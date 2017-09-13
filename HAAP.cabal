@@ -1,0 +1,51 @@
+Name:               HAAP
+Version:            0.0.1
+Description:        Haskell Automatic Assessment Platform
+License:            GPL
+Author:             Hugo Pacheco
+Maintainer:         Hugo Pacheco <hpacheco@gmail.com>
+Bug-reports:        mailto:hpacheco@gmail.com
+Stability:          experimental
+Homepage:           
+Category:           Education
+Build-Type:         Simple
+Cabal-Version:      >=1.6
+Tested-with:        GHC==8.0.1
+Synopsis:           Haskell Automatic Assessment Platform
+
+Extra-Source-Files: README.txt
+Data-Files: templates/*.html, css/*.css
+  
+Library
+  exposed-modules:
+    HAAP
+    HAAP.Core
+    HAAP.DB
+    HAAP.DB.State
+    HAAP.DB.Acid
+    HAAP.DB.Binary
+    HAAP.IO
+    HAAP.Lens
+    HAAP.Log
+--    HAAP.Sources
+--    HAAP.Sources.SVN
+    HAAP.Utils
+    HAAP.Test.Spec
+    HAAP.Test.Rank
+    HAAP.Test.Tourney
+    HAAP.Pretty
+    HAAP.Web.Hakyll
+    HAAP.Web.Blaze
+    HAAP.Web.Test.Spec
+    HAAP.Web.Test.Rank
+    HAAP.Web.Test.Tourney
+    HAAP.Doc.Haddock
+    HAAP.Code.HLint
+    HAAP.Code.Homplexity
+    HAAP.Code.HPC
+        
+  Hs-source-dirs:   src
+  Other-Modules:
+    Paths_HAAP
+  Build-Depends:    dlist, containers, transformers, base, mtl, data-default, lens, deepseq, filepath, bytestring, knob, HUnit, hspec, hspec-contrib, hspec-core, QuickCheck, exceptions, safecopy, acid-state, pretty, GenericPretty, hakyll, contravariant, shelly, text, directory, random-shuffle, blaze-html, time, binary
+

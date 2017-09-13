@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=\"UTF-8\">
+    <link rel="stylesheet" href=$projectpath$/css/normalize.css>
+    <link rel="stylesheet" href=$projectpath$/css/style.css>
+    <title>Homplexity Code Quality Analysis</title>
+</head>
+
+<body>
+<div id="demo">
+
+<h1>Homplexity Code Quality Analysis</h1>
+
+<div class="table-responsive-vertical shadow-z-1">
+<table id="table" class="table table-hover table-mc-light-blue">
+    <thead>
+        <tr>
+            <th>Suggestion</th>
+            <th>Messages</th>
+        </tr>
+    </thead>
+    <tbody>
+        $for(messages)$
+            <tr>
+                <td data-title="Suggestion">$suggestion$</td>
+                <td class=$class$ data-title="Message">$message$</td>
+            </tr>
+        $endfor$
+    </tbody>
+</table>
+$endfor$
+</div>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+dist/
+*.sci
+*.dyn_o
+*-dyn_hi
+*.o
+*.hi
+*.o-boot
+*.hi-boot
+*.DS_Store

@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=\"UTF-8\">
+    <link rel="stylesheet" href=$projectpath$/css/normalize.css>
+    <link rel="stylesheet" href=$projectpath$/css/style.css>
+    <title>$title$</title>
+</head>
+
+<body>
+<div id="demo">
+    <h1>$title$</h1>
+    <div class="table-responsive-vertical shadow-z-1" >
+        <table id="table" class="table table-hover table-mc-light-blue">
+            <thead>
+                <tr>
+                    <th>$idtag$</th>
+                    $for(headers)$
+                    <th>$header$</th>
+                    $endfor$
+                    <th>$ranktag$</th>
+                </tr>
+            </thead>
+            <tbody>
+                $for(rows)$
+                    <tr>
+                    <td data-title=$id$>$id$</td>
+                    $for(cols)$
+                    <td data-title=$header$ class=$class$>$col$</td>
+                    $endfor$
+                    <td data-title=$ranktag$ class=$class$>$score$</td>
+                    </tr>
+                $endfor$
+                <tr></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+
+</html>
+
+
