@@ -4,6 +4,7 @@ import HAAP.Core
 import HAAP.IO
 import HAAP.Web.Hakyll
 import HAAP.Utils
+import HAAP.Compiler.GHC
 
 import Data.Traversable
 import Data.Foldable
@@ -31,7 +32,7 @@ runHpc hpc m = do
             let (dir,exec) = splitFileName path
             runSh $ do
                 shCd dir
-                shCompileWith io' ghc' [exec]
+                shGhcWith io' ghc' [exec]
         x <- m
         htmls <- forM (hpcExecutables hpc) $ \path -> do
             io <- Reader.reader (hpcIO hpc)

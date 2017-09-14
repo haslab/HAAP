@@ -23,6 +23,9 @@ module HAAP
     , module HAAP.Code.HLint
     , module HAAP.Code.Homplexity
     , module HAAP.Code.HPC
+    , module HAAP.Compiler.GHC
+    , module HAAP.Compiler.GHCJS
+    , module HAAP.Web.Graphics.CodeWorld
     ) where
 
 import HAAP.Core
@@ -49,3 +52,10 @@ import HAAP.Doc.Haddock
 import HAAP.Code.HLint
 import HAAP.Code.Homplexity
 import HAAP.Code.HPC
+import HAAP.Compiler.GHC
+import HAAP.Compiler.GHCJS
+import HAAP.Web.Graphics.CodeWorld
+
+
+
+

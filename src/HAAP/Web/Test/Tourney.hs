@@ -36,15 +36,15 @@ instance Out a => Out (ScoredTourneyPlayer a r) where
     docPrec i x = doc x
     doc (ScoredTourneyPlayer x) = doc $ fst x
 
-renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db a r -> Haap p args (DB db) (Rules ())
+renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db a r -> Haap p args (DB db) (Rules (),FilePath)
 renderHaapTourney tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb
-    web1 <- renderHaapTourneyDB tourney db
+    (web1,index) <- renderHaapTourneyDB tourney db
     web2 <- renderHaapTourneyTree tourney tourneyno tourneyTree tourneyTime
-    return $ web1 >> web2
+    return (web1 >> web2,index)
 
-renderHaapTourneyDB :: (TourneyPlayer a) => HaapTourney p args db a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) (Rules ())
+renderHaapTourneyDB :: (TourneyPlayer a) => HaapTourney p args db a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) (Rules (),FilePath)
 renderHaapTourneyDB t db = do
     --runIO $ putStrLn $ "render " ++ show (toRoot $ tourneysPath)
     renderHaapRank rank

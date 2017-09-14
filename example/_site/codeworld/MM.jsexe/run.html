@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
+      <title>CodeWorld - codeworld/MM.jsexe</title>
+      <link rel="stylesheet" href="../../css/ghcjs-demo.css">
+    
+    <script language="javascript" src="rts.js"></script>
+    <script language="javascript" src="lib.js"></script>
+    <script language="javascript" src="out.js"></script>
+  </head>
+  <body style="text-align: center">
+    <canvas id="screen"></canvas>
+    <pre id="message" class="dropbox">=== Compiling ===
+Output:
+[1 of 1] Compiling Main             ( MM.hs, MM.js_o )
+Linking ./codeworld/MM.jsexe (Main)
+
+Errors:
+
+Exit Code: 0
+=== Running ===</pre>
+  </body>
+  
+  <script type="text/javascript">
+    function reportRuntimeError(err, str) {
+      if (window.parent.addToMessage) {
+        var message = window.parent.addToMessage('\n' + str);
+
+        if (err) {
+          var message = window.parent.document.getElementById('message');
+          message.classList.add('error');
+        }
+      } else {
+        console.log(str);
+      }
+    }
+  </script>
+  
+  <script language="javascript" src="runmain.js" defer></script>
+  <script type="text/javascript" src="../../js/ghcjs-debugmode.js"></script>
+  <script type="text/javascript" src="../../js/ghcjs-demo.js"></script>
+</html>

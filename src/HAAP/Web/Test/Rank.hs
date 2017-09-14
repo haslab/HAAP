@@ -14,19 +14,19 @@ import Data.List
 
 import qualified Control.Monad.Reader as Reader
 
-renderHaapRank :: (Out a,Score score) => HaapRank p args db a score -> Haap p args db (Rules ())
+renderHaapRank :: (Out a,Score score) => HaapRank p args db a score -> Haap p args db (Rules (),FilePath)
 renderHaapRank rank = do
     scores <- runHaapRank rank
     renderHaapRankScores rank scores
 
-renderHaapSpecRankWith :: (Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db a score -> Haap p args db (Rules ())
+renderHaapSpecRankWith :: (Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db a score -> Haap p args db (Rules (),FilePath)
 renderHaapSpecRankWith getArgs rank = do
     scores <- runHaapSpecRankWith getArgs rank
     renderHaapRankScores (haapSpecRank getArgs rank) scores
 
-renderHaapRankScores :: (Out a,Score score) => HaapRank p args db a score -> HaapRankRes a score -> Haap p args db (Rules ())
+renderHaapRankScores :: (Out a,Score score) => HaapRank p args db a score -> HaapRankRes a score -> Haap p args db (Rules (),FilePath)
 renderHaapRankScores rank scores = do
-    return $ create [fromFilePath $ rankPath rank] $ do
+    let rules = create [fromFilePath $ rankPath rank] $ do
         route idRoute
         compile $ do
             let headerCtx = field "header" (return . itemBody)
@@ -46,6 +46,7 @@ renderHaapRankScores rank scores = do
                         `mappend` listField "headers" headerCtx (mapM makeItem headers)
                         `mappend` listField "rows" rowCtx (mapM makeItem scores')
             makeItem "" >>= loadAndApplyTemplate "templates/ranks.html" pageCtx
+    return (rules,rankPath rank)
   where
     scores' = map (mapSnd3 (zipLeft headernums)) scores
     numscores [] = 0

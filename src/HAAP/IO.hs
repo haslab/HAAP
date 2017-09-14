@@ -46,6 +46,12 @@ data IOResult = IOResult
     , resStderr :: Text
     }
 
+instance Out IOResult where
+    docPrec i x = doc x
+    doc io =   text "Output:" $+$ text (Text.unpack $ resStdout io)
+           $+$ text "Errors:" $+$ text (Text.unpack $ resStderr io)
+           $+$ text "Exit Code:" <+> doc (resExitCode io)
+
 defaultIOArgs :: IOArgs
 defaultIOArgs = IOArgs Nothing False Nothing False False
 
@@ -151,22 +157,7 @@ copyRecursive from to = do
             forM_ froms $ \x -> copyRecursive (from </> x) to
         else runSh $ Sh.cp_r (shFromFilePath from) (shFromFilePath to)
 
-data GHCArgs = GHCArgs
-    { ghcSafe :: Bool -- compile with the -XSafe extension
-    , ghcHpc :: Bool -- compile for hpc
-    , ghcArgs :: [String] -- additional flags
-    }
 
-instance Default GHCArgs where
-    def = GHCArgs True False []
-
-shCompileWith :: IOArgs -> GHCArgs -> [FilePath] -> Sh IOResult
-shCompileWith io ghc ins = shCommandWith io "ghc" (addHpc (ghcHpc ghc) $ addSafe (ghcSafe ghc) ins)
-    where
-    addSafe True cmds = "-XSafe" : cmds
-    addSafe False cmds = cmds
-    addHpc True  cmds = "-fhpc" : cmds
-    addHpc False cmds = cmds
         
         
         

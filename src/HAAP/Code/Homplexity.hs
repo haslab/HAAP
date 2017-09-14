@@ -23,7 +23,7 @@ data HomplexityArgs = HomplexityArgs
     , homplexityHtmlPath :: FilePath -- relative to the project path
     }
 
-runHomplexity :: HomplexityArgs -> Haap p args db (Rules ())
+runHomplexity :: HomplexityArgs -> Haap p args db (Rules (),FilePath)
 runHomplexity h = do
     let ioArgs = def { ioSandbox = homplexitySandbox h }
     let extras = homplexityArgs h
@@ -35,7 +35,7 @@ runHomplexity h = do
 --    runIO $ putStrLn $ show $ resStderr res
 --    runIO $ putStrLn $ show $ resStdout res
     let messages = parseMessages $ lines (Text.unpack $ resStdout res) ++ lines (Text.unpack $ resStderr res)
-    return $ do
+    let rules = do
         -- copy the homplexity generated documentation
         create [fromFilePath $ homplexityHtmlPath h] $ do
             route   idRoute
@@ -46,6 +46,7 @@ runHomplexity h = do
                 let homCtx = constField "projectpath" (toRoot $ homplexityPath h)
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
                 makeItem "" >>= loadAndApplyTemplate "templates/homplexity.html" homCtx
+    return (rules,homplexityHtmlPath h)
       
 parseMessages [] = []
 parseMessages (x:xs)

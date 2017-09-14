@@ -22,7 +22,7 @@ data HLintArgs = HLintArgs
     , hlintHtmlPath :: FilePath -- relative to the project path
     }
 
-runHLint :: HLintArgs -> Haap p args db (Rules ())
+runHLint :: HLintArgs -> Haap p args db (Rules (),FilePath)
 runHLint h = do
     let ioArgs = def { ioSandbox = hlintSandbox h }
     let extras = hlintArgs h
@@ -33,10 +33,11 @@ runHLint h = do
         shCommandWith ioArgs "hlint" (extras++["--report="++html]++files)
 --    runIO $ putStrLn $ show $ resStderr res
 --    runIO $ putStrLn $ show $ resStdout res
-    return $ do
+    let rules = do
         -- copy the hlint generated documentation
         match (fromGlob $ hlintHtmlPath h) $ do
             route   idRoute
             compile copyFileCompiler
+    return (rules,hlintHtmlPath h)
       
         

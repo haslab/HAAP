@@ -29,6 +29,7 @@ runHakyllWith cfg rules = ignoreError $ do
     let datarules = do
         matchDataTemplates
         matchDataCSSs
+        matchDataJSs
         rules
     let build = runIOExit $ withArgs ["build"] $ hakyllWith cfg datarules
     let clean = runIOExit $ withArgs ["clean"] $ hakyllWith cfg datarules
@@ -43,6 +44,12 @@ copyDataFiles cfg = do
 
 --dataRoute :: FilePath -> Routes
 --dataRoute datapath = customRoute (\iden -> makeRelative datapath $ toFilePath iden)
+
+matchDataJSs :: Rules ()
+matchDataJSs = do
+    match (fromGlob ("js" </> "*.js")) $ do
+        route idRoute
+        compile copyFileCompiler
 
 matchDataTemplates :: Rules ()
 matchDataTemplates = do

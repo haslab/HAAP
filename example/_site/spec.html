@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=\"UTF-8\">
+    <link rel="stylesheet" href=./css/normalize.css>
+    <link rel="stylesheet" href=./css/style.css>
+    <title>Spec</title>
+</head>
+
+<body>
+<div id="demo">
+
+<h1>spec1</h1>
+
+<div class="table-responsive-vertical shadow-z-1">
+<table id="table" class="table table-hover table-mc-light-blue">
+    <thead>
+        <tr>
+            
+                <th>x</th>
+            
+                <th>y</th>
+            
+            <th>Resultado</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+            <tr>
+                
+                <td data-title=97>97</td>
+                
+                <td data-title='a'>'a'</td>
+                
+                <td class=hspec-success data-title="Resultado">OK</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=97>97</td>
+                
+                <td data-title='b'>'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n97\\n...but got...\\n98\\nexpected: 97\\n but got: 98\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=97>97</td>
+                
+                <td data-title='c'>'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n97\\n...but got...\\n99\\nexpected: 97\\n but got: 99\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=97>97</td>
+                
+                <td data-title='d'>'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n97\\n...but got...\\n100\\nexpected: 97\\n but got: 100\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=98>98</td>
+                
+                <td data-title='a'>'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n98\\n...but got...\\n97\\nexpected: 98\\n but got: 97\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=98>98</td>
+                
+                <td data-title='b'>'b'</td>
+                
+                <td class=hspec-success data-title="Resultado">OK</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=98>98</td>
+                
+                <td data-title='c'>'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n98\\n...but got...\\n99\\nexpected: 98\\n but got: 99\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=98>98</td>
+                
+                <td data-title='d'>'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n98\\n...but got...\\n100\\nexpected: 98\\n but got: 100\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=3>3</td>
+                
+                <td data-title='a'>'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n3\\n...but got...\\n97\\nexpected: 3\\n but got: 97\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=3>3</td>
+                
+                <td data-title='b'>'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n3\\n...but got...\\n98\\nexpected: 3\\n but got: 98\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=3>3</td>
+                
+                <td data-title='c'>'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n3\\n...but got...\\n99\\nexpected: 3\\n but got: 99\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=3>3</td>
+                
+                <td data-title='d'>'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n3\\n...but got...\\n100\\nexpected: 3\\n but got: 100\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=4>4</td>
+                
+                <td data-title='a'>'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n4\\n...but got...\\n97\\nexpected: 4\\n but got: 97\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=4>4</td>
+                
+                <td data-title='b'>'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n4\\n...but got...\\n98\\nexpected: 4\\n but got: 98\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=4>4</td>
+                
+                <td data-title='c'>'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n4\\n...but got...\\n99\\nexpected: 4\\n but got: 99\""</td>
+            </tr>
+        
+            <tr>
+                
+                <td data-title=4>4</td>
+                
+                <td data-title='d'>'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">"Reason \"Equality assertion failed: expected...\\n4\\n...but got...\\n100\\nexpected: 4\\n but got: 100\""</td>
+            </tr>
+        
+    </tbody>
+</table>
+
+</div>
+</body>
+
+</html>

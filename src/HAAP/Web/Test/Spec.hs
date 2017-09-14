@@ -10,14 +10,14 @@ import HAAP.Pretty
 
 import Data.Traversable
 
-renderHaapSpecsWith :: (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db (Rules ())
+renderHaapSpecsWith :: (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db (Rules (),FilePath)
 renderHaapSpecsWith getArgs path title specs = do
     tests <- forM specs $ mapSndM (runSpecWith getArgs)
     renderHaapTests path title tests
 
-renderHaapTests :: FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db (Rules ())
+renderHaapTests :: FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db (Rules (),FilePath)
 renderHaapTests path title specs = do
-    return $ create [fromFilePath path] $ do
+    let rules = create [fromFilePath path] $ do
         route idRoute
         compile $ do
             let showRes Nothing = "OK"
@@ -34,3 +34,4 @@ renderHaapTests path title specs = do
                         `mappend` constField "projectpath" (toRoot path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
             makeItem "" >>= loadAndApplyTemplate "templates/specs.html" pageCtx
+    return (rules,path)

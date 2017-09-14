@@ -14,7 +14,7 @@ Tested-with:        GHC==8.0.1
 Synopsis:           Haskell Automatic Assessment Platform
 
 Extra-Source-Files: README.txt
-Data-Files: templates/*.html, css/*.css
+Data-Files: templates/*.html, css/*.css, js/*.js
   
 Library
   exposed-modules:
@@ -43,6 +43,9 @@ Library
     HAAP.Code.HLint
     HAAP.Code.Homplexity
     HAAP.Code.HPC
+    HAAP.Web.Graphics.CodeWorld
+    HAAP.Compiler.GHC
+    HAAP.Compiler.GHCJS
         
   Hs-source-dirs:   src
   Other-Modules:

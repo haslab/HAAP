@@ -23,24 +23,25 @@ data HaddockArgs = HaddockArgs
     , haddockHtmlPath :: FilePath -- relative to the project path
     }
 
-runHaddock :: HaddockArgs -> Haap p args db (Rules ())
+runHaddock :: HaddockArgs -> Haap p args db (Rules (),FilePath)
 runHaddock h = do
     let ioArgs = def { ioSandbox = haddockSandbox h }
     let extras = haddockArgs h
     let files = haddockFiles h
     let html = toRoot (haddockHtmlPath h) </> haddockHtmlPath h
+    let indexhtml = addExtension (haddockHtmlPath h) "html"
     res <- runSh $ do
         shCd $ haddockPath h
         shCommandWith ioArgs "haddock" (extras++["-h","-o",html]++files)
 --    runIO $ putStrLn $ show $ resStderr res
 --    runIO $ putStrLn $ show $ resStdout res
-    return $ do
+    let rules = do
         -- copy the haddock generated documentation
         match (fromGlob $ (haddockHtmlPath h) </> "*") $ do
             route   idRoute
             compile copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
-        create [fromFilePath $ addExtension (haddockHtmlPath h) "html"] $ do
+        create [fromFilePath indexhtml] $ do
             route idRoute
             compile $ do
                 let docCtx = constField "title" (haddockTitle h)
@@ -49,4 +50,5 @@ runHaddock h = do
                            `mappend` constField "stderr" (Text.unpack $ resStderr res)
                            `mappend` constField "link" (haddockHtmlPath h </> "index.html")
                 makeItem "" >>= loadAndApplyTemplate "templates/doc.html" docCtx
+    return (rules,indexhtml)
         
