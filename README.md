@@ -1,5 +1,5 @@
 
-#Installation
+# Installation
 
 To install HAAP in a new sandbox simply run:
 ```
@@ -16,7 +16,7 @@ cabal install --ghcjs codeworld-haap-api
 cabal install --ghcjs codeworld-haap-base
 ```
 
-#Example
+# Example
 
 You can experiment with a minimalistic example.
 
