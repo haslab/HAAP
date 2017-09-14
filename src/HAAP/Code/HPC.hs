@@ -42,7 +42,7 @@ runHpc hpc m = do
             runSh $ do
                 shCd dir
                 shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
-            return $ hpcHtmlPath hpc </> "hpc_index.html"
+            return $ hpcHtmlPath hpc </> exec </> "hpc_index.html"
         let rules = do
             -- copy the hpc generated documentation
             forM_ htmls $ \html -> do
