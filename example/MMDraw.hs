@@ -1,5 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, PackageImports, NoImplicitPrelude #-}
 
+import "codeworld-haap-base" Prelude
 import qualified CodeWorld as CW
 import Graphics.Gloss hiding ((.*.))
 import Graphics.Gloss.Data.Picture          
@@ -7,7 +8,10 @@ import Graphics.Gloss.Interface.Pure.Game
 --import Graphics.Gloss.Juicy
 import Graphics.Gloss.Geometry.Line
 
+import Control.Exception
+
 import Text.Read
+import qualified Data.Text as Text
 
 
 -- input da T1
@@ -329,7 +333,7 @@ joga = do
     let tamanhoY::Float = (realToFrac cy) / (realToFrac dimensao)
     let tamanho = min tamanhoX tamanhoY
     let back = red
-    let ini = estadoInicial screen (round tamanho) (escava ex1)
+    let ini = estadoInicial screen (round tamanho) (escava caminho)
     display screen back (glossDesenha ini)
     --play screen back ini glossDesenha glossEvento glossTempo
     where
@@ -337,7 +341,7 @@ joga = do
 --    screen = (InWindow "Novo Jogo" ((dimensao+1)*round tamBloco,(dimensao+1)*round tamBloco) (0, 0))
     
     
-main = joga
+main = catch joga (\(e::SomeException) -> CW.trace (Text.pack $ show e) $ return ())
 
 -- exemplos
 -- bom

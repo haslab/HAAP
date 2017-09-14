@@ -14,7 +14,7 @@
     <canvas id="screen"></canvas>
     <textarea id="text">$textmessage$</textarea>
     <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>
-    <pre id="textmessage" class="dropbox">$message$</pre>
+    <pre id="message" class="dropbox draw">$message$</pre>
   </body>
   
   <script type="text/javascript">
@@ -31,7 +31,7 @@
         var message = window.parent.addToMessage('\n' + str);
 
         if (err) {
-          var message = window.parent.document.getElementById('textmessage');
+          var message = window.parent.document.getElementById('message');
           message.classList.add('error');
         }
       } else {

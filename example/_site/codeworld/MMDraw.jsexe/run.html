@@ -14,7 +14,7 @@
     <canvas id="screen"></canvas>
     <textarea id="text">Insira um caminho...</textarea>
     <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>
-    <pre id="textmessage" class="dropbox">=== Compiling ===
+    <pre id="message" class="dropbox draw">=== Compiling ===
 Output:
 Linking ./codeworld/MMDraw.jsexe (Main)
 
@@ -38,7 +38,7 @@ Exit Code: 0
         var message = window.parent.addToMessage('\n' + str);
 
         if (err) {
-          var message = window.parent.document.getElementById('textmessage');
+          var message = window.parent.document.getElementById('message');
           message.classList.add('error');
         }
       } else {
