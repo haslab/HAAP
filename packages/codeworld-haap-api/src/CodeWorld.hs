@@ -23,6 +23,7 @@ module CodeWorld (
     simulationOf,
     interactionOf,
     getScreenSize,
+    getTextContent,
 
     -- * Pictures
     Picture,

@@ -35,7 +35,8 @@ module CodeWorld.Driver (
     simulationOf,
     interactionOf,
     trace,
-    getScreenSize
+    getScreenSize,
+    getTextContent
     ) where
 
 import           CodeWorld.Color
@@ -73,6 +74,7 @@ import           Data.JSString.Text
 import qualified Data.JSString
 import           Data.Word
 import           GHCJS.DOM
+import           GHCJS.DOM.HTMLTextAreaElement
 import           GHCJS.DOM.NonElementParentNode
 import           GHCJS.DOM.GlobalEventHandlers
 import           GHCJS.DOM.Window as Window
@@ -500,13 +502,23 @@ drawFrame ctx pic = do
 
 getScreenSize :: IO (Double,Double)
 getScreenSize = do
-    Just window <- currentWindow
     Just doc <- currentDocument
     Just canvas <- getElementById doc ("screen" :: JSString)
     rect <- getBoundingClientRect canvas
     cx <- DOMRect.getWidth rect
     cy <- DOMRect.getHeight rect
     return (cx,cy)
+
+getTextContent :: IO String
+getTextContent = do
+    doc <- orError "currentDocument" currentDocument
+    textarea <- orError "getElementById" $ getElementById doc ("text" :: JSString)
+    content <- orError "getValue" $ mapM getValue =<< fromJSVal =<< toJSVal textarea
+    return content
+  where
+      orError str m = m >>= \x -> case x of
+          Nothing -> Prelude.error $ "getTextContent " ++ str
+          Just x -> return x
 
 setupScreenContext :: Element -> DOMRect.DOMRect -> IO Canvas.Context
 setupScreenContext canvas rect = do

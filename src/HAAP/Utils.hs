@@ -35,6 +35,18 @@ snd3 (x,y,z) = y
 thr3 :: (a,b,c) -> c
 thr3 (x,y,z) = z
 
+fst4 :: (a,b,c,d) -> a
+fst4 (x,y,z,w) = x
+
+snd4 :: (a,b,c,d) -> b
+snd4 (x,y,z,w) = y
+
+thr4 :: (a,b,c,d) -> c
+thr4 (x,y,z,w) = z
+
+fou4 :: (a,b,c,d) -> d
+fou4 (x,y,z,w) = w
+
 averageList :: Fractional a => [a] -> a
 averageList xs = sum xs / realToFrac (length xs)
 

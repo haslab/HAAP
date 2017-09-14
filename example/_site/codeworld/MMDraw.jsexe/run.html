@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
+      <title>CodeWorld - codeworld/MMDraw.jsexe</title>
+      <link rel="stylesheet" href="../../css/codeworld.css">
+    
+    <script language="javascript" src="rts.js"></script>
+    <script language="javascript" src="lib.js"></script>
+    <script language="javascript" src="out.js"></script>
+  </head>
+  <body style="text-align: center">
+    <canvas id="screen"></canvas>
+    <textarea id="text">Insira um caminho...</textarea>
+    <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>
+    <pre id="textmessage" class="dropbox">=== Compiling ===
+Output:
+Linking ./codeworld/MMDraw.jsexe (Main)
+
+Errors:
+
+Exit Code: 0
+=== Running ===</pre>
+  </body>
+  
+  <script type="text/javascript">
+  function drawCW() {
+      var imported = document.createElement('script');
+      imported.src = 'runmain.js';
+      document.head.appendChild(imported);
+  }
+  </script>
+  
+  <script type="text/javascript">
+    function reportRuntimeError(err, str) {
+      if (window.parent.addToMessage) {
+        var message = window.parent.addToMessage('\n' + str);
+
+        if (err) {
+          var message = window.parent.document.getElementById('textmessage');
+          message.classList.add('error');
+        }
+      } else {
+        console.log(str);
+      }
+    }
+  </script>
+  
+  <script type="text/javascript" src="../../js/ghcjs-debugmode.js"></script>
+  <script type="text/javascript" src="../../js/cw-demo.js"></script>
+</html>

@@ -191,11 +191,10 @@ Why not<br/>
 <div class="hint3 file0">
 Example.hs:46:1: Suggestion: Use camelCase<br/>
 Found<br/>
-<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span>
-                             <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>LI1Player</span><span class='hs-layout'>}</span>
+<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                 <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
-<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>ExampleDB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>ExampleDB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>LI1Player</span><span class='hs-layout'>}</span>
+<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>ExampleDB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>ExampleDB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 
 </div>
@@ -203,12 +202,11 @@ Why not<br/>
 <div class="hint4 file0">
 Example.hs:46:1: Suggestion: Use newtype instead of data<br/>
 Found<br/>
-<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span>
-                             <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>LI1Player</span><span class='hs-layout'>}</span>
+<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                 <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
 <pre><span class='hs-keyword'>newtype</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span>
-                                <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>LI1Player</span><span class='hs-layout'>}</span>
+                                <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                    <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 <span class='note'>Note: decreases laziness</span>
 </div>
@@ -244,11 +242,11 @@ Why not<br/>
 <div class="hint4 file0">
 Example.hs:114:1: Suggestion: Use newtype instead of data<br/>
 Found<br/>
-<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>LI1Player</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>LI1Player</span> <span class='hs-layout'>(</span><span class='hs-conid'>String</span><span class='hs-layout'>,</span> <span class='hs-conid'>Bool</span><span class='hs-layout'>)</span>
-               <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Eq</span><span class='hs-layout'>,</span> <span class='hs-conid'>Ord</span><span class='hs-layout'>,</span> <span class='hs-conid'>Show</span><span class='hs-layout'>,</span> <span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
+<pre><span class='hs-keyword'>data</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-layout'>(</span><span class='hs-conid'>String</span><span class='hs-layout'>,</span> <span class='hs-conid'>Bool</span><span class='hs-layout'>)</span>
+              <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Eq</span><span class='hs-layout'>,</span> <span class='hs-conid'>Ord</span><span class='hs-layout'>,</span> <span class='hs-conid'>Show</span><span class='hs-layout'>,</span> <span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
-<pre><span class='hs-keyword'>newtype</span> <span class='hs-conid'>LI1Player</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>LI1Player</span> <span class='hs-layout'>(</span><span class='hs-conid'>String</span><span class='hs-layout'>,</span> <span class='hs-conid'>Bool</span><span class='hs-layout'>)</span>
-                  <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Eq</span><span class='hs-layout'>,</span> <span class='hs-conid'>Ord</span><span class='hs-layout'>,</span> <span class='hs-conid'>Show</span><span class='hs-layout'>,</span> <span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
+<pre><span class='hs-keyword'>newtype</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-layout'>(</span><span class='hs-conid'>String</span><span class='hs-layout'>,</span> <span class='hs-conid'>Bool</span><span class='hs-layout'>)</span>
+                 <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Eq</span><span class='hs-layout'>,</span> <span class='hs-conid'>Ord</span><span class='hs-layout'>,</span> <span class='hs-conid'>Show</span><span class='hs-layout'>,</span> <span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
 <span class='note'>Note: decreases laziness</span>
 </div>
 

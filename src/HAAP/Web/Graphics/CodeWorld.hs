@@ -20,8 +20,10 @@ import System.Directory
 
 import qualified Shelly as Sh
 
+data CWTemplate = CWGame | CWDraw String
+
 data CodeWorldArgs args = CodeWorldArgs
-    { cwExecutables :: [FilePath] -- graphical web applications to compile with ghjs and codeworld libraries
+    { cwExecutables :: [(FilePath,CWTemplate)] -- graphical web applications to compile with ghjs and codeworld libraries
     , cwGHCJS :: args -> GHCJSArgs
     , cwIO :: args -> IOArgs
     , cwHtmlPath :: FilePath -- relative path to the project to store codeworld results
@@ -30,7 +32,10 @@ data CodeWorldArgs args = CodeWorldArgs
 
 runCodeWorld :: CodeWorldArgs args -> Haap p args db (Rules (),[FilePath])
 runCodeWorld cw = do
-    htmls <- forM (cwExecutables cw) $ \path -> do
+    htmls <- forM (cwExecutables cw) $ \(path,tplt) -> do
+        let (tpltfile,textmessage) = case tplt of
+                                        CWGame -> ("templates/cw-game.html","")
+                                        CWDraw msg -> ("templates/cw-draw.html",msg)
         -- compile files with ghcjs
         ghcjs <- Reader.reader (cwGHCJS cw)
         io <- Reader.reader (cwIO cw)
@@ -43,9 +48,9 @@ runCodeWorld cw = do
             Sh.mkdir_p (fromString destfolder)
             shCd dir
             shGhcjsWith io ghcjs' [exec]
-        return (res,destfolder)
+        return (tpltfile,textmessage,res,destfolder)
     let rules = do
-        forM_ htmls $ \(res,html) -> do
+        forM_ htmls $ \(tpltfile,textmessage,res,html) -> do
             let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
             match (fromGlob $ html </> "*") $ do
                 route   idRoute
@@ -56,8 +61,9 @@ runCodeWorld cw = do
                     let cwCtx = constField "title" html
                               `mappend` constField "projectpath" (toRoot $ html </> "run.html")
                               `mappend` constField "message" message
-                    makeItem "" >>= loadAndApplyTemplate "templates/codeworld.html" cwCtx
+                              `mappend` constField "textmessage" textmessage
+                    makeItem "" >>= loadAndApplyTemplate tpltfile cwCtx
     
-    let runs = map ((</> "run.html") . snd) htmls
+    let runs = map ((</> "run.html") . fou4) htmls
     return (rules,runs)
     

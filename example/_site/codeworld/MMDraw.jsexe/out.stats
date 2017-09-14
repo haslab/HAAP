@@ -1,14 +1,15 @@
 code size summary per package:
 
-base:                    424094
-codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw:491010
-ghc-prim:                24243
-ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F:9059
-ghcjs-dom-jsffi-0.9.2.0-3TYxh8ZLmiQ561qJCRIiZo:44866
+base:                    526088
+codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw:330426
+deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ:648
+ghc-prim:                26415
+ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F:8519
+ghcjs-dom-jsffi-0.9.2.0-3TYxh8ZLmiQ561qJCRIiZo:23722
 ghcjs-prim-0.1.0.0-IFhsWclGfLr1HfhUvIVylA:10712
-integer-gmp:             79861
-main:                    109649
-text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P:20858
+integer-gmp:             54230
+main:                    81124
+text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P:2817
 
 
 code size per module:
@@ -16,11 +17,11 @@ code size per module:
 base
     Control.Exception.Base:             5610
     Control.Monad.IO.Class:             430
+    Data.Either:                        369
     Data.Foldable:                      3552
     Data.Maybe:                         194
     Data.OldList:                       2751
     Data.Traversable:                   1635
-    Data.Tuple:                         334
     Data.Typeable:                      878
     Data.Typeable.Internal:             2335
     Foreign.C.Error:                    9569
@@ -28,15 +29,15 @@ base
     Foreign.Marshal.Alloc:              301
     Foreign.Marshal.Array:              1987
     Foreign.Storable:                   9380
-    GHC.Base:                           7594
+    GHC.Base:                           7778
     GHC.Char:                           705
     GHC.Conc.Sync:                      4428
-    GHC.Enum:                           18285
+    GHC.Enum:                           10111
     GHC.Err:                            546
     GHC.Exception:                      16380
     GHC.Fingerprint:                    1459
     GHC.Fingerprint.Type:               724
-    GHC.Float:                          39980
+    GHC.Float:                          32908
     GHC.Float.ConversionUtils:          2721
     GHC.Float.RealFracMethods:          405
     GHC.Foreign:                        12172
@@ -56,35 +57,42 @@ base
     GHC.IO.Handle.Internals:            27261
     GHC.IO.Handle.Types:                3466
     GHC.Int:                            755
-    GHC.List:                           15467
+    GHC.List:                           15233
     GHC.MVar:                           174
-    GHC.Num:                            3430
+    GHC.Num:                            3250
     GHC.Ptr:                            610
-    GHC.Real:                           31734
+    GHC.Read:                           15873
+    GHC.Real:                           28202
     GHC.STRef:                          180
-    GHC.Show:                           23066
+    GHC.Show:                           25904
     GHC.Stack.CCS:                      3971
-    GHC.Stack.Types:                    1491
+    GHC.Stack.Types:                    1992
     GHC.Storable:                       1070
     GHC.TopHandler:                     12934
+    GHC.Unicode:                        1814
     GHC.Word:                           923
     System.Posix.Internals:             15344
+    Text.ParserCombinators.ReadP:       23521
+    Text.ParserCombinators.ReadPrec:    4119
+    Text.Read:                          2642
+    Text.Read.Lex:                      69659
 
 codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw
     CodeWorld.Color:                    1170
-    CodeWorld.Driver:                   391168
-    CodeWorld.Event:                    4201
+    CodeWorld.Driver:                   291971
     CodeWorld.Picture:                  9382
     Graphics.Gloss.Data.Color:          541
-    Graphics.Gloss.Data.Display:        3616
-    Graphics.Gloss.Data.Event:          55970
+    Graphics.Gloss.Data.Display:        4589
     Graphics.Gloss.Data.Picture:        21583
-    Graphics.Gloss.Data.Point:          1389
-    Graphics.Gloss.Interface.Pure.Game: 1990
+    Graphics.Gloss.Data.Point:          569
+    Graphics.Gloss.Interface.Pure.Display:621
+
+deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ
+    Control.DeepSeq:                    648
 
 ghc-prim
     GHC.CString:                        4516
-    GHC.Classes:                        14821
+    GHC.Classes:                        16993
     GHC.IntWord64:                      298
     GHC.Tuple:                          2617
     GHC.Types:                          1991
@@ -93,36 +101,34 @@ ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F
     Data.JSString:                      3850
     Data.JSString.Internal.Fusion.Common:1488
     Data.JSString.Internal.Type:        421
+    GHCJS.Internal.Types:               240
     GHCJS.Marshal:                      982
     GHCJS.Marshal.Internal:             1354
-    JavaScript.Web.AnimationFrame:      964
+    GHCJS.Types:                        184
 
 ghcjs-dom-jsffi-0.9.2.0-3TYxh8ZLmiQ561qJCRIiZo
     GHCJS.DOM:                          882
-    GHCJS.DOM.EventM:                   4345
+    GHCJS.DOM.EventM:                   1278
     GHCJS.DOM.EventTargetClosures:      915
-    GHCJS.DOM.JSFFI.Generated.GlobalEventHandlers:4357
-    GHCJS.DOM.JSFFI.Generated.MouseEvent:2046
+    GHCJS.DOM.JSFFI.Generated.GlobalEventHandlers:724
     GHCJS.DOM.JSFFI.Generated.NonElementParentNode:1398
-    GHCJS.DOM.Types:                    30923
+    GHCJS.DOM.Types:                    18525
 
 ghcjs-prim-0.1.0.0-IFhsWclGfLr1HfhUvIVylA
     GHCJS.Prim:                         6385
     GHCJS.Prim.Internal:                4327
 
 integer-gmp
-    GHC.Integer.Type:                   79861
+    GHC.Integer.Type:                   54230
 
 main
-    Main:                               109649
+    Main:                               81124
 
 text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P
     Data.Text.Array:                    1559
-    Data.Text.Internal:                 1581
-    Data.Text.Internal.Fusion.Common:   1378
-    Data.Text.Show:                     16340
+    Data.Text.Internal:                 1258
 
 
 
-packed metadata: 263312
+packed metadata: 215109
 

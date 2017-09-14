@@ -41,20 +41,20 @@ exSpec = bounded "x" [97,98,3,4] $ \x ->
 exRankSpec :: Int -> HaapSpec
 exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual $ return (x,i)
 
-type LI1 = Haap Example Example_Args (BinaryDB Example_DB)
+type Ex = Haap Example Example_Args (BinaryDB Example_DB)
 
 data Example_DB = Example_DB
-    { exTourneyDB :: HaapTourneyDB LI1Player
+    { exTourneyDB :: HaapTourneyDB ExPlayer
     }
   deriving (Generic)
 instance Binary Example_DB
 
-lnsTourney :: DBLens (BinaryDB Example_DB) (HaapTourneyDB LI1Player)
+lnsTourney :: DBLens (BinaryDB Example_DB) (HaapTourneyDB ExPlayer)
 lnsTourney = DBLens
     (BinaryDBQuery exTourneyDB)
     (\st -> BinaryDBUpdate $ \db -> ((),db { exTourneyDB = st }) )
 
-haap :: LI1 HaapTestTableRes
+haap :: Ex HaapTestTableRes
 haap = do
     res <- runSpecWith getSpecArgs exSpec
     return res
@@ -111,29 +111,29 @@ main = do
         
         runHakyllWith cfg $ web1 >> web2 >> web3 >> web4 >> web5 >> web6 >> web7 >> web8 >> pageRule
 
-data LI1Player = LI1Player (String,Bool)
+data ExPlayer = ExPlayer (String,Bool)
  deriving (Eq,Ord,Show,Generic)
-instance Binary LI1Player
+instance Binary ExPlayer
 
-instance Out LI1Player where
+instance Out ExPlayer where
     docPrec i x = doc x
-    doc (LI1Player x) = text (fst x)
+    doc (ExPlayer x) = text (fst x)
 
-instance TourneyPlayer LI1Player where
-    isDefaultPlayer (LI1Player (_,b)) = b
-    defaultPlayer = LI1Player ("random",True)
+instance TourneyPlayer ExPlayer where
+    isDefaultPlayer (ExPlayer (_,b)) = b
+    defaultPlayer = ExPlayer ("random",True)
 
-exTourney :: HaapTourney Example Example_Args (BinaryDB Example_DB) LI1Player [Link]
+exTourney :: HaapTourney Example Example_Args (BinaryDB Example_DB) ExPlayer [Link]
 exTourney = HaapTourney 10 "Tourney" "Grupo" grupos "torneio" lnsTourney match return (const $ return ())
     where
-    grupos = map (LI1Player . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
+    grupos = map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
     match tno rno mno players = do
         players' <- runIO $ shuffleM players
         return (zip players' [1..],["link"])
 
 
 
-exHaddock = HaddockArgs True "LI1" [] "." ["Example.hs"] "doc"
+exHaddock = HaddockArgs True "Ex" [] "." ["Example.hs"] "doc"
 exHLint = HLintArgs True [] "." ["Example.hs"] "hlint.html"
 exHomplexity = HomplexityArgs True [] "." ["../src/"] "homplexity.html"
 
@@ -144,7 +144,7 @@ exHpc = HpcArgs ["HPCTest"] getGHC getIO False "hpc"
     getGHC = const def
 
 exCodeWorld :: CodeWorldArgs Example_Args
-exCodeWorld = CodeWorldArgs ["MM.hs"] getGHCJS getIO "codeworld" db
+exCodeWorld = CodeWorldArgs [("MMGame.hs",CWGame),("MMDraw.hs",CWDraw "Insira um caminho...")] getGHCJS getIO "codeworld" db
     where
     getIO = const def
     getGHCJS = const $ def { ghcjsSafe = False }
