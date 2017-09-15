@@ -27,8 +27,8 @@ Library
     HAAP.IO
     HAAP.Lens
     HAAP.Log
---    HAAP.Sources
---    HAAP.Sources.SVN
+    HAAP.Sources
+    HAAP.Sources.SVN
     HAAP.Utils
     HAAP.Test.Spec
     HAAP.Test.Rank
@@ -46,9 +46,10 @@ Library
     HAAP.Web.Graphics.CodeWorld
     HAAP.Compiler.GHC
     HAAP.Compiler.GHCJS
+    HAAP.Web.HTML.Table
         
   Hs-source-dirs:   src
   Other-Modules:
     Paths_HAAP
-  Build-Depends:    dlist, containers, transformers, base, mtl, data-default, lens, deepseq, filepath, bytestring, knob, HUnit, hspec, hspec-contrib, hspec-core, QuickCheck, exceptions, safecopy, acid-state, pretty, GenericPretty, hakyll, contravariant, shelly, text, directory, random-shuffle, blaze-html, time, binary
+  Build-Depends:    dlist, containers, transformers, base, mtl, data-default, lens, deepseq, filepath, bytestring, knob, HUnit, hspec, hspec-contrib, hspec-core, QuickCheck, exceptions, safecopy, acid-state, pretty, GenericPretty, hakyll, contravariant, shelly, text, directory, random-shuffle, blaze-html, time, binary, split, safe
 

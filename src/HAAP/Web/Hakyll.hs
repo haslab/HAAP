@@ -33,7 +33,7 @@ runHakyllWith cfg rules = ignoreError $ do
         rules
     let build = runIOExit $ withArgs ["build"] $ hakyllWith cfg datarules
     let clean = runIOExit $ withArgs ["clean"] $ hakyllWith cfg datarules
-    orDefault (\e -> clean >> build) build
+    orDo (\e -> clean >> build) build
     return ()
 
 copyDataFiles :: Configuration -> Haap p args db ()

@@ -83,6 +83,9 @@ runShWith getArgs io = do
 runSh :: Sh a -> Haap p args db a
 runSh = runShWith (const defaultIOArgs)
 
+shCommand :: String -> [String] -> Sh IOResult
+shCommand = shCommandWith defaultIOArgs
+
 shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
 shCommandWith ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
@@ -124,17 +127,20 @@ runIOCore args io = case ioTimeout args of
 runIO' :: NFData a => IO a -> Haap p args db a
 runIO' = runIOWith' (const defaultIOArgs)
 
-orDefault :: (HaapException -> Haap p args db a) -> Haap p args db a -> Haap p args db a
-orDefault ex m = catchError m ex
+orDo :: (HaapException -> Haap p args db a) -> Haap p args db a -> Haap p args db a
+orDo ex m = catchError m ex
+
+orLogDefault :: a -> Haap p args db a -> Haap p args db a
+orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
 
 orError :: Haap p args db a -> Haap p args db (Either a HaapException)
-orError m = orDefault (return . Right) (liftM Left m)
+orError m = orDo (return . Right) (liftM Left m)
 
-orDefault' :: NFData a => (HaapException -> Haap p args db a) -> Haap p args db a -> Haap p args db a
-orDefault' ex m = catchError (forceM m) ex
+orDo' :: NFData a => (HaapException -> Haap p args db a) -> Haap p args db a -> Haap p args db a
+orDo' ex m = catchError (forceM m) ex
 
 ignoreError :: Haap p args db () -> Haap p args db ()
-ignoreError m = orDefault (\e -> logEvent (show e)) m
+ignoreError m = orDo (\e -> logEvent (show e)) m
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do

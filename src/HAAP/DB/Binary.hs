@@ -38,7 +38,7 @@ instance Binary st => HaapDB (BinaryDB st) where
         path <- getProjectPath
         args <- Reader.reader getArgs
         let file = path </> binaryDBFile args
-        let get = liftM BinaryDBDB $ orDefault (\err -> return $ binaryDBInit args) (runIO $ decodeFile file)
+        let get = liftM BinaryDBDB $ orDo (\err -> return $ binaryDBInit args) (runIO $ decodeFile file)
         let put (BinaryDBDB st) = runIO $ encodeFile file st
         mapHaapDB get put m
         

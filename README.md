@@ -23,8 +23,9 @@ You can experiment with a minimalistic example.
 ```
 cd example
 cabal exec -- ghc Example.hs
-open _site/index.html
 ```
+
+You can find a pre-compiled example [here](_site/example/example.html).
 
 
 

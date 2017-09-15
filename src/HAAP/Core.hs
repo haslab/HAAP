@@ -32,8 +32,6 @@ data Project p = Project
 	, projectPath :: FilePath -- absolute path
 	, projectGroups :: [Group]
 	, projectTasks :: [Task]
---    , projectDatabaseFile :: FilePath -- relative path
---    , projectScript :: HAAP p ()
     }
   deriving (Data,Typeable,Read,Show)
 
@@ -49,11 +47,8 @@ runHaap p args (Haap m) = do
 data Group = Group
 	{ groupId :: String
 	, groupStudents :: [String]
---    , groupSource :: IsSource (HaapSource p) =>  Source (HaapSource p)
     }
   deriving (Data,Typeable,Read,Show)
-
---type family HaapSource p :: *
 
 data Task = Task
 	{ taskName :: String
@@ -63,11 +58,6 @@ data Task = Task
 	, taskLibrary :: [FilePath]   -- common libraries for both students and instructors
     }
   deriving (Data,Typeable,Read,Show)
-
---type HAAP p = Haap p (HaapArgs p) ()
-
---type family HaapArgs p = r | r -> p
---type family HaapDB p = s | s -> p
 
 newtype Haap p args db x = Haap { unHaap :: RWST (Project p,args) HaapLog db (ExceptT HaapException IO) x }
   deriving (Applicative,Functor,Monad,MonadWriter HaapLog)

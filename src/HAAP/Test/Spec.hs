@@ -89,7 +89,7 @@ haapNewExample = do
     return i
 
 runHaapTestTable :: HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db HaapTestTableRes
-runHaapTestTable args tests = orDefault (\e -> return $ fmapDefault (const $ Just e) tests) $ do
+runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) tests) $ do
     outknob <- runIO $ newKnob (B.pack [])
     outhandle <- runIO $ newFileHandle outknob "knob" WriteMode
     runIO $ hPutStr outhandle "[(0,Nothing)"

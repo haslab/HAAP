@@ -10,31 +10,22 @@ import Data.Default
 import Data.Map (Map(..))
 import qualified Data.Map as Map
 
-type SourceState s = Map (Source s) (SourceInfo s)
-
-class IsSource s where
+class HaapSource s where
     type Source s = r | r -> s
     type SourceInfo s = r | r -> s
     type SourceArgs s = r | r -> s
-    getSourceWith :: (args -> SourceArgs s) -> Lens'' db (SourceState s)
-                  -> Source s -> Haap p args db (SourceInfo s)
-    putSourceWith :: (args -> SourceArgs s) -> Lens'' db (SourceState s)
-                  -> Source s -> Haap p args db (SourceInfo s)
-    defaultSourceArgs :: SourceArgs s
+    getSourceWith :: (args -> SourceArgs s) -> Source s -> Haap p args db ()
+    putSourceWith :: (args -> SourceArgs s) -> Source s -> Haap p args db ()
+    getSourceInfoWith  :: (args -> SourceArgs s) -> Source s -> Haap p args db (SourceInfo s)
 
--- updates to the latest source
-getSource :: IsSource s => Source s -> Haap p (SourceArgs s) (SourceState s) (SourceInfo s)
-getSource = getSourceWith id idLens''
+-- pulls the latest source (a.k.a. git pull)
+getSource :: HaapSource s => Source s -> Haap p (SourceArgs s) db ()
+getSource = getSourceWith id
 
-putSource :: IsSource s => Source s -> Haap p (SourceArgs s) (SourceState s) (SourceInfo s)
-putSource = putSourceWith id idLens''
+-- pushes a new source (a.k.a git push)
+putSource :: HaapSource s => Source s -> Haap p (SourceArgs s) db ()
+putSource = putSourceWith id
 
--- for each group, update its source and run some function
-forSource :: IsSource s => (Source s -> SourceInfo s -> Haap p (SourceArgs s) (SourceState s) r) -> Haap p (SourceArgs s) (SourceState s) [r]
-forSource = forSourceWith id idLens''
+getSourceInfo :: HaapSource s => Source s -> Haap p (SourceArgs s) db (SourceInfo s)
+getSourceInfo = getSourceInfoWith id
 
-forSourceWith :: IsSource s => (args -> SourceArgs s) -> Lens'' db (SourceState s)
-              -> (Source s -> SourceInfo s -> Haap p args db r) -> Haap p args db [r]
-forSourceWith fargs ldb upd = do
-    db <- getStateLens'' ldb
-    forM (Map.toList db) (uncurry upd)

@@ -7,8 +7,8 @@ module HAAP
     , module HAAP.IO
     , module HAAP.Lens
     , module HAAP.Log
---  , module   HAAP.Sources
---  , module   HAAP.Sources.SVN
+    , module   HAAP.Sources
+    , module   HAAP.Sources.SVN
     , module HAAP.Utils
     , module HAAP.Test.Spec
     , module HAAP.Test.Rank
@@ -26,6 +26,7 @@ module HAAP
     , module HAAP.Compiler.GHC
     , module HAAP.Compiler.GHCJS
     , module HAAP.Web.Graphics.CodeWorld
+    , module HAAP.Web.HTML.Table
     ) where
 
 import HAAP.Core
@@ -36,8 +37,8 @@ import HAAP.DB.Binary
 import HAAP.IO
 import HAAP.Lens hiding (Context(..))
 import HAAP.Log
---import   HAAP.Sources
---import   HAAP.Sources.SVN
+import   HAAP.Sources
+import   HAAP.Sources.SVN
 import HAAP.Utils
 import HAAP.Test.Spec
 import HAAP.Test.Rank
@@ -55,6 +56,7 @@ import HAAP.Code.HPC
 import HAAP.Compiler.GHC
 import HAAP.Compiler.GHCJS
 import HAAP.Web.Graphics.CodeWorld
+import HAAP.Web.HTML.Table
 
 
 
