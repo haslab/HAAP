@@ -25,7 +25,7 @@ cd example
 cabal exec -- ghc Example.hs
 ```
 
-You can find a pre-compiled example [here](_site/example/example.html).
+You can find a pre-compiled example [here](https://hpacheco.github.io/HAAP/example/_site/example.html).
 
 
 
