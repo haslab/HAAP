@@ -41,19 +41,19 @@ instance Out MaybeFloatScore where
     doc (MaybeFloatScore Nothing) = text "-"
     doc (MaybeFloatScore (Just x)) = doc x
 
-data HaapRank p args db a score = HaapRank
+data HaapRank p args db m a score = HaapRank
     { rankPath :: FilePath
     , rankTitle :: String
     , rankIdTag :: String
     , rankHeaders :: Maybe [String]
     , rankTag :: String
     , rankIds :: [a]
-    , rankScore :: a -> Haap p args db [score]
+    , rankScore :: a -> Haap p args db m [score]
     }
 
 type HaapRankRes a score = [(a,[score],score)]
 
-runHaapRank :: (Out a,Score score) => HaapRank p args db a score -> Haap p args db (HaapRankRes a score)
+runHaapRank :: (HaapMonad m,Out a,Score score) => HaapRank p args db m a score -> Haap p args db m (HaapRankRes a score)
 runHaapRank rank = do
     scores <- forM (rankIds rank) $ \x -> do
         scores <- rankScore rank x
@@ -61,20 +61,20 @@ runHaapRank rank = do
     let cmp x y = compare (thr3 y) (thr3 x)
     return $ sortBy cmp scores
 
-data HaapSpecRank p args db a score = HaapSpecRank
+data HaapSpecRank p args db m a score = HaapSpecRank
     { sRankPath :: FilePath
     , sRankTitle :: String
     , sRankIdTag :: String
     , sRankTag :: String
     , sRankIds :: [a]
     , sRankSpec :: a -> HaapSpec
-    , sRankScore :: HaapTestRes -> Haap p args db score
+    , sRankScore :: HaapTestRes -> Haap p args db m score
     }
 
-runHaapSpecRankWith :: (Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db a score -> Haap p args db (HaapRankRes a score)
+runHaapSpecRankWith :: (HaapMonad m,Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> Haap p args db m (HaapRankRes a score)
 runHaapSpecRankWith getArgs r = runHaapRank (haapSpecRank getArgs r)
 
-haapSpecRank :: (args -> HaapSpecArgs) -> HaapSpecRank p args db a score -> HaapRank p args db a score
+haapSpecRank :: HaapMonad m => (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> HaapRank p args db m a score
 haapSpecRank getArgs r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
     where
     rSc a = do

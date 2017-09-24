@@ -1,6 +1,6 @@
-{-# LANGUAGE ScopedTypeVariables, PackageImports, NoImplicitPrelude #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-import "codeworld-haap-base" Prelude
+--import "codeworld-haap-base" Prelude
 import Graphics.Gloss hiding ((.*.))
 import Graphics.Gloss.Data.Picture          
 import Graphics.Gloss.Interface.Pure.Game   

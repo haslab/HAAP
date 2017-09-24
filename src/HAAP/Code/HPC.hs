@@ -14,39 +14,39 @@ import qualified Control.Monad.Reader as Reader
 import System.FilePath
 
 data HpcArgs args = HpcArgs
-    { hpcExecutables :: [FilePath] -- executables to run with hpc
+    { hpcExecutable :: FilePath -- executables to run with hpc
     , hpcGHC :: args -> GHCArgs
     , hpcIO :: args -> IOArgs
-    , hpcSandbox :: Bool
+    , hpcSandbox :: Maybe FilePath
     , hpcHtmlPath :: FilePath -- relative path to the project to store hpc results
     }
 
-runHpc :: HpcArgs args -> Haap p args db a -> Haap p args db (a,Rules (),[FilePath])
+runHpc :: HpcArgs args -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
 runHpc hpc m = do
+    tmp <- getProjectTmpPath
     ghc <- Reader.reader (hpcGHC hpc)
     let ghc' = ghc { ghcHpc = True }
+    io <- Reader.reader (hpcIO hpc)
+    let (dir,exec) = splitFileName (hpcExecutable hpc)
+    let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
     do
-        forM (hpcExecutables hpc) $ \path -> do
-            io <- Reader.reader (hpcIO hpc)
-            let io' = io { ioSandbox = hpcSandbox hpc }
-            let (dir,exec) = splitFileName path
-            runSh $ do
-                shCd dir
-                shGhcWith io' ghc' [exec]
-        x <- m
-        htmls <- forM (hpcExecutables hpc) $ \path -> do
-            io <- Reader.reader (hpcIO hpc)
-            let io' = io { ioSandbox = hpcSandbox hpc }
-            let (dir,exec) = splitFileName path
-            let destdir = toRoot dir </> hpcHtmlPath hpc </> exec
-            runSh $ do
-                shCd dir
-                shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
-            return $ hpcHtmlPath hpc </> exec </> "hpc_index.html"
-        let rules = do
+        ghcres <- runSh $ do
+            shCd dir
+            res <- shGhcWith io' ghc' [exec]
+            shRm $ addExtension exec "tix"
+            return res
+            
+        x <- m ghcres
+        
+        let destdir = dirToRoot dir </> tmp </> hpcHtmlPath hpc </> exec
+        let html = hpcHtmlPath hpc </> exec </> "hpc_index.html"
+        orErrorWritePage (tmp </> html) mempty $ runSh $ do
+            shCd dir
+            shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
+            
+        hakyllRules $ do
             -- copy the hpc generated documentation
-            forM_ htmls $ \html -> do
-                match (fromGlob $ takeDirectory html </> "*") $ do
-                    route   idRoute
-                    compile copyFileCompiler
-        return (x,rules,htmls)
+            match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
+                route   $ relativeRoute tmp
+                compile $ copyFileCompiler
+        return (x,html)

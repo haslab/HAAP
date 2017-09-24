@@ -10,4 +10,4 @@ import Graphics.Gloss.Data.Display
 
 -- TODO: missing screen and background
 animate :: Display -> Color -> (Float -> Picture) -> IO ()
-animate screen back go = CW.animationOf (displayCWPicture screen back . go . realToFrac)
+animate screen back go = CW.animationOf (return . displayCWPicture screen back . go . realToFrac)

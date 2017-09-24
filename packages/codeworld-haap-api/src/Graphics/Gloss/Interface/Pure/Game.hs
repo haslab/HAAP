@@ -13,9 +13,9 @@ import Graphics.Gloss.Data.Event
 play :: Display -> Color -> world -> (world -> Picture) -> (Event -> world -> world) -> (Float -> world -> world) -> IO ()
 play display back start draw react step = CW.interactionOf start stepCW reactCW drawCW
     where
-    stepCW f w = step (realToFrac f) w
-    reactCW e w = react (eventFromCW e) w
-    drawCW w = displayCWPicture display back (draw w)
+    stepCW f w = return $ step (realToFrac f) w
+    reactCW e w = return $ react (eventFromCW e) w
+    drawCW w = return $ displayCWPicture display back (draw w)
 
 
 

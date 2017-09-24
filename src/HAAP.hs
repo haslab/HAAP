@@ -27,6 +27,7 @@ module HAAP
     , module HAAP.Compiler.GHCJS
     , module HAAP.Web.Graphics.CodeWorld
     , module HAAP.Web.HTML.Table
+    , module HAAP.Template
     ) where
 
 import HAAP.Core
@@ -37,14 +38,14 @@ import HAAP.DB.Binary
 import HAAP.IO
 import HAAP.Lens hiding (Context(..))
 import HAAP.Log
-import   HAAP.Sources
-import   HAAP.Sources.SVN
+import HAAP.Sources
+import HAAP.Sources.SVN
 import HAAP.Utils
 import HAAP.Test.Spec
 import HAAP.Test.Rank
 import HAAP.Test.Tourney
 import HAAP.Pretty
-import HAAP.Web.Hakyll
+import HAAP.Web.Hakyll hiding (applyTemplate)
 import HAAP.Web.Blaze
 import HAAP.Web.Test.Spec
 import HAAP.Web.Test.Rank
@@ -57,6 +58,7 @@ import HAAP.Compiler.GHC
 import HAAP.Compiler.GHCJS
 import HAAP.Web.Graphics.CodeWorld
 import HAAP.Web.HTML.Table
+import HAAP.Template
 
 
 

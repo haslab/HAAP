@@ -11,6 +11,11 @@
     <script language="javascript" src="out.js"></script>
   </head>
   <body style="text-align: center">
+      
+    $for(images)$
+    <img style="display: none;" id="$imgid$" src="$projectpath$/$imgfile$">
+    $endfor$
+      
     <canvas id="screen"></canvas>
     <textarea id="text">$textmessage$</textarea>
     <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>

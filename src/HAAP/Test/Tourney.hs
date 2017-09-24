@@ -32,16 +32,16 @@ class (Ord a,Out a) => TourneyPlayer a where
     defaultPlayer :: a
     isDefaultPlayer :: a -> Bool
 
-data HaapTourney p args db a r = HaapTourney
+data HaapTourney p args db m a r = HaapTourney
     { tourneyMax :: Int -- maximum number of table entries for the tournament
     , tourneyTitle :: String
     , tourneyPlayerTag :: String
     , tourneyPlayers :: [a]
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
-    , tourneyMatch :: Int -> Int -> Int -> [a] -> Haap p args (DB db) ([(a,Int)],r) -- receives a tmp folder and runs the match there, returning a match result
+    , tourneyMatch :: Int -> Int -> Int -> [a] -> Haap p args (DB db) m ([(a,Int)],r) -- receives a tmp folder and runs the match there, returning a match result
     , renderMatch :: r -> Rules [Link] -- renders a match result as a series of links
-    , deleteTourney :: Int -> Haap p args (DB db) () -- cleanup procedure
+    , deleteTourney :: Int -> Haap p args (DB db) m () -- cleanup procedure
     }
 
 type Link = FilePath
@@ -53,7 +53,7 @@ data HaapTourneyDB a = HaapTourneyDB
   deriving (Generic,Typeable)
 instance Binary a => Binary (HaapTourneyDB a)
 
-insertHaapTourneySt :: HaapTourney p args db a r -> Int -> HaapTourneySt a -> HaapTourneyDB a -> Haap p args (DB db) (HaapTourneyDB a)
+insertHaapTourneySt :: HaapMonad m => HaapTourney p args db m a r -> Int -> HaapTourneySt a -> HaapTourneyDB a -> Haap p args (DB db) m (HaapTourneyDB a)
 insertHaapTourneySt t i tour st = do
     let tours = tourneyDB st
     tours' <- if length tours >= tourneyMax t
@@ -74,7 +74,7 @@ type Round a r = [Match a r]
 type Match a r = ([a],r)
 
 -- TODO: Tourney matches are currently fixed to multiples of 4 players
-getTourneySize :: [a] -> Haap p args db Int
+getTourneySize :: HaapMonad m => [a] -> Haap p args db m Int
 getTourneySize (length -> n)
     | n <= 128 = return 128
     | n <= 256 = return 256
@@ -122,7 +122,7 @@ playerPos 1 xs = error $ "playerPos1 " ++ show xs
 playerPos roundno [x] = nextRound roundno + 1
 playerPos roundno (x:xs) = playerPos (nextRound roundno) xs
 
-runHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db a r -> Haap p args (DB db) (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
+runHaapTourney :: (HaapMonad m,HaapDB db,TourneyPlayer a) => HaapTourney p args db m a r -> Haap p args (DB db) m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
 runHaapTourney tourney = do
     let players = tourneyPlayers tourney
     tourneySize <- getTourneySize players
@@ -139,7 +139,7 @@ runHaapTourney tourney = do
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: TourneyPlayer a => [a] -> Int -> Haap p args db [[a]]
+pairPlayers :: (HaapMonad m,TourneyPlayer a) => [a] -> Int -> Haap p args db m [[a]]
 pairPlayers players tourneySize = do
     players' <- runIO $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
@@ -160,18 +160,18 @@ pairPlayers players tourneySize = do
         (x,xs') = splitAt (4-n) xs
 
 -- (tourney no, round no,match no,partial rankings)
-type PlaySt p args db a r = (HaapTourney p args db a r,Int,Int,Int,HaapTourneySt' a)
+type PlaySt p args db m a r = (HaapTourney p args db m a r,Int,Int,Int,HaapTourneySt' a)
 
-type HaapPlay p args db a r = StateT (PlaySt p args db a r) (Haap p args (DB db))
+type HaapPlay p args db m a r = StateT (PlaySt p args db m a r) (Haap p args (DB db) m)
 
-playTourney :: TourneyPlayer a => HaapTourney p args db a r -> [[a]] -> Int -> Int -> Haap p args (DB db) (HaapTourneySt' a,TourneyTree a r)
+playTourney :: (HaapMonad m,TourneyPlayer a) => HaapTourney p args db m a r -> [[a]] -> Int -> Int -> Haap p args (DB db) m (HaapTourneySt' a,TourneyTree a r)
 playTourney tourney matches tourneyno tourneySize = do
     (tree,(_,_,_,_,rank)) <- State.runStateT
         (playRounds matches tourneySize tourneySize)
         (tourney,tourneyno,tourneySize,1,Map.empty)
     return (rank,tree)
 
-playRounds :: TourneyPlayer a => [[a]] -> Int -> Int -> HaapPlay p args db a r [Round a r]
+playRounds :: (HaapMonad m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay p args db m a r [Round a r]
 playRounds matches tourneySize round = do
     (winners,roundRes) <- playRound matches tourneySize round
     case winners of
@@ -181,7 +181,7 @@ playRounds matches tourneySize round = do
             return (roundRes:roundRess)
 
 -- returns (standings for players that lost this round, winner players for next round)
-playRound :: TourneyPlayer a => [[a]] -> Int -> Int -> HaapPlay p args db a r ([(a,Int)],Round a r)
+playRound :: (HaapMonad m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay p args db m a r ([(a,Int)],Round a r)
 playRound matches tourneySize round = do
 --    lift $ runIO $ putStrLn $ "playing round " ++ show round
     State.modify $ \(o,x,y,z,w) -> (o,x,round,1,w)
@@ -195,7 +195,7 @@ playRound matches tourneySize round = do
 --    lift $ runIO $ putStrLn $ "newst " ++ pretty (sort $ Map.toAscList newst)
     return (winners,roundRes)
 
-addPlayerSt :: TourneyPlayer a => (a,[Int]) -> HaapTourneySt' a -> HaapTourneySt' a
+addPlayerSt :: (TourneyPlayer a) => (a,[Int]) -> HaapTourneySt' a -> HaapTourneySt' a
 addPlayerSt (p,r) xs = Map.insertWith aux p (map (:[]) r) xs
     where
     aux :: [PlayerPos] -> [PlayerPos] -> [PlayerPos]
@@ -205,12 +205,12 @@ addPlayerSts :: TourneyPlayer a => [(a,[Int])] -> HaapTourneySt' a -> HaapTourne
 addPlayerSts [] m = m
 addPlayerSts (x:xs) m = addPlayerSt x (addPlayerSts xs m)
 
-playMatches :: TourneyPlayer a => [[a]] -> HaapPlay p args db a r ([[(a,Int)]],[Match a r])
+playMatches :: HaapMonad m => TourneyPlayer a => [[a]] -> HaapPlay p args db m a r ([[(a,Int)]],[Match a r])
 playMatches xs = do
     scores <- forM xs playMatch
     return (map fst scores,map (mapFst (map fst)) scores)
 
-playMatch :: TourneyPlayer a => [a] -> HaapPlay p args db a r ([(a,Int)],r)
+playMatch :: (HaapMonad m,TourneyPlayer a) => [a] -> HaapPlay p args db m a r ([(a,Int)],r)
 playMatch xs = do
     (tourney,tourneyno,roundno,matchno,_) <- State.get
     lift $ tourneyMatch tourney tourneyno roundno matchno xs

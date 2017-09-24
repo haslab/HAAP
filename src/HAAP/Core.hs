@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, RankNTypes, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GeneralizedNewtypeDeriving, TypeFamilyDependencies, DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts, RankNTypes, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GeneralizedNewtypeDeriving, TypeFamilyDependencies, DeriveGeneric, TemplateHaskell #-}
 module HAAP.Core where
 
 import HAAP.Utils
@@ -21,28 +21,23 @@ import Control.Monad.Signatures
 import Data.DList as DList
 import Data.Typeable
 import Data.Data
+import Data.SafeCopy
 
 import GHC.Stack
 import GHC.Generics
+
+import System.Directory
 
 -- General static project information
 
 data Project p = Project
 	{ projectName :: String
 	, projectPath :: FilePath -- absolute path
+    , projectTmpPath :: FilePath -- relative path for the project's temp directory
 	, projectGroups :: [Group]
 	, projectTasks :: [Task]
     }
-  deriving (Data,Typeable,Read,Show)
-
-runHaap :: Project p -> args -> Haap p args () a -> IO a
-runHaap p args (Haap m) = do
-    e <- Except.runExceptT $ RWS.runRWST m (p,args) ()
-    case e of
-        Left e -> error $ "Haap Error: " ++ show e
-        Right (a,(),w') -> do
-            printLog w'
-            return a
+  deriving (Typeable)
 
 data Group = Group
 	{ groupId :: String
@@ -50,24 +45,52 @@ data Group = Group
     }
   deriving (Data,Typeable,Read,Show)
 
+data HaapFileType
+    = HaapTemplateFile -- student files with a given template
+    | HaapLibraryFile  -- common libraries for both students and instructors
+    | HaapOracleFile -- instructor code that students can't see
+  deriving (Eq,Show,Ord)
+
+data HaapFile = HaapFile
+    { haapLocalFile :: FilePath -- file in the project folder (the contents can be a template)
+    , haapRemoteFile :: FilePath -- file in the group folder (the name itself is a template)
+    , haapFileType :: HaapFileType
+    }
+
 data Task = Task
 	{ taskName :: String
-	, taskPath :: FilePath -- relative path
-	, taskTemplate :: [FilePath]  -- student files with a given template
-	, taskOracle :: [FilePath]    -- instructor solutions or hidden files in the students directory
-	, taskLibrary :: [FilePath]   -- common libraries for both students and instructors
+	, taskFiles :: [HaapFile]  
     }
-  deriving (Data,Typeable,Read,Show)
+  deriving (Typeable)
 
-newtype Haap p args db x = Haap { unHaap :: RWST (Project p,args) HaapLog db (ExceptT HaapException IO) x }
+$(deriveSafeCopy 0 'base ''Group)
+$(deriveSafeCopy 0 'base ''HaapFileType)
+$(deriveSafeCopy 0 'base ''HaapFile)
+$(deriveSafeCopy 0 'base ''Task)
+$(deriveSafeCopy 0 'base ''Project)
+
+runHaap :: Project p -> args -> Haap p args () IO a -> IO a
+runHaap p args (Haap m) = do
+    createDirectoryIfMissing True $ projectTmpPath p
+    e <- Except.runExceptT $ RWS.runRWST m (p,args) ()
+    case e of
+        Left e -> error $ "Haap Error: " ++ show e
+        Right (a,(),w') -> do
+            printLog w'
+            return a
+
+newtype Haap p args db m x = Haap { unHaap :: RWST (Project p,args) HaapLog db (ExceptT HaapException m) x }
   deriving (Applicative,Functor,Monad,MonadWriter HaapLog)
 
-instance MonadReader args (Haap p args db) where
+instance MonadTrans (Haap p args db) where
+    lift = Haap . lift . lift
+
+instance Monad m => MonadReader args (Haap p args db m) where
     ask = Haap $ liftM snd ask
     local f (Haap m) = Haap $ local (mapSnd f) m
     reader f = Haap $ reader (f . snd)
     
-haapWithReader :: (args -> args') -> Haap p args' db a -> Haap p args db a
+haapWithReader :: HaapMonad m => (args -> args') -> Haap p args' db m a -> Haap p args db m a
 haapWithReader f (Haap m) = Haap $ do
     (p,r) <- Reader.ask
     s <- State.get
@@ -76,7 +99,7 @@ haapWithReader f (Haap m) = Haap $ do
     Writer.tell w'
     return x
 
-mapHaapDB :: Haap p args st1 st2 -> (st2 -> Haap p args st1 ()) -> Haap p args st2 a -> Haap p args st1 a
+mapHaapDB :: HaapMonad m => Haap p args st1 m st2 -> (st2 -> Haap p args st1 m ()) -> Haap p args st2 m a -> Haap p args st1 m a
 mapHaapDB get put (Haap m) = Haap $ do
     (p,r) <- Reader.ask
     st2 <- unHaap $ get
@@ -85,14 +108,14 @@ mapHaapDB get put (Haap m) = Haap $ do
     Writer.tell w'
     return x
 
-instance MonadError HaapException (Haap p args db) where
+instance HaapMonad m => MonadError HaapException (Haap p args db m) where
     {-# INLINE throwError #-}
     throwError e = Haap $ throwError e
     {-# INLINE catchError #-}
     catchError (Haap m) f = Haap $ do
         (p,r) <- Reader.ask
         s <- State.get
-        e <- liftIO $ Except.runExceptT $ RWS.runRWST m (p,r) s
+        e <- lift $ lift $ Except.runExceptT $ RWS.runRWST m (p,r) s
         case e of
             Left err -> unHaap $ f err
             Right (x,s',w') -> do
@@ -100,10 +123,10 @@ instance MonadError HaapException (Haap p args db) where
                 Writer.tell w'
                 return x
 
-getDB :: Haap p args db db
+getDB :: HaapMonad m => Haap p args db m db
 getDB = Haap State.get
 
-putDB :: db -> Haap p args db ()
+putDB :: HaapMonad m => db -> Haap p args db m ()
 putDB db = Haap $ State.put db
 
 data HaapException = HaapException String
@@ -120,13 +143,35 @@ data HaapEvent = HaapEvent CallStack String
 printLog :: HaapLog -> IO ()
 printLog l = forM_ l $ \e -> putStrLn $ show e
 
-getProject :: Haap p args db (Project p)
+getProject :: HaapMonad m => Haap p args db m (Project p)
 getProject = Haap $ liftM fst ask
 
-getProjectName = liftM projectPath getProject
+getProjectName :: HaapMonad m => Haap p args db m String
+getProjectName = liftM projectName getProject
+
+getProjectPath :: HaapMonad m => Haap p args db m String
 getProjectPath = liftM projectPath getProject
+
+getProjectTmpPath :: HaapMonad m => Haap p args db m String
+getProjectTmpPath = liftM projectTmpPath getProject
+
+getProjectGroups :: HaapMonad m => Haap p args db m [Group]
 getProjectGroups = liftM projectGroups getProject
+
+getProjectTasks :: HaapMonad m => Haap p args db m [Task]
 getProjectTasks = liftM projectTasks getProject
+
+getProjectTaskFiles :: HaapMonad m => Haap p args db m [HaapFile]
+getProjectTaskFiles = liftM (concatMap taskFiles) getProjectTasks
+
+class (MonadIO m,Monad m,MonadCatch m,MonadThrow m) => HaapMonad m where
+    type HaapMonadArgs m = r | r -> m
+    runHaapMonadWith :: (args -> HaapMonadArgs m) -> Haap p args db m a -> Haap p args db IO a
+
+instance HaapMonad IO where
+    type HaapMonadArgs IO = ()
+    runHaapMonadWith getArgs m = m
+
 
 
 

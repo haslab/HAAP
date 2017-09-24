@@ -18,7 +18,7 @@ instance (Out a,Out b) => Out (Map a b) where
 
 instance Out HaapException where
     docPrec i x = doc x
-    doc (HaapException str) = doc str
+    doc (HaapException str) = text str
     doc (HaapTimeout _ i) = text "timeout after" <+> int i <+> text "seconds"
     doc (HaapIOException ex) = text (show ex)
 

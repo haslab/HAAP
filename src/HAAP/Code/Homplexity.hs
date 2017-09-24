@@ -16,26 +16,27 @@ import qualified Control.Monad.Reader as Reader
 import System.FilePath
 
 data HomplexityArgs = HomplexityArgs
-    { homplexitySandbox :: Bool
+    { homplexitySandbox :: Maybe FilePath
     , homplexityArgs :: [String]
     , homplexityPath :: FilePath -- path relative to the project where to execute the homplexity command
     , homplexityFiles :: [FilePath] -- relative to the path where homplexity is executed
     , homplexityHtmlPath :: FilePath -- relative to the project path
     }
 
-runHomplexity :: HomplexityArgs -> Haap p args db (Rules (),FilePath)
+runHomplexity :: HomplexityArgs -> Haap p args db Hakyll FilePath
 runHomplexity h = do
-    let ioArgs = def { ioSandbox = homplexitySandbox h }
+    tmp <- getProjectTmpPath
+    let ioArgs = def { ioSandbox = fmap (dirToRoot (homplexityPath h) </>) (homplexitySandbox h) }
     let extras = homplexityArgs h
     let files = homplexityFiles h
-    let html = toRoot (homplexityHtmlPath h) </> homplexityHtmlPath h
-    res <- runSh $ do
+--    let html = dirToRoot (homplexityPath h) </> tmp </> homplexityHtmlPath h
+    res <- orErrorWritePage (tmp </> homplexityHtmlPath h) mempty $ runSh $ do
         shCd $ homplexityPath h
         shCommandWith ioArgs "homplexity" (extras++files)
 --    runIO $ putStrLn $ show $ resStderr res
 --    runIO $ putStrLn $ show $ resStdout res
     let messages = parseMessages $ lines (Text.unpack $ resStdout res) ++ lines (Text.unpack $ resStderr res)
-    let rules = do
+    hakyllRules $ do
         -- copy the homplexity generated documentation
         create [fromFilePath $ homplexityHtmlPath h] $ do
             route   idRoute
@@ -43,10 +44,10 @@ runHomplexity h = do
                 let msgCtx = field "class" (return . fst3 . itemBody)
                            `mappend` field "suggestion" (return . snd3 . itemBody)
                            `mappend` field "message" (return . thr3 . itemBody)
-                let homCtx = constField "projectpath" (toRoot $ homplexityPath h)
+                let homCtx = constField "projectpath" (dirToRoot $ homplexityPath h)
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
                 makeItem "" >>= loadAndApplyTemplate "templates/homplexity.html" homCtx
-    return (rules,homplexityHtmlPath h)
+    return (homplexityHtmlPath h)
       
 parseMessages [] = []
 parseMessages (x:xs)

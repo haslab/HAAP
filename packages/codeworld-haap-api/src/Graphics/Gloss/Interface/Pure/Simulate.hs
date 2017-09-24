@@ -12,5 +12,5 @@ import Graphics.Gloss.Data.Display
 simulate :: Display -> Color -> model -> (model -> Picture) -> (Float -> model -> model) -> IO ()
 simulate display back state draw go = CW.simulationOf state goCW drawCW
     where
-    goCW t w = go (realToFrac t) w
-    drawCW = displayCWPicture display back . draw
+    goCW t w = return $ go (realToFrac t) w
+    drawCW = return . displayCWPicture display back . draw

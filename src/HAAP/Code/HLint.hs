@@ -15,29 +15,29 @@ import qualified Control.Monad.Reader as Reader
 import System.FilePath
 
 data HLintArgs = HLintArgs
-    { hlintSandbox :: Bool
+    { hlintSandbox :: Maybe FilePath
     , hlintArgs :: [String]
     , hlintPath :: FilePath -- path relative to the project where to execute the hlint command
     , hlintFiles :: [FilePath] -- relative to the path where hlint is executed
     , hlintHtmlPath :: FilePath -- relative to the project path
     }
 
-runHLint :: HLintArgs -> Haap p args db (Rules (),FilePath)
+runHLint :: HLintArgs -> Haap p args db Hakyll FilePath
 runHLint h = do
-    let ioArgs = def { ioSandbox = hlintSandbox h }
+    tmp <- getProjectTmpPath
+    let ioArgs = def { ioSandbox = fmap (dirToRoot (hlintPath h) </>) (hlintSandbox h) }
     let extras = hlintArgs h
     let files = hlintFiles h
-    let html = toRoot (hlintHtmlPath h) </> hlintHtmlPath h
-    res <- runSh $ do
+    let html = dirToRoot (hlintPath h) </> tmp </> hlintHtmlPath h
+    orErrorWritePage (tmp </> hlintHtmlPath h) mempty $ runSh $ do
         shCd $ hlintPath h
         shCommandWith ioArgs "hlint" (extras++["--report="++html]++files)
 --    runIO $ putStrLn $ show $ resStderr res
 --    runIO $ putStrLn $ show $ resStdout res
-    let rules = do
+    hakyllRules $ do
         -- copy the hlint generated documentation
-        match (fromGlob $ hlintHtmlPath h) $ do
-            route   idRoute
+        match (fromGlob $ tmp </> hlintHtmlPath h) $ do
+            route   $ relativeRoute tmp
             compile copyFileCompiler
-    return (rules,hlintHtmlPath h)
+    return (hlintHtmlPath h)
       
-        

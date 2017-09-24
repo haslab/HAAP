@@ -12,6 +12,10 @@ module Graphics.Gloss
     , module Graphics.Gloss.Interface.Pure.Animate
     , module Graphics.Gloss.Interface.Pure.Simulate
     , module Graphics.Gloss.Interface.Pure.Game
+    , module Graphics.Gloss.Interface.IO.Display
+    , module Graphics.Gloss.Interface.IO.Animate
+    , module Graphics.Gloss.Interface.IO.Simulate
+    , module Graphics.Gloss.Interface.IO.Game
     , module Graphics.Gloss.Geometry.Angle
     , module Graphics.Gloss.Geometry.Line
     ) where
@@ -26,6 +30,10 @@ import Graphics.Gloss.Interface.Pure.Display
 import Graphics.Gloss.Interface.Pure.Animate
 import Graphics.Gloss.Interface.Pure.Simulate
 import Graphics.Gloss.Interface.Pure.Game
+import Graphics.Gloss.Interface.IO.Display
+import Graphics.Gloss.Interface.IO.Animate
+import Graphics.Gloss.Interface.IO.Simulate
+import Graphics.Gloss.Interface.IO.Game
 import Graphics.Gloss.Geometry.Angle
 import Graphics.Gloss.Geometry.Line
 

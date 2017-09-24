@@ -1,15 +1,14 @@
 code size summary per package:
 
 base:                    529987
-codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw:331219
-codeworld-haap-base-0.2.0.0-CiiC2Np9zoZ47rlmcPe9HQ:12640
-deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ:648
+codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw:332828
+deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ:878
 ghc-prim:                26415
-ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F:8519
+ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F:8939
 ghcjs-dom-jsffi-0.9.2.0-3TYxh8ZLmiQ561qJCRIiZo:23722
 ghcjs-prim-0.1.0.0-IFhsWclGfLr1HfhUvIVylA:10712
 integer-gmp:             54230
-main:                    81902
+main:                    77305
 text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P:13571
 
 
@@ -80,19 +79,16 @@ base
 
 codeworld-haap-api-0.2.2.0-Co54r8D91NCBjpe3rJLQOw
     CodeWorld.Color:                    1170
-    CodeWorld.Driver:                   292758
-    CodeWorld.Picture:                  9388
+    CodeWorld.Driver:                   293058
+    CodeWorld.Picture:                  9762
     Graphics.Gloss.Data.Color:          541
     Graphics.Gloss.Data.Display:        4589
-    Graphics.Gloss.Data.Picture:        21583
+    Graphics.Gloss.Data.Picture:        22518
     Graphics.Gloss.Data.Point:          569
     Graphics.Gloss.Interface.Pure.Display:621
 
-codeworld-haap-base-0.2.0.0-CiiC2Np9zoZ47rlmcPe9HQ
-    Prelude:                            12640
-
 deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ
-    Control.DeepSeq:                    648
+    Control.DeepSeq:                    878
 
 ghc-prim
     GHC.CString:                        4516
@@ -102,7 +98,7 @@ ghc-prim
     GHC.Types:                          1991
 
 ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F
-    Data.JSString:                      3850
+    Data.JSString:                      4270
     Data.JSString.Internal.Fusion.Common:1488
     Data.JSString.Internal.Type:        421
     GHCJS.Internal.Types:               240
@@ -126,7 +122,7 @@ integer-gmp
     GHC.Integer.Type:                   54230
 
 main
-    Main:                               81902
+    Main:                               77305
 
 text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P
     Data.Text:                          10754
@@ -135,5 +131,5 @@ text-1.2.2.1-K5kKypz1wJJhsTy1Ol15P
 
 
 
-packed metadata: 218934
+packed metadata: 219431
 

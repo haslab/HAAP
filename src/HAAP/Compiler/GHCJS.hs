@@ -21,3 +21,11 @@ shGhcjsWith io ghc ins = shCommandWith io "ghcjs" $ addArgs (ghcjsArgs ghc) $ ad
     addSafe True cmds = "-XSafe" : cmds
     addSafe False cmds = cmds
     addArgs xs ys = ys ++ xs
+
+ioGhcjsWith :: IOArgs -> GHCJSArgs -> [FilePath] -> IO IOResult
+ioGhcjsWith io ghc ins = do
+    ioCommandWith io "ghcjs" (addArgs (ghcjsArgs ghc) $ addSafe (ghcjsSafe ghc) ins)
+  where
+    addSafe True cmds = "-XSafe" : cmds
+    addSafe False cmds = cmds
+    addArgs xs ys = ys ++ xs

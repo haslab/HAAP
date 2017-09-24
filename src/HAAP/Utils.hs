@@ -4,6 +4,7 @@ import Data.Map (Map(..))
 import qualified Data.Map as Map
 
 import System.FilePath
+import System.FilePath.Find
 
 mapFst :: (a -> c) -> (a,b) -> (c,b)
 mapFst f (x,y) = (f x,y)
@@ -77,12 +78,25 @@ pathDepth [] = 0
 pathDepth ("":xs) = pathDepth xs
 pathDepth (".":xs) = pathDepth xs
 pathDepth ("..":xs) = pred $ pathDepth xs
+pathDepth ("/":xs) = pathDepth xs
+pathDepth ("./":xs) = pathDepth xs
+pathDepth ("../":xs) = pred $ pathDepth xs
 pathDepth (x:xs) = succ $ pathDepth xs
 
-toRoot :: FilePath -> FilePath
-toRoot p = case joinPath $ replicate (pred $ pathDepth $ splitPath p) ".." of
+dirToRoot :: FilePath -> FilePath
+dirToRoot p = case joinPath $ replicate (pathDepth $ splitPath p) ".." of
     "" -> "."
     x -> x
 
+fileToRoot :: FilePath -> FilePath
+fileToRoot p = case joinPath $ replicate (pred $ pathDepth $ splitPath p) ".." of
+    "" -> "."
+    x -> x
 
+anyM :: Monad m => (a -> m Bool) -> [a] -> m Bool
+anyM f [] = return False
+anyM f (x:xs) = f x >>= \b -> if b then return b else anyM f xs
 
+concatPaths [] = []
+concatPaths [x] = x
+concatPaths (x:xs) = x ++ ":" ++ concatPaths xs

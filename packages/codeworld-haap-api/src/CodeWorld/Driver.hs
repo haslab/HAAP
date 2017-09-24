@@ -11,7 +11,8 @@
 {-# LANGUAGE ScopedTypeVariables      #-}
 {-# LANGUAGE StandaloneDeriving       #-}
 {-# LANGUAGE DataKinds                #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Trustworthy, BangPatterns #-}
+
 
 {-
   Copyright 2017 The CodeWorld Authors. All rights reserved.
@@ -35,8 +36,9 @@ module CodeWorld.Driver (
     simulationOf,
     interactionOf,
     trace,
-    getScreenSize,
-    getTextContent
+    getSizeOf,
+    getTextContent,
+    loadImage, loadImage', makeImage
     ) where
 
 import           CodeWorld.Color
@@ -48,12 +50,14 @@ import           Control.Concurrent.Chan
 import           Control.Exception
 import           Control.Monad
 import           Control.Monad.Trans (liftIO)
+import qualified Control.Monad.Reader as Reader
 import           Data.Char (chr)
 import           Data.List (zip4, find)
 import           Data.Maybe (fromMaybe, mapMaybe)
 import           Data.Monoid
 import           Data.Serialize
 import           Data.Serialize.Text
+import           Data.String
 import qualified Data.Text as T
 import           Data.Text (Text, singleton, pack)
 import           GHC.Fingerprint.Type
@@ -65,26 +69,31 @@ import           System.Environment
 import           System.Mem.StableName
 import           Text.Read
 import           System.Random
+import           System.FilePath
+--import Data.FileEmbed
 
 #ifdef ghcjs_HOST_OS
 
 import           Data.Hashable
+import Data.Unique
 import           Data.IORef
 import           Data.JSString.Text
 import qualified Data.JSString
 import           Data.Word
 import           GHCJS.DOM
 import           GHCJS.DOM.HTMLTextAreaElement
+import           GHCJS.DOM.HTMLImageElement
 import           GHCJS.DOM.NonElementParentNode
-import           GHCJS.DOM.GlobalEventHandlers
+import           GHCJS.DOM.GlobalEventHandlers as Global
 import           GHCJS.DOM.Window as Window
+import qualified GHCJS.DOM.Node as Node
 import           GHCJS.DOM.Document
 import qualified GHCJS.DOM.DOMRect as DOMRect
 import qualified GHCJS.DOM.DOMRectReadOnly as DOMRectRO
 import           GHCJS.DOM.Element
 import           GHCJS.DOM.EventM
 import           GHCJS.DOM.MouseEvent
-import           GHCJS.DOM.Types (Element, unElement)
+import           GHCJS.DOM.Types (Element, unElement, HTMLImageElement)
 import           GHCJS.Foreign
 import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
@@ -112,6 +121,7 @@ import           Text.Printf
 
 #endif
 
+
 --------------------------------------------------------------------------------
 -- The common interface, provided by both implementations below.
 
@@ -119,19 +129,19 @@ import           Text.Printf
 drawingOf :: Picture -> IO ()
 
 -- | Shows an animation, with a picture for each time given by the parameter.
-animationOf :: (Double -> Picture) -> IO ()
+animationOf :: (Double -> IO Picture) -> IO ()
 
 -- | Shows a simulation, which is essentially a continuous-time dynamical
 -- system described by an initial value and step function.
-simulationOf :: world -> (Double -> world -> world) -> (world -> Picture) -> IO ()
+simulationOf :: world -> (Double -> world -> IO world) -> (world -> IO Picture) -> IO ()
 
 -- | Runs an interactive event-driven CodeWorld program.  This is a
 -- generalization of simulations that can respond to events like key presses
 -- and mouse movement.
 interactionOf :: world
-              -> (Double -> world -> world)
-              -> (Event -> world -> world)
-              -> (world -> Picture)
+              -> (Double -> world -> IO world)
+              -> (Event -> world -> IO world)
+              -> (world -> IO Picture)
               -> IO ()
 
 ---- | Runs an interactive multi-user CodeWorld program, involving multiple
@@ -156,6 +166,56 @@ interactionOf :: world
 -- This is equivalent to the similarly named function in `Debug.Trace`, except
 -- that it uses the CodeWorld console instead of standard output.
 trace :: Text -> a -> a
+
+orError str m = m >>= \x -> case x of
+    Nothing -> Prelude.error $ str
+    Just x -> return x
+
+toHTMLImageElement :: Element -> IO HTMLImageElement
+toHTMLImageElement e = do
+    Just x <- toJSVal e >>= fromJSVal
+    return x
+
+loadImage :: Double -> Double -> FilePath -> IO Picture
+loadImage w h path = do
+    i <- newUnique
+    let name = dropExtension (takeFileName path)++show (hashUnique i)
+    doc <- orError "loadImage doc" currentDocument
+    !elem <- createElement doc (fromString "img" :: JSString)
+    setAttribute elem ("style" :: JSString) ("display: none;" :: String)
+    setAttribute elem ("id" :: JSString) name
+    setAttribute elem ("src" :: JSString) path
+    setAttribute elem ("width" :: JSString) (show w)
+    setAttribute elem ("height" :: JSString) (show h)
+    body <- orError "loadImage body" $ getBody doc
+    Node.appendChild body elem
+    img <- toHTMLImageElement elem
+    return $! image w h (HTMLImg img)
+
+makeImage :: Double -> Double -> String -> Picture
+makeImage w h n = image w h (StringImg n)
+
+loadImage' :: FilePath -> IO Picture
+loadImage' path = do
+    i <- newUnique
+    let name = dropExtension (takeFileName path)++show (hashUnique i)
+    doc <- orError "loadImage doc" currentDocument
+    !elem <- createElement doc (fromString "img" :: JSString)
+    setAttribute elem ("style" :: JSString) ("display: none;" :: String)
+    setAttribute elem ("id" :: JSString) name
+    setAttribute elem ("src" :: JSString) path
+    body <- orError "loadImage body" $ getBody doc
+    Node.appendChild body elem
+    img <- toHTMLImageElement elem
+    (w,h) <- getImgSize elem
+    putStrLn $ "loadImage' " ++ show (w,h)
+    return $! image w h (HTMLImg img)
+  where
+    getImgSize :: Element -> IO (Double,Double)
+    getImgSize elem = do
+        (w,h) <- getSizeOfElem elem
+        if (w==0 && h==0) then getImgSize elem else return (w,h)
+    
 
 --------------------------------------------------------------------------------
 -- Draw state.  An affine transformation matrix, plus a Bool indicating whether
@@ -241,23 +301,6 @@ applyColor ctx ds = case getColorDS ds of
 foreign import javascript unsafe "$1.globalCompositeOperation = $2"
     js_setGlobalCompositeOperation :: Canvas.Context -> JSString -> IO ()
 
-drawCodeWorldLogo :: Canvas.Context -> DrawState -> Int -> Int -> Int -> Int -> IO ()
-drawCodeWorldLogo ctx ds x y w h = do
-    Just doc <- currentDocument
-    Just canvas <- getElementById doc ("cwlogo" :: JSString)
-    case getColorDS ds of
-        Nothing -> js_canvasDrawImage ctx canvas x y w h
-        Just (RGBA r g b a) -> do
-            -- This is a tough case.  The best we can do is to allocate an
-            -- offscreen buffer as a temporary.
-            buf <- Canvas.create w h
-            bufctx <- js_getCodeWorldContext buf
-            applyColor bufctx ds
-            Canvas.fillRect 0 0 (fromIntegral w) (fromIntegral h) bufctx
-            js_setGlobalCompositeOperation bufctx "destination-in"
-            js_canvasDrawImage bufctx canvas 0 0 w h
-            js_canvasDrawImage ctx (elementFromCanvas buf) x y w h
-
 -- Debug Mode logic
 
 -- | Register callback with initDebugMode allowing users to
@@ -329,7 +372,7 @@ getPictureCS (Translate cs _ _ _) = cs
 getPictureCS (Scale cs _ _ _)     = cs
 getPictureCS (Rotate cs _ _)      = cs
 getPictureCS (Pictures cs _)      = cs
-getPictureCS (Logo cs)            = cs
+getPictureCS (Image cs _ _ _)            = cs
 
 getPictureSrc :: Picture -> Maybe (String,SrcLoc)
 getPictureSrc = findCSMain . getPictureCS
@@ -363,8 +406,10 @@ findTopPicture ctx ds pic = case pic of
         if contained
             then return (Just [pic])
             else return Nothing
-    Logo _             -> do
-        withDS ctx ds $ Canvas.rect (-225) (-50) 450 100 ctx
+    Image _ w h _            -> do
+        let w2 = realToFrac w / 2
+        let h2 = realToFrac h / 2
+        withDS ctx ds $ Canvas.rect (-w2) (-h2) (w2) (h2) ctx
         contained <- js_isPointInPath 0 0 ctx
         if contained
             then return (Just [pic])
@@ -465,34 +510,66 @@ fontString style font = stylePrefix style <> "25px " <> fontName font
         fontName Fancy           = "fantasy"
         fontName (NamedFont txt) = "\"" <> textToJSString (T.filter (/= '"') txt) <> "\""
 
+imgElement :: Img -> IO HTMLImageElement
+imgElement (StringImg s) = do
+    doc <- orError "imgElement" currentDocument
+    el <- orError "imgElement" $ getElementById doc (fromString s :: JSString)
+    toHTMLImageElement el
+imgElement (HTMLImg e) = return e
+
 drawPicture :: Canvas.Context -> DrawState -> Picture -> IO ()
-drawPicture ctx ds (Polygon _ ps smooth) = do
+drawPicture ctx ds p = do
+    waitForImages 
+    drawPicture' ctx ds p
+  where
+    waitForImages = do
+        isComplete <- liftM and $ mapM (getComplete <=< imgElement) (pictureImages p)
+        unless isComplete $ do
+--            threadDelay $ 10^4
+            waitForImages
+    
+    --drawImgs (take 2 imgs) p
+--    where
+--    imgs = pictureImages p
+--    drawImgs :: [Img] -> Picture -> IO ()
+--    drawImgs [] p = drawPicture' ctx ds p
+--    drawImgs (Img x:xs) p = do
+--        listener <- newListener (Reader.lift $ drawImgs xs p)
+--        addListener x Global.load listener False
+
+drawPicture' :: Canvas.Context -> DrawState -> Picture -> IO ()
+drawPicture' ctx ds (Polygon _ ps smooth) = do
     withDS ctx ds $ followPath ctx ps True smooth
     applyColor ctx ds
     Canvas.fill ctx
-drawPicture ctx ds (Path _ ps w closed smooth) = do
+drawPicture' ctx ds (Path _ ps w closed smooth) = do
     drawFigure ctx ds w $ followPath ctx ps closed smooth
-drawPicture ctx ds (Sector _ b e r) = withDS ctx ds $ do
+drawPicture' ctx ds (Sector _ b e r) = withDS ctx ds $ do
     Canvas.arc 0 0 (25 * abs r) b e (b > e) ctx
     Canvas.lineTo 0 0 ctx
     applyColor ctx ds
     Canvas.fill ctx
-drawPicture ctx ds (Arc _ b e r w) = do
+drawPicture' ctx ds (Arc _ b e r w) = do
     drawFigure ctx ds w $ do
         Canvas.arc 0 0 (25 * abs r) b e (b > e) ctx
-drawPicture ctx ds (Text _ sty fnt txt) = withDS ctx ds $ do
+drawPicture' ctx ds (Text _ sty fnt txt) = withDS ctx ds $ do
     Canvas.scale 1 (-1) ctx
     applyColor ctx ds
     Canvas.font (fontString sty fnt) ctx
     Canvas.fillText (textToJSString txt) 0 0 ctx
-drawPicture ctx ds (Logo _) = withDS ctx ds $ do
+drawPicture' ctx ds (Image _ w h img) = withDS ctx ds $ do
     Canvas.scale 1 (-1) ctx
-    drawCodeWorldLogo ctx ds (-225) (-50) 450 100
-drawPicture ctx ds (Color _ col p)     = drawPicture ctx (setColorDS col ds) p
-drawPicture ctx ds (Translate _ x y p) = drawPicture ctx (translateDS x y ds) p
-drawPicture ctx ds (Scale _ x y p)     = drawPicture ctx (scaleDS x y ds) p
-drawPicture ctx ds (Rotate _ r p)      = drawPicture ctx (rotateDS r ds) p
-drawPicture ctx ds (Pictures _ ps)     = mapM_ (drawPicture ctx ds) (reverse ps)
+    doc <- orError "drawPicture doc" currentDocument
+--    element <- orError ("drawPicture img " ++ show imgid) $ getElementById doc (fromString imgid :: JSString)
+    cimg <- liftM Canvas.Image $ toJSVal =<< imgElement img
+    let w2 = 25 * w / 2
+    let h2 = 25 * h / 2
+    Canvas.drawImage cimg (round (-w2)) (round (-h2)) (round $ 25 * w) (round $ 25 * h) ctx
+drawPicture' ctx ds (Color _ col p)     = drawPicture' ctx (setColorDS col ds) p
+drawPicture' ctx ds (Translate _ x y p) = drawPicture' ctx (translateDS x y ds) p
+drawPicture' ctx ds (Scale _ x y p)     = drawPicture' ctx (scaleDS x y ds) p
+drawPicture' ctx ds (Rotate _ r p)      = drawPicture' ctx (rotateDS r ds) p
+drawPicture' ctx ds (Pictures _ ps)     = mapM_ (drawPicture' ctx ds) (reverse ps)
 
 drawFrame :: Canvas.Context -> Picture -> IO ()
 drawFrame ctx pic = do
@@ -500,25 +577,34 @@ drawFrame ctx pic = do
     Canvas.fillRect (-250) (-250) 500 500 ctx
     drawPicture ctx initialDS pic
 
-getScreenSize :: IO (Double,Double)
-getScreenSize = do
-    Just doc <- currentDocument
-    Just canvas <- getElementById doc ("screen" :: JSString)
+getDocElement :: String -> IO Element
+getDocElement iden = do
+    doc <- orError "getDocElement doc" currentDocument
+    el <- orError "getDocElement iden" $ getElementById doc (fromString iden :: JSString)
+    return el
+
+getSizeOf :: String -> IO (Double,Double)
+getSizeOf iden = do
+    doc <- orError "getSizeOf doc" currentDocument
+    canvas <- orError "getSizeOf iden" $ getElementById doc (fromString iden :: JSString)
     rect <- getBoundingClientRect canvas
+    cx <- DOMRect.getWidth rect
+    cy <- DOMRect.getHeight rect
+    return (cx,cy)
+
+getSizeOfElem :: Element -> IO (Double,Double)
+getSizeOfElem elem = do
+    rect <- getBoundingClientRect elem
     cx <- DOMRect.getWidth rect
     cy <- DOMRect.getHeight rect
     return (cx,cy)
 
 getTextContent :: IO String
 getTextContent = do
-    doc <- orError "currentDocument" currentDocument
-    textarea <- orError "getElementById" $ getElementById doc ("text" :: JSString)
-    content <- orError "getValue" $ mapM getValue =<< fromJSVal =<< toJSVal textarea
+    doc <- orError "getTextContent currentDocument" currentDocument
+    textarea <- orError "getTextContent getElementById" $ getElementById doc ("text" :: JSString)
+    content <- orError "getTextContent getValue" $ mapM getValue =<< fromJSVal =<< toJSVal textarea
     return content
-  where
-      orError str m = m >>= \x -> case x of
-          Nothing -> Prelude.error $ "getTextContent " ++ str
-          Just x -> return x
 
 setupScreenContext :: Element -> DOMRect.DOMRect -> IO Canvas.Context
 setupScreenContext canvas rect = do
@@ -543,9 +629,9 @@ setCanvasSize target canvas = do
 
 display :: Picture -> IO ()
 display pic = do
-    Just window <- currentWindow
-    Just doc <- currentDocument
-    Just canvas <- getElementById doc ("screen" :: JSString)
+    window <- orError "display window" currentWindow
+    doc <- orError "display doc" currentDocument
+    canvas <- orError "display screen" $ getElementById doc ("screen" :: JSString)
     on window resize $ liftIO (draw canvas)
     draw canvas
   where
@@ -799,10 +885,11 @@ keyCodeToText n = case n of
   where fromAscii n = singleton (chr (fromIntegral n))
         fromNum   n = pack (show (fromIntegral n))
 
-isUniversallyConstant :: (a -> s -> s) -> s -> IO Bool
+isUniversallyConstant :: (a -> s -> IO s) -> s -> IO Bool
 isUniversallyConstant f old = falseOr $ do
     oldName <- makeStableName old
-    genName <- makeStableName $! f undefined old
+    x <- f undefined old
+    genName <- makeStableName $! x
     return (genName == oldName)
   where falseOr x = x `catch` \(e :: SomeException) -> return False
 
@@ -915,11 +1002,11 @@ getWebSocketURL = do
 
     return url
 
-run :: s -> (Double -> s -> s) -> (Event -> s -> s) -> (s -> Picture) -> IO ()
+run :: s -> (Double -> s -> IO s) -> (Event -> s -> IO s) -> (s -> IO Picture) -> IO ()
 run initial stepHandler eventHandler drawHandler = do
-    Just window <- currentWindow
-    Just doc <- currentDocument
-    Just canvas <- getElementById doc ("screen" :: JSString)
+    window <- orError "run window" currentWindow
+    doc <- orError "run doc" currentDocument
+    canvas <- orError "run screen" $ getElementById doc ("screen" :: JSString)
     offscreenCanvas <- Canvas.create 500 500
 
     setCanvasSize canvas canvas
@@ -932,13 +1019,13 @@ run initial stepHandler eventHandler drawHandler = do
     eventHappened <- newMVar ()
 
     onEvents canvas $ \event -> do
-        changed <- modifyMVarIfNeeded currentState (return . eventHandler event)
+        changed <- modifyMVarIfNeeded currentState (eventHandler event)
         when changed $ void $ tryPutMVar eventHappened ()
 
     screen <- js_getCodeWorldContext (canvasFromElement canvas)
 
     let go t0 lastFrame lastStateName needsTime = do
-            pic <- drawHandler <$> readMVar currentState
+            pic <- drawHandler =<< readMVar currentState
             picFrame <- makeStableName $! pic
             when (picFrame /= lastFrame) $ do
                 rect <- getBoundingClientRect canvas
@@ -957,7 +1044,7 @@ run initial stepHandler eventHandler drawHandler = do
               | needsTime -> do
                   t1 <- nextFrame
                   let dt = min (t1 - t0) 0.25
-                  modifyMVar_ currentState (return . stepHandler dt)
+                  modifyMVar_ currentState (stepHandler dt)
                   return t1
               | otherwise -> do
                   takeMVar eventHappened
@@ -1097,47 +1184,53 @@ data Control :: * -> * where
   BackButton    :: Control Double
   TimeLabel     :: Control Double
 
-wrappedStep :: (Double -> a -> a) -> Double -> Wrapped a -> Wrapped a
-wrappedStep f dt w = w {
-    state          = if paused w then state w else f dt (state w),
-    mouseMovedTime = mouseMovedTime w + dt
-    }
+wrappedStep :: (Double -> a -> IO a) -> Double -> Wrapped a -> IO (Wrapped a)
+wrappedStep f dt w = do
+    state' <- if paused w then return (state w) else f dt (state w)
+    return $ w { state = state', mouseMovedTime = mouseMovedTime w + dt }
+
+foldrM :: Monad m => (a -> b -> m b) -> b -> [a] -> m b
+foldrM f y xs = foldr g (return y) xs
+    where
+    g x my = my >>= \y -> f x y
 
 wrappedEvent :: (Wrapped a -> [Control a])
-      -> (Double -> a -> a)
-      -> Event -> Wrapped a -> Wrapped a
+      -> (Double -> a -> IO a)
+      -> Event -> Wrapped a -> IO (Wrapped a)
 wrappedEvent _     _ (MouseMovement _)         w
-    = w { mouseMovedTime = 0 }
+    = return $ w { mouseMovedTime = 0 }
 wrappedEvent ctrls f (MousePress LeftButton p) w
-    = (foldr (handleControl f p) w (ctrls w)) { mouseMovedTime = 0 }
-wrappedEvent _     _ _                         w = w
+    = do
+        x <- foldrM (handleControl f p) w (ctrls w)
+        return $ x { mouseMovedTime = 0 }
+wrappedEvent _     _ _                         w = return w
 
-handleControl :: (Double -> a -> a)
+handleControl :: (Double -> a -> IO a)
               -> Point
               -> Control a
               -> Wrapped a
-              -> Wrapped a
+              -> IO (Wrapped a)
 handleControl _ (x,y) RestartButton w
   | -9.4 < x && x < -8.6 && -9.4 < y && y < -8.6
-      = w { state = 0 }
+      = return $ w { state = 0 }
 handleControl _ (x,y) PlayButton    w
   | -8.4 < x && x < -7.6 && -9.4 < y && y < -8.6
-      = w { paused = False }
+      = return $ w { paused = False }
 handleControl _ (x,y) PauseButton   w
   | -8.4 < x && x < -7.6 && -9.4 < y && y < -8.6
-      = w { paused = True }
+      = return $ w { paused = True }
 handleControl _ (x,y) BackButton    w
   | -7.4 < x && x < -6.6 && -9.4 < y && y < -8.6
-      = w { state = max 0 (state w - 0.1) }
+      = return $ w { state = max 0 (state w - 0.1) }
 handleControl f (x,y) StepButton    w
   | -6.4 < x && x < -5.6 && -9.4 < y && y < -8.6
-      = w { state = f 0.1 (state w) }
-handleControl _ _     _             w = w
+      = f 0.1 (state w) >>= \st' -> return $ w { state = st' }
+handleControl _ _     _             w = return w
 
 wrappedDraw :: (Wrapped a -> [Control a])
-     -> (a -> Picture)
-     -> Wrapped a -> Picture
-wrappedDraw ctrls f w = drawControlPanel ctrls w <> f (state w)
+     -> (a -> IO Picture)
+     -> Wrapped a -> IO Picture
+wrappedDraw ctrls f w = liftM (drawControlPanel ctrls w <>) (f (state w))
 
 drawControlPanel :: (Wrapped a -> [Control a]) -> Wrapped a -> Picture
 drawControlPanel ctrls w
@@ -1200,8 +1293,8 @@ animationControls w
 
 animationOf f =
     interactionOf initial
-                  (wrappedStep (+))
-                  (wrappedEvent animationControls (+))
+                  (wrappedStep (\x y -> return $ x + y))
+                  (wrappedEvent animationControls (\x y -> return $ x + y))
                   (wrappedDraw animationControls f)
   where initial = Wrapped {
             state          = 0,

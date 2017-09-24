@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, EmptyDataDecls #-}
+{-# LANGUAGE TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.SVN where
 
@@ -10,6 +10,7 @@ import Data.Default
 import Data.List.Split
 import Data.List
 import qualified Data.Text as Text
+import Data.SafeCopy
 
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Except
@@ -30,6 +31,7 @@ data SVNSource = SVNSource
     , svnRepository :: FilePath -- repository url
     }
   deriving Show
+$(deriveSafeCopy 0 'base ''SVNSource)
 
 data SVNSourceInfo = SVNSourceInfo
     { svnRevision :: Int
@@ -37,6 +39,7 @@ data SVNSourceInfo = SVNSourceInfo
     , svnDate     :: String
     }
   deriving Show
+$(deriveSafeCopy 0 'base ''SVNSourceInfo)
 
 instance Eq SVNSourceInfo where
     x == y = (svnRevision x) == (svnRevision y)
@@ -56,6 +59,8 @@ instance HaapSource SVN where
     getSourceWith = getSVNSourceWith
     putSourceWith = putSVNSourceWith
     getSourceInfoWith = getSVNSourceInfoWith
+    
+    sourcePath = svnPath
 
 defaultSVNSourceArgs = SVNSourceArgs "system commit"
 
@@ -63,7 +68,7 @@ instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
     
-getSVNSourceWith :: (args -> SVNSourceArgs) -> SVNSource -> Haap p args db ()
+getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
 getSVNSourceWith getArgs s = do
     let user = svnUser s
     let pass = svnPass s
@@ -82,7 +87,7 @@ getSVNSourceWith getArgs s = do
                 shCommand "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
     return ()
 
-getSVNSourceInfoWith :: (args -> SVNSourceArgs) -> SVNSource -> Haap p args db SVNSourceInfo
+getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
 getSVNSourceInfoWith getArgs s = do
     let path = svnPath s
     info <- runSh $ do
@@ -100,14 +105,16 @@ getSVNSourceInfoWith getArgs s = do
             Just rev -> return rev
             Nothing -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s
         [] -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s
-    parseLogRev txt = case headMay $ tailDef [] (lines $ Text.unpack txt) of
-        Just str -> case splitOn "|" str of
-            [_,author,date,_] -> return (author,date)
-            otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s
-        Nothing -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s
+    parseLogRev txt = case tailMay (lines $ Text.unpack txt) of
+        Nothing -> return ("","")
+        Just t -> case headMay t of
+            Nothing -> return ("","")
+            Just str -> case splitOn "|" str of
+                [_,author,date,_] -> return (author,date)
+                otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s
 
-putSVNSourceWith :: (args -> SVNSourceArgs) -> SVNSource -> Haap p args db ()
-putSVNSourceWith getArgs s = do
+putSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> [FilePath] -> SVNSource -> Haap p args db m ()
+putSVNSourceWith getArgs files s = do
     args <- Reader.reader getArgs
     let user = svnUser s
     let pass = svnPass s
@@ -115,8 +122,10 @@ putSVNSourceWith getArgs s = do
     let msg = svnCommitMessage args
     runSh $ do
         shCd path
+        forM_ files $ \file -> shCommand "svn" ["add",file]
         shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
+
 
 
 

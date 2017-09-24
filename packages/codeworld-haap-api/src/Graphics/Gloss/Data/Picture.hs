@@ -1,14 +1,16 @@
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE TypeSynonymInstances, Trustworthy, BangPatterns #-}
 
 module Graphics.Gloss.Data.Picture where
 
 import qualified CodeWorld as CW
+import qualified CodeWorld.Picture as CW
 
 import Graphics.Gloss.Data.Color
 import Graphics.Gloss.Data.Point
 import Graphics.Gloss.Geometry.Angle
 
 import qualified Data.Text as Text
+import Control.Monad
 
 --TODO: This does not work well for non-square windows with rotates!
 data Picture
@@ -25,6 +27,8 @@ data Picture
     | Rotate Float Picture	
     | Scale Float Float Picture	
     | Pictures [Picture]	
+    | Image Float Float CW.Img
+  deriving (Eq,Show)
 
 pictureToCW :: Picture -> CW.Picture
 pictureToCW Blank = CW.blank
@@ -40,3 +44,17 @@ pictureToCW (Translate x y p) = CW.translated (coordToCW x) (coordToCW y) (pictu
 pictureToCW (Rotate r p) = CW.rotated (angleToCW r) (pictureToCW p)
 pictureToCW (Scale x y p) = CW.scaled (coordToCW x) (coordToCW y) (pictureToCW p)
 pictureToCW (Pictures ps) = CW.pictures $ reverse $ map pictureToCW ps
+pictureToCW (Image w h img) = CW.image (coordToCW w) (coordToCW h) img
+
+makeImage :: Float -> Float -> String -> Picture
+makeImage w h n = Image w h (CW.StringImg n)
+
+loadImage :: Float -> Float -> FilePath -> IO Picture
+loadImage w h p = do
+    CW.Image cs w h n <- CW.loadImage (coordToCW w) (coordToCW h) p
+    return $! Image (realToFrac w) (realToFrac h) n
+
+loadImage' :: FilePath -> IO Picture
+loadImage' p = do
+    CW.Image cs w h n <- CW.loadImage' p
+    return $! Image (realToFrac w) (realToFrac h) n

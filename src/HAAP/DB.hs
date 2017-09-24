@@ -10,8 +10,8 @@ class HaapDB db where
     type DBQuery db a = r | r -> db a
     type DBUpdate db a = r | r -> db a
     
-    useDB :: (args -> DBArgs db) -> Haap p args (DB db) a -> Haap p args () a
+    useDB :: HaapMonad m => (args -> DBArgs db) -> Haap p args (DB db) m a -> Haap p args () m a
     
-    queryDB :: DBQuery db a -> Haap p args (DB db) a
-    updateDB :: DBUpdate db a -> Haap p args (DB db) a
+    queryDB :: HaapMonad m => DBQuery db a -> Haap p args (DB db) m a
+    updateDB :: HaapMonad m => DBUpdate db a -> Haap p args (DB db) m a
     

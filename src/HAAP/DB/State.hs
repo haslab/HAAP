@@ -46,7 +46,7 @@ data DBLens db st = DBLens
     , dbPut :: st -> DBUpdate db ()
     }
 
-lensDB :: HaapDB db => DBLens db st -> Haap p args (StateDBDB st) a -> Haap p args (DB db) a
+lensDB :: (HaapMonad m,HaapDB db) => DBLens db st -> Haap p args (StateDBDB st) m a -> Haap p args (DB db) m a
 lensDB l m = do
     let to = liftM StateDBDB $ queryDB $ dbGet l
     let from (StateDBDB x) = updateDB $ dbPut l x

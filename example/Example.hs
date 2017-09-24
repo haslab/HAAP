@@ -41,7 +41,7 @@ exSpec = bounded "x" [97,98,3,4] $ \x ->
 exRankSpec :: Int -> HaapSpec
 exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual $ return (x,i)
 
-type Ex = Haap Example Example_Args (BinaryDB Example_DB)
+type Ex = Haap Example Example_Args (BinaryDB Example_DB) Hakyll
 
 data Example_DB = Example_DB
     { exTourneyDB :: HaapTourneyDB ExPlayer
@@ -66,32 +66,33 @@ exRankScore :: HaapTestRes -> FloatScore
 exRankScore Nothing = FloatScore 1
 exRankScore (Just err) = FloatScore 0
 
-exRank :: HaapSpecRank Example Example_Args db Int FloatScore
+exRank :: HaapSpecRank Example Example_Args db Hakyll Int FloatScore
 exRank = HaapSpecRank "ranks.html" "Ranks" "Grupo" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
 
 main = do
 --    logger <- new Message
     let cfg = defaultConfiguration
-    runHaap example exampleArgs $ useDB exDBArgs $ do
-        (web1,spec) <- renderHaapSpecsWith getSpecArgs "spec.html" "Spec" [("spec1",exSpec)]
+    runHaap example exampleArgs $ runHaapMonadWith (const cfg) $ useDB exDBArgs $ do
+        spec <- renderHaapSpecsWith getSpecArgs "spec.html" "Spec" [("spec1",exSpec)]
         
-        (web2,rank) <- renderHaapSpecRankWith getSpecArgs exRank
+        rank <- renderHaapSpecRankWith getSpecArgs exRank
         
-        (web3,tour) <- renderHaapTourney exTourney
+        tour <- renderHaapTourney exTourney
         
-        (web4,hadck) <- runHaddock exHaddock
+        hadck <- runHaddock exHaddock
         
-        (web5,hlint) <- runHLint exHLint
+        hlint <- runHLint exHLint
         
-        (web6,homplexity) <- runHomplexity exHomplexity
+        homplexity <- runHomplexity exHomplexity
         
-        (_,web7,hpcs) <- runHpc exHpc $ do
+        (_,hpcs) <- runHpc exHpc $ do
             runIO $ system "./HPCTest < ints"
             runIO $ system "./HPCTest < ints"
             
-        (web8,cws) <- runCodeWorld exCodeWorld
+        cw1 <- runCodeWorld exCodeWorldDraw
+        cw2 <- runCodeWorld exCodeWorldGame
         
-        let pageRule = do
+        hakyllRules $ do
             match (fromGlob ("templates/example.html")) $ do
                 route idRoute
                 compile templateBodyCompiler
@@ -106,10 +107,10 @@ main = do
                               `mappend` constField "hlint" hlint
                               `mappend` constField "homplexity" homplexity
                               `mappend` listField "hpcs" (field "hpc" (return . itemBody)) (mapM makeItem hpcs)
-                              `mappend` listField "cws" (field "cw" (return . itemBody)) (mapM makeItem cws)
+                              `mappend` listField "cws" (field "cw" (return . itemBody)) (mapM makeItem [cw1,cw2])
                     makeItem "" >>= loadAndApplyTemplate "templates/example.html" exCtx
         
-        runHakyllWith cfg $ web1 >> web2 >> web3 >> web4 >> web5 >> web6 >> web7 >> web8 >> pageRule
+        return ()
 
 data ExPlayer = ExPlayer (String,Bool)
  deriving (Eq,Ord,Show,Generic)
@@ -123,7 +124,7 @@ instance TourneyPlayer ExPlayer where
     isDefaultPlayer (ExPlayer (_,b)) = b
     defaultPlayer = ExPlayer ("random",True)
 
-exTourney :: HaapTourney Example Example_Args (BinaryDB Example_DB) ExPlayer [Link]
+exTourney :: HaapTourney Example Example_Args (BinaryDB Example_DB) Hakyll ExPlayer [Link]
 exTourney = HaapTourney 10 "Tourney" "Grupo" grupos "torneio" lnsTourney match return (const $ return ())
     where
     grupos = map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
@@ -143,8 +144,16 @@ exHpc = HpcArgs ["HPCTest"] getGHC getIO False "hpc"
     getIO = const def
     getGHC = const def
 
-exCodeWorld :: CodeWorldArgs Example_Args
-exCodeWorld = CodeWorldArgs [("MMGame.hs",CWGame),("MMDraw.hs",CWDraw "Insira um caminho...")] getGHCJS getIO "codeworld" db
+exCodeWorldDraw :: CodeWorldArgs Example_Args
+exCodeWorldDraw = CodeWorldArgs ("MMDraw.hs") "Draw" (CWDraw "Insira um caminho...") getGHCJS getIO "codeworld" db imgs
+    where
+    getIO = const def
+    getGHCJS = const $ def { ghcjsSafe = False }
+    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
+    imgs = [("recta","recta.png"),("curva","curva.png"),("lava","lava.jpg"),("carro","carro.png")]
+
+exCodeWorldGame :: CodeWorldArgs Example_Args
+exCodeWorldGame = CodeWorldArgs ("MMGame.hs") "Game" (CWGame) getGHCJS getIO "codeworld" db []
     where
     getIO = const def
     getGHCJS = const $ def { ghcjsSafe = False }

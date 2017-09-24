@@ -14,56 +14,70 @@ import qualified Control.Monad.Reader as Reader
 import Data.Foldable
 import Data.String
 import Data.Traversable
+import Data.Default
+import qualified Data.Text as Text
 
 import System.FilePath
 import System.Directory
+import System.Process
 
 import qualified Shelly as Sh
 
 data CWTemplate = CWGame | CWDraw String
 
 data CodeWorldArgs args = CodeWorldArgs
-    { cwExecutables :: [(FilePath,CWTemplate)] -- graphical web applications to compile with ghjs and codeworld libraries
+    { cwExecutable :: FilePath -- graphical web applications to compile with ghjs and codeworld libraries
+    , cwTitle :: String
+    , cwTemplate :: CWTemplate 
     , cwGHCJS :: args -> GHCJSArgs
     , cwIO :: args -> IOArgs
     , cwHtmlPath :: FilePath -- relative path to the project to store codeworld results
-    , cwGHJSPackages :: [FilePath] -- additional ghcjs library folders
+    , cwImages :: [(String,FilePath)] -- a list of html identifiers and respective local files for loading images
     }
 
-runCodeWorld :: CodeWorldArgs args -> Haap p args db (Rules (),[FilePath])
+runCodeWorld :: CodeWorldArgs args -> Haap p args db Hakyll FilePath
 runCodeWorld cw = do
-    htmls <- forM (cwExecutables cw) $ \(path,tplt) -> do
-        let (tpltfile,textmessage) = case tplt of
-                                        CWGame -> ("templates/cw-game.html","")
-                                        CWDraw msg -> ("templates/cw-draw.html",msg)
-        -- compile files with ghcjs
-        ghcjs <- Reader.reader (cwGHCJS cw)
-        io <- Reader.reader (cwIO cw)
-        let (dir,exec) = splitFileName path
-        let destdir = dropExtension (cwHtmlPath cw </> exec)
-        let destfolder = addExtension destdir "jsexe"
-        let packages = map (\x -> "-package-db=" ++ toRoot dir </> x) (cwGHJSPackages cw)
-        let ghcjs' = ghcjs { ghcjsArgs = packages ++ ghcjsArgs ghcjs ++ ["-o",toRoot dir </> destdir] }
-        res <- runSh $ do
-            Sh.mkdir_p (fromString destfolder)
-            shCd dir
-            shGhcjsWith io ghcjs' [exec]
-        return (tpltfile,textmessage,res,destfolder)
-    let rules = do
-        forM_ htmls $ \(tpltfile,textmessage,res,html) -> do
-            let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
-            match (fromGlob $ html </> "*") $ do
-                route   idRoute
-                compile copyFileCompiler
-            create [fromFilePath $ html </> "run.html"] $ do
-                route idRoute
-                compile $ do
-                    let cwCtx = constField "title" html
-                              `mappend` constField "projectpath" (toRoot $ html </> "run.html")
-                              `mappend` constField "message" message
-                              `mappend` constField "textmessage" textmessage
-                    makeItem "" >>= loadAndApplyTemplate tpltfile cwCtx
+    tmp <- getProjectTmpPath
+    let (tpltfile,textmessage) = case cwTemplate cw of
+                                    CWGame -> ("templates/cw-game.html","")
+                                    CWDraw msg -> ("templates/cw-draw.html",msg)
+    -- compile files with ghcjs
+    ghcjs <- Reader.reader (cwGHCJS cw)
+    io <- Reader.reader (cwIO cw)
+    let (dir,exec) = splitFileName (cwExecutable cw)
+    let destdir = dropExtension (cwHtmlPath cw </> exec)
+    let destfolder = addExtension destdir "jsexe"
+    let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir] }
     
-    let runs = map ((</> "run.html") . fou4) htmls
-    return (rules,runs)
+    res <- runShWith (const io) $ do
+        Sh.mkdir_p (fromString $ tmp </> destfolder)
+        shCd dir
+        --Sh.setenv "GHC_PACKAGE_PATH" (Text.pack $ concatPaths ghcpackagedbs)
+        --Sh.setenv "GHCJS_PACKAGE_PATH" (Text.pack $ concatPaths ghcjspackagedbs)
+        shGhcjsWith io ghcjs' [exec]
+--    runIO $ system "ghcjs --user"
+--    res <- runIO $ ioGhcjsWith io' ghcjs' [cwExecutable cw]
+    let images = (cwImages cw)
+        
+    hakyllRules $ do
+        
+        let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
+        match (fromGlob $ tmp </> destfolder </> "*") $ do
+            route   $ relativeRoute tmp
+            compile copyFileCompiler
+        create [fromFilePath $ destfolder </> "run.html"] $ do
+            route idRoute
+            compile $ do
+                let mkImg s = s
+                let imgCtx = field "imgid" (return . fst . itemBody)
+                           `mappend` constField "projectpath" (dirToRoot destfolder)
+                           `mappend` field "imgfile" (return . mkImg . snd . itemBody)
+                let cwCtx = constField "title" (cwTitle cw)
+                          `mappend` constField "projectpath" (dirToRoot destfolder)
+                          `mappend` constField "message" message
+                          `mappend` constField "textmessage" textmessage
+                          `mappend` listField "images" imgCtx (mapM makeItem images)
+                makeItem "" >>= loadAndApplyTemplate tpltfile cwCtx
+        
+    return (destfolder </> "run.html")
     

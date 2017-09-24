@@ -1,4 +1,5 @@
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE OverloadedStrings        #-}
 
 {-
   Copyright 2017 The CodeWorld Authors. All rights reserved.
@@ -22,6 +23,7 @@ import CodeWorld.Color
 import Data.Monoid ((<>))
 import Data.Text (Text, pack)
 import GHC.Stack
+import GHCJS.DOM.HTMLImageElement
 
 type Point = (Double, Double)
 type Vector = (Double, Double)
@@ -59,7 +61,23 @@ data Picture = Polygon CallStack [Point] !Bool
              | Scale CallStack !Double !Double !Picture
              | Rotate CallStack !Double !Picture
              | Pictures CallStack [Picture]
-             | Logo CallStack
+             | Image CallStack Double Double Img -- width, height and the identifier of the html element holding the image
+
+data Img = StringImg String
+         | HTMLImg HTMLImageElement
+  deriving Eq
+
+instance Show Img where
+    show x = "<Img>"
+
+pictureImages :: Picture -> [Img]
+pictureImages (Color _ c p) = pictureImages p
+pictureImages (Translate _ _ _ p) = pictureImages p
+pictureImages (Scale _ _ _ p) = pictureImages p
+pictureImages (Rotate _ _ p) = pictureImages p
+pictureImages (Pictures _ ps) = concatMap pictureImages ps
+pictureImages (Image _ _ _ n) = [n]
+pictureImages _ = []
 
 data TextStyle = Plain | Bold | Italic
 
@@ -183,6 +201,10 @@ translated = Translate callStack
 scaled :: HasCallStack => Double -> Double -> Picture -> Picture
 scaled = Scale callStack
 
+-- | An external image
+image :: HasCallStack => Double -> Double -> Img -> Picture
+image = Image callStack
+
 -- | A picture scaled by these factors.
 dilated :: HasCallStack => Double -> Picture -> Picture
 dilated k = scaled k k
@@ -231,5 +253,5 @@ coordinatePlane = axes <> numbers <> guidelines
               | k <- [-9, -8 .. 9], k /= 0 ]
 
 -- | The CodeWorld logo.
-codeWorldLogo :: HasCallStack => Picture
-codeWorldLogo = Logo callStack
+--codeWorldLogo :: HasCallStack => Picture
+--codeWorldLogo = Logo callStack

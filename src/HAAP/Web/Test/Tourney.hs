@@ -36,15 +36,15 @@ instance Out a => Out (ScoredTourneyPlayer a r) where
     docPrec i x = doc x
     doc (ScoredTourneyPlayer x) = doc $ fst x
 
-renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db a r -> Haap p args (DB db) (Rules (),FilePath)
+renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourney tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb
-    (web1,index) <- renderHaapTourneyDB tourney db
-    web2 <- renderHaapTourneyTree tourney tourneyno tourneyTree tourneyTime
-    return (web1 >> web2,index)
+    index <- renderHaapTourneyDB tourney db
+    renderHaapTourneyTree tourney tourneyno tourneyTree tourneyTime
+    return index
 
-renderHaapTourneyDB :: (TourneyPlayer a) => HaapTourney p args db a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) (Rules (),FilePath)
+renderHaapTourneyDB :: (TourneyPlayer a) => HaapTourney p args db Hakyll a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourneyDB t db = do
     --runIO $ putStrLn $ "render " ++ show (toRoot $ tourneysPath)
     renderHaapRank rank
@@ -76,15 +76,15 @@ renderHaapTourneyDB t db = do
 --    ranks :: [(a,[MaybeFloatScore])]
     ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatScore)) $ sortBy cmp $ Map.toList ranksByGroup
     
-renderHaapTourneyTree :: (TourneyPlayer a) => HaapTourney p args db a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) (Rules ())
+renderHaapTourneyTree :: (TourneyPlayer a) => HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll ()
 renderHaapTourneyTree t no tree time = do
     let tPath =  tourneyPath t </> "tourneys" </> addExtension ("tourney" ++ pretty no) "html"
     size <- getTourneySize $ tourneyPlayers t
     let title = "Tourney " ++ pretty no ++ " " ++ show time
     let header = H.h1 $ fromString title
-    let csspath = toRoot tPath </> "css"
+    let csspath = dirToRoot tPath </> "css"
     
-    return $ create [fromFilePath tPath] $ do
+    hakyllRules $ create [fromFilePath tPath] $ do
         route idRoute
         tree' <- mapM (mapM (mapSndM $ renderMatch t)) tree
         compile $ do

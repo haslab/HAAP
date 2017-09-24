@@ -42,10 +42,10 @@ data HaapSpecArgs = HaapSpecArgs
 
 data HaapSpecMode = HaapSpecQuickCheck | HaapSpecHUnit
 
-runSpec :: HaapSpec -> Haap p HaapSpecArgs db HaapTestTableRes
+runSpec :: HaapMonad m => HaapSpec -> Haap p HaapSpecArgs db m HaapTestTableRes
 runSpec = runSpecWith id
 
-runSpecWith :: (args -> HaapSpecArgs) -> HaapSpec -> Haap p args db HaapTestTableRes
+runSpecWith :: HaapMonad m => (args -> HaapSpecArgs) -> HaapSpec -> Haap p args db m HaapTestTableRes
 runSpecWith getArgs spec = do
     logEvent "Running Haap Specification"
     args <- liftM getArgs $ Reader.ask
@@ -88,7 +88,7 @@ haapNewExample = do
     State.modify succ
     return i
 
-runHaapTestTable :: HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db HaapTestTableRes
+runHaapTestTable :: HaapMonad m => HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db m HaapTestTableRes
 runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) tests) $ do
     outknob <- runIO $ newKnob (B.pack [])
     outhandle <- runIO $ newFileHandle outknob "knob" WriteMode

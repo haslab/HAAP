@@ -3,7 +3,7 @@
   <head>
     
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
-      <title>CodeWorld - codeworld/MMDraw.jsexe</title>
+      <title>CodeWorld - Draw</title>
       <link rel="stylesheet" href="../../css/codeworld.css">
     
     <script language="javascript" src="rts.js"></script>
@@ -11,11 +11,23 @@
     <script language="javascript" src="out.js"></script>
   </head>
   <body style="text-align: center">
+      
+    
+    <img style="display: none;" id="recta" src="images/recta.png">
+    
+    <img style="display: none;" id="curva" src="images/curva.png">
+    
+    <img style="display: none;" id="lava" src="images/lava.jpg">
+    
+    <img style="display: none;" id="carro" src="images/carro.png">
+    
+      
     <canvas id="screen"></canvas>
     <textarea id="text">Insira um caminho...</textarea>
     <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>
     <pre id="message" class="dropbox draw">=== Compiling ===
 Output:
+[1 of 1] Compiling Main             ( MMDraw.hs, MMDraw.js_o )
 Linking ./codeworld/MMDraw.jsexe (Main)
 
 Errors:

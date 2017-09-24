@@ -11,7 +11,7 @@ import qualified CodeWorld.Driver as CW
 
 getDisplay :: IO Display
 getDisplay = do
-    (x,y) <- CW.getScreenSize
+    (x,y) <- CW.getSizeOf "screen"
     return $ Display (round x) (round y)
 
 data Display = Display Int Int

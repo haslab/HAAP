@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, TypeFamilies, OverloadedStrings, ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 
 
 
@@ -9,13 +9,24 @@ module HAAP.Web.Hakyll
         
 import HAAP.Core
 import HAAP.IO
+import HAAP.Pretty
 
 import System.FilePath
 import System.Directory
 import System.Environment
 import System.Exit
 
+import Control.Applicative
 import Control.Monad
+import Control.Exception
+import Control.Monad.IO.Class
+import Control.Monad.Writer (MonadWriter(..),WriterT(..))
+import qualified Control.Monad.Reader as Reader
+import qualified Control.Monad.Writer as Writer
+import qualified Control.Monad.Except as Except
+import qualified Control.Monad.RWS as RWS
+import Control.Monad.Catch (MonadCatch,MonadThrow)
+import Control.Monad.Trans
 
 import Data.Functor.Contravariant
 
@@ -23,24 +34,47 @@ import Hakyll
 
 import Paths_HAAP
 
-runHakyllWith :: Configuration -> Rules () -> Haap p args db ()
-runHakyllWith cfg rules = ignoreError $ do
-    copyDataFiles cfg
-    let datarules = do
-        matchDataTemplates
-        matchDataCSSs
-        matchDataJSs
-        rules
-    let build = runIOExit $ withArgs ["build"] $ hakyllWith cfg datarules
-    let clean = runIOExit $ withArgs ["clean"] $ hakyllWith cfg datarules
-    orDo (\e -> clean >> build) build
-    return ()
+instance Monoid (Rules ()) where
+    mempty = return ()
+    mappend x y = x >> y
 
-copyDataFiles :: Configuration -> Haap p args db ()
+newtype Hakyll a = Hakyll { unHakyll :: WriterT (Rules ()) IO a }
+  deriving (Functor,Applicative,Monad,MonadIO,MonadCatch,MonadThrow,MonadWriter (Rules ()))
+
+instance HaapMonad Hakyll where
+    type HaapMonadArgs Hakyll = Configuration
+    runHaapMonadWith = runHakyllWith
+
+relativeRoute :: FilePath -> Routes
+relativeRoute prefix = customRoute $ \iden -> makeRelative prefix (toFilePath iden)
+
+hakyllRules :: Rules () -> Haap p args db Hakyll ()
+hakyllRules r = Haap $ lift $ lift $ Writer.tell r
+
+runHakyllWith :: (args -> Configuration) -> Haap p args db Hakyll a -> Haap p args db IO a
+runHakyllWith getCfg (Haap mrules) = do
+    cfg <- Reader.reader getCfg
+    let g (Hakyll m) = do
+        (e,rules) <- Writer.runWriterT m
+        let datarules = do
+            matchDataTemplates
+            matchDataCSSs
+            matchDataJSs
+            rules
+        let build = withArgs ["build"] $ hakyllWithExitCode cfg datarules
+        let clean = withArgs ["clean"] $ hakyllWithExitCode cfg datarules
+        catch
+            (build >>= \e -> case e of { ExitFailure _ -> clean >> build; otherwise -> return e })
+            (\(err::SomeException) -> clean >> build)
+        return e
+    copyDataFiles cfg
+    Haap $ RWS.mapRWST (Except.mapExceptT g) mrules
+
+copyDataFiles :: HaapMonad m => Configuration -> Haap p args db m ()
 copyDataFiles cfg = do
     datapath <- runIO $ getDataFileName ""
     xs <- runIO $ listDirectory datapath
-    forM_ xs $ \x -> copyRecursive (datapath </> x) (providerDirectory cfg </> x)
+    runSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> x)
 
 --dataRoute :: FilePath -> Routes
 --dataRoute datapath = customRoute (\iden -> makeRelative datapath $ toFilePath iden)
@@ -77,5 +111,13 @@ instance Contravariant Context where
 --fromDataFileName :: FilePath -> Compiler Identifier
 --fromDataFileName path = liftM fromFilePath $ unsafeCompiler $ getDataFileName path
 
+orErrorHakyllPage :: (Out a) => FilePath -> a -> Haap p args db Hakyll a -> Haap p args db Hakyll a
+orErrorHakyllPage page def m = orDo go m
+  where
+    go e = do
+        hakyllRules $ create [fromFilePath page] $ do
+            route idRoute
+            compile $ makeItem (show e::String)
+        return def
 
 

@@ -43,7 +43,6 @@ instance IsAcidic st => HaapDB (AcidDB st) where
     type DBQuery (AcidDB st) a = AcidDBQuery st a
     type DBUpdate (AcidDB st) a = AcidDBUpdate st a
     
-    useDB :: (args -> AcidDBArgs st) -> Haap p args (AcidState st) a -> Haap p args () a
     useDB getArgs m = do
         path <- getProjectPath
         args <- liftM getArgs Reader.ask
@@ -53,12 +52,10 @@ instance IsAcidic st => HaapDB (AcidDB st) where
         runIO $ closeAcidState acid
         return x
         
-    queryDB :: AcidDBQuery st a -> Haap p args (AcidState st) a
     queryDB (AcidDBQuery q) = do
         acid <- getDB
         runIO $ query acid q
         
-    updateDB :: AcidDBUpdate st a -> Haap p args (AcidState st) a
     updateDB (AcidDBUpdate u) = do
         acid <- getDB
         runIO $ update acid u
