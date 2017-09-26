@@ -49,6 +49,7 @@ instance Ord SVNSourceInfo where
 
 data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
+    , svnAcceptConflicts :: Bool
     }
   deriving Show
 
@@ -62,7 +63,7 @@ instance HaapSource SVN where
     
     sourcePath = svnPath
 
-defaultSVNSourceArgs = SVNSourceArgs "system commit"
+defaultSVNSourceArgs = SVNSourceArgs "system commit" True
 
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
@@ -70,6 +71,7 @@ instance Default SVNSourceArgs where
     
 getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
 getSVNSourceWith getArgs s = do
+    args <- Reader.reader getArgs
     let user = svnUser s
     let pass = svnPass s
     let path = svnPath s
@@ -79,9 +81,10 @@ getSVNSourceWith getArgs s = do
     runSh $ do
         if exists
             then do
+                let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
                 shCd path
                 shCommand "svn" ["cleanup"]
-                shCommand "svn" ["update","--non-interactive","--username",user,"--password",pass]
+                shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
             else do
                 shCd dir
                 shCommand "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
