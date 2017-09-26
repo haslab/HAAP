@@ -77,7 +77,7 @@ runCodeWorld cw = do
                           `mappend` constField "message" message
                           `mappend` constField "textmessage" textmessage
                           `mappend` listField "images" imgCtx (mapM makeItem images)
-                makeItem "" >>= loadAndApplyTemplate tpltfile cwCtx
+                makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx
         
     return (destfolder </> "run.html")
     

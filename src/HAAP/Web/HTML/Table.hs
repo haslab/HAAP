@@ -34,7 +34,7 @@ renderHaapTable t = do
                         `mappend` constField "projectpath" (fileToRoot $ haapTablePath t)
                         `mappend` listField "headers" headerCtx (mapM makeItem $ haapTableHeaders t)
                         `mappend` listField "rows" rowCtx (mapM makeItem $ haapTableRows t)
-            makeItem "" >>= loadAndApplyTemplate "templates/table.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/table.html" pageCtx
     return (haapTablePath t)
 
 

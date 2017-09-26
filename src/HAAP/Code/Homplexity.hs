@@ -46,7 +46,7 @@ runHomplexity h = do
                            `mappend` field "message" (return . thr3 . itemBody)
                 let homCtx = constField "projectpath" (dirToRoot $ homplexityPath h)
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
-                makeItem "" >>= loadAndApplyTemplate "templates/homplexity.html" homCtx
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx
     return (homplexityHtmlPath h)
       
 parseMessages [] = []

@@ -45,6 +45,11 @@ instance HaapMonad Hakyll where
     type HaapMonadArgs Hakyll = (Configuration,Bool)
     runHaapMonadWith = runHakyllWith
 
+loadAndApplyHTMLTemplate :: Identifier -> Context a -> Item a -> Compiler (Item String)
+loadAndApplyHTMLTemplate iden ctx item = do
+    i <- loadAndApplyTemplate iden ctx item
+    return $ fmap escapeHtml i
+
 relativeRoute :: FilePath -> Routes
 relativeRoute prefix = customRoute $ \iden -> makeRelative prefix (toFilePath iden)
 

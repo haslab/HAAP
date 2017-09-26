@@ -45,7 +45,7 @@ renderHaapRankScores rank scores = do
                         `mappend` constField "ranktag" (rankTag rank)
                         `mappend` listField "headers" headerCtx (mapM makeItem headers)
                         `mappend` listField "rows" rowCtx (mapM makeItem scores')
-            makeItem "" >>= loadAndApplyTemplate "templates/ranks.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/ranks.html" pageCtx
     return $ rankPath rank
   where
     scores' = map (mapSnd3 (zipLeft headernums)) scores

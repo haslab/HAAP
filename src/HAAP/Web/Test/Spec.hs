@@ -37,7 +37,7 @@ renderHaapTest path title notes spec = do
                          `mappend` listField "rows" rowCtx (mapM makeItem $ haapTestTableRows spec)
                          `mappend` constField "projectpath" (fileToRoot path)
                          `mappend` constField "notes" notes                        
-            makeItem "" >>= loadAndApplyTemplate "templates/spec.html" specCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx
     return (path)
 
 renderHaapTests :: FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db Hakyll FilePath
@@ -58,6 +58,6 @@ renderHaapTests path title specs = do
             let pageCtx = constField "title" title
                         `mappend` constField "projectpath" (fileToRoot path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
-            makeItem "" >>= loadAndApplyTemplate "templates/specs.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx
     return (path)
 
