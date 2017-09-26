@@ -93,13 +93,15 @@ getSVNSourceWith getArgs s = do
 getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
 getSVNSourceInfoWith getArgs s = do
     let path = svnPath s
+    let user = svnUser s
+    let pass = svnPass s
     info <- runSh $ do
         shCd path
-        shCommand "svn" ["info","--non-interactive"]
+        shCommand "svn" ["info","--non-interactive","--username",user,"--password",pass]
     rev <- parseInfo $ resStdout info
     logRev <- runSh $ do
         shCd path
-        shCommand "svn" ["log","-r",show rev]
+        shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     (author,date) <- parseLogRev $ resStdout logRev
     return $ SVNSourceInfo rev author date
   where
