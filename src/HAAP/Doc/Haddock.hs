@@ -49,7 +49,7 @@ runHaddock h = do
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
                            `mappend` constField "stdout" (Text.unpack $ resStdout res)
                            `mappend` constField "stderr" (Text.unpack $ resStderr res)
-                           `mappend` constField "link" (haddockHtmlPath h </> "index.html")
+                           `mappend` constField "link" (takeFileName (haddockHtmlPath h) </> "index.html")
                 makeItem "" >>= loadAndApplyTemplate "templates/doc.html" docCtx
     return indexhtml
         
