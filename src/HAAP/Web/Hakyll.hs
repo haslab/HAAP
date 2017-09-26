@@ -42,7 +42,7 @@ newtype Hakyll a = Hakyll { unHakyll :: WriterT (Rules ()) IO a }
   deriving (Functor,Applicative,Monad,MonadIO,MonadCatch,MonadThrow,MonadWriter (Rules ()))
 
 instance HaapMonad Hakyll where
-    type HaapMonadArgs Hakyll = Configuration
+    type HaapMonadArgs Hakyll = (Configuration,Bool)
     runHaapMonadWith = runHakyllWith
 
 relativeRoute :: FilePath -> Routes
@@ -51,9 +51,9 @@ relativeRoute prefix = customRoute $ \iden -> makeRelative prefix (toFilePath id
 hakyllRules :: Rules () -> Haap p args db Hakyll ()
 hakyllRules r = Haap $ lift $ lift $ Writer.tell r
 
-runHakyllWith :: (args -> Configuration) -> Haap p args db Hakyll a -> Haap p args db IO a
+runHakyllWith :: (args -> HaapMonadArgs Hakyll) -> Haap p args db Hakyll a -> Haap p args db IO a
 runHakyllWith getCfg (Haap mrules) = do
-    cfg <- Reader.reader getCfg
+    (cfg,doClean) <- Reader.reader getCfg
     let g (Hakyll m) = do
         (e,rules) <- Writer.runWriterT m
         let datarules = do
@@ -63,9 +63,11 @@ runHakyllWith getCfg (Haap mrules) = do
             rules
         let build = withArgs ["build"] $ hakyllWithExitCode cfg datarules
         let clean = withArgs ["clean"] $ hakyllWithExitCode cfg datarules
-        catch
-            (build >>= \e -> case e of { ExitFailure _ -> clean >> build; otherwise -> return e })
-            (\(err::SomeException) -> clean >> build)
+        if doClean
+            then clean >> build
+            else catch
+                (build >>= \e -> case e of { ExitFailure _ -> clean >> build; otherwise -> return e })
+                (\(err::SomeException) -> clean >> build)
         return e
     copyDataFiles cfg
     Haap $ RWS.mapRWST (Except.mapExceptT g) mrules

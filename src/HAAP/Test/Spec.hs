@@ -26,6 +26,8 @@ import Control.Monad.Except
 
 import System.IO
 import System.Environment
+import System.FilePath
+import System.IO.Unsafe
 
 import Data.Traversable
 import Data.Typeable
@@ -34,6 +36,8 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 
 import Text.Read
+
+import Safe
 
 data HaapSpecArgs = HaapSpecArgs
     { specMode :: HaapSpecMode
@@ -132,9 +136,10 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
             return $ HaapTestTable (n:h) (map (mapFst (show x :)) t)
         ys <- mapM add xs
         return $ concatTable ys
-    haapSpec' HaapSpecQuickCheck (HaapSpecUnbounded n seeds g f) = do
+    haapSpec' HaapSpecQuickCheck spec@(HaapSpecUnbounded n seeds g f) = do
         ex <- haapNewExample
-        return $ HaapTestTable [n] [(["-"],(ex,it (show ex) $ forAll g f))]
+        let ns = unsafePerformIO $ haapSpecNames spec
+        return $ HaapTestTable ns [(replicate (length ns) "-",(ex,it (show ex) $ forAll g f))]
     haapSpec' HaapSpecHUnit (HaapSpecUnbounded n seeds g f) = do
         let mkArg i = unGen g (mkQCGen i) i
         let xs = map mkArg seeds
@@ -154,6 +159,17 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
 
 instance QuickCheck.Testable HaapSpec where
     property = haapSpecProperty
+
+haapSpecNames :: HaapSpec -> IO [String]
+haapSpecNames (HaapSpecBounded n xs f) = do
+    ns <- mapM (haapSpecNames . f) (headMay xs)
+    return (n:maybe [] id ns)
+haapSpecNames (HaapSpecUnbounded n _ g f) = do
+    x <- generate g
+    ns <- haapSpecNames $ f x
+    return (n:ns)
+haapSpecNames (HaapSpecTestBool io) = return []
+haapSpecNames (HaapSpecTestEqual io) = return []
 
 haapSpecProperty :: HaapSpec -> Property
 haapSpecProperty (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty . f) xs

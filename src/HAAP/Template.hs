@@ -31,6 +31,8 @@ applyTemplate t c = TextL.unpack $ T.render t (unHaapConText c)
 
 shLoadApplyAndCopyTemplate :: HaapContext -> FilePath -> FilePath -> Sh ()
 shLoadApplyAndCopyTemplate ctx from to = do
+--    Sh.liftIO $ putStrLn $ "shFrom " ++ show from
+--    Sh.liftIO $ putStrLn $ "shTo " ++ show to
     txt::Text.Text <- Sh.readfile (shFromFilePath from)
     let tplt::T.Template = T.template txt
     let ctx' :: T.Context = unHaapConText ctx

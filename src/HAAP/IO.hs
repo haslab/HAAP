@@ -45,8 +45,8 @@ data IOArgs = IOArgs
     , ioEnv :: [(String,FilePath)] -- additional environment variables
     }
 
-addIOEnv :: String -> FilePath -> IOArgs -> IOArgs
-addIOEnv var path io = io { ioEnv = ioEnv io ++ [(var,path)] }
+addIOEnv :: [(String,FilePath)] -> IOArgs -> IOArgs
+addIOEnv xs io = io { ioEnv = ioEnv io ++ xs }
 
 data IOResult = IOResult
     { resExitCode :: Int
@@ -207,6 +207,9 @@ runIOCore args io = case ioTimeout args of
 runIO' :: (HaapMonad m,NFData a) => IO a -> Haap p args db m a
 runIO' = runIOWith' (const defaultIOArgs)
 
+orMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
+orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
+
 orDo :: HaapMonad m => (HaapException -> Haap p args db m a) -> Haap p args db m a -> Haap p args db m a
 orDo ex m = catchError m ex
 
@@ -269,7 +272,7 @@ shRecursive op from to = do
     if (isfromdir && istodir)
         then do
             froms <- shLs from
-            forM_ froms $ \x -> shCpRecursive (from </> x) to
+            forM_ froms $ \x -> shRecursive op (from </> x) to
         else op from to
 
 equalPathIO :: FilePath -> FilePath -> IO Bool

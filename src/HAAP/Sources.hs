@@ -7,6 +7,7 @@ import HAAP.Lens
 import HAAP.IO
 import HAAP.Utils
 import HAAP.Template
+import HAAP.Log
 
 import Data.Traversable
 import Data.Default
@@ -21,6 +22,7 @@ import System.Directory
 import System.FilePath.Find as FilePath
 
 import Shelly (Sh(..))
+import qualified Shelly as Sh
 
 class Ord (SourceInfo s) => HaapSource s where
     type Source s = r | r -> s
@@ -48,16 +50,20 @@ getSourceInfo = getSourceInfoWith id
 -- | pushes project files to the group's local copy of the source; returns the files to be commited to version control system
 populateGroupSourceWith :: (HaapMonad m,HaapSource s) => (args -> SourceArgs s) -> HaapContext -> Bool -> Group -> Source s -> Haap p args db m [FilePath]
 populateGroupSourceWith getArgs ctx overwriteTemplateFiles g s = do
+    logEvent "populating source"
     sargs <- Reader.reader getArgs
     ppath <- getProjectPath
     let spath = sourcePath s
     files <- getProjectTaskFiles
     remotefiles <- runSh $ forM files $ \file -> do
+        --Sh.liftIO $ putStrLn $ "populating file " ++ show file
         let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteTemplateFiles
         let localfile = haapLocalFile file
         let remotefile = applyTemplate (makeTemplate $ haapRemoteFile file) ctx
         if copy
             then do
+--                Sh.liftIO $ putStrLn $ "from " ++ show  (ppath </> localfile)
+--                Sh.liftIO $ putStrLn $ "to " ++ show (spath </> remotefile)
                 shRecursive (shLoadApplyAndCopyTemplate ctx) (ppath </> localfile) (spath </> remotefile)
                 case haapFileType file of
                     HaapOracleFile -> return []

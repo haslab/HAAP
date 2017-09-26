@@ -25,6 +25,17 @@ instance Score FloatScore where
     okScore (FloatScore x) = x > 0
     appendScores = FloatScore . averageList . map unFloatScore
 
+newtype PercentageScore = PercentageScore { unPercentageScore :: Double }
+  deriving (Eq,Ord,Show)
+
+instance Out PercentageScore where
+    docPrec i  = doc
+    doc (PercentageScore x) = doc x <> text "%"
+
+instance Score PercentageScore where
+    okScore (PercentageScore x) = x > 50
+    appendScores = PercentageScore . averageList . map unPercentageScore
+
 newtype MaybeFloatScore = MaybeFloatScore { unMaybeFloatScore :: Maybe Float }
   deriving (Eq,Ord,Show)
 

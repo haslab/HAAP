@@ -37,31 +37,32 @@ data Project p = Project
 	, projectGroups :: [Group]
 	, projectTasks :: [Task]
     }
-  deriving (Typeable)
+  deriving (Data,Typeable,Eq,Show,Ord)
 
 data Group = Group
 	{ groupId :: String
 	, groupStudents :: [String]
     }
-  deriving (Data,Typeable,Read,Show)
+  deriving (Data,Typeable,Read,Show,Eq,Ord)
 
 data HaapFileType
     = HaapTemplateFile -- student files with a given template
     | HaapLibraryFile  -- common libraries for both students and instructors
     | HaapOracleFile -- instructor code that students can't see
-  deriving (Eq,Show,Ord)
+  deriving (Data,Typeable,Eq,Show,Ord)
 
 data HaapFile = HaapFile
     { haapLocalFile :: FilePath -- file in the project folder (the contents can be a template)
     , haapRemoteFile :: FilePath -- file in the group folder (the name itself is a template)
     , haapFileType :: HaapFileType
     }
+  deriving (Data,Typeable,Eq,Show,Ord)
 
 data Task = Task
 	{ taskName :: String
 	, taskFiles :: [HaapFile]  
     }
-  deriving (Typeable)
+  deriving (Data,Typeable,Eq,Show,Ord)
 
 $(deriveSafeCopy 0 'base ''Group)
 $(deriveSafeCopy 0 'base ''HaapFileType)
