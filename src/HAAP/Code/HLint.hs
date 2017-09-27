@@ -37,7 +37,7 @@ runHLint hp h = do
     hakyllRules $ do
         -- copy the hlint generated documentation
         match (fromGlob $ tmp </> hlintHtmlPath h) $ do
-            route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
             compile $ getResourceString >>= hakyllCompile hp
-    return (hlintHtmlPath h)
+    return (hakyllRoute hp $ hlintHtmlPath h)
       

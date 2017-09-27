@@ -8,7 +8,9 @@ import HAAP.Compiler.GHC
 
 import Data.Traversable
 import Data.Foldable
+import Data.Maybe
 
+import Control.Monad
 import qualified Control.Monad.Reader as Reader
 
 import System.FilePath
@@ -47,6 +49,6 @@ runHpc hp hpc m = do
         hakyllRules $ do
             -- copy the hpc generated documentation
             match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
-                route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+                route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                 compile $ getResourceString >>= hakyllCompile hp
-        return (x,html)
+        return (x,hakyllRoute hp $ html)

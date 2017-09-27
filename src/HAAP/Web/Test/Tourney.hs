@@ -50,7 +50,7 @@ renderHaapTourneyDB hp t db = do
     renderHaapRank hp rank
   where
     tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
-    makeTourneyPath tourneyno = "tourneys" </> addExtension ("tourney" ++ pretty tourneyno) "html"
+    makeTourneyPath tourneyno = hakyllRoute hp $ "tourneys" </> addExtension ("tourney" ++ pretty tourneyno) "html"
     makeHeader i = pretty $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
     headers = map (makeHeader) (map fst db)
     rank = HaapRank
@@ -76,7 +76,7 @@ renderHaapTourneyDB hp t db = do
 --    ranks :: [(a,[MaybeFloatScore])]
     ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatScore)) $ sortBy cmp $ Map.toList ranksByGroup
     
-renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll ()
+renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourneyTree hp t no tree time = do
     let tPath =  tourneyPath t </> "tourneys" </> addExtension ("tourney" ++ pretty no) "html"
     size <- getTourneySize $ tourneyPlayers t
@@ -85,10 +85,11 @@ renderHaapTourneyTree hp t no tree time = do
     let csspath = dirToRoot tPath </> "css"
     
     hakyllRules $ create [fromFilePath tPath] $ do
-        route $ idRoute `composeRoutes` (hakyllRoute hp)
+        route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         tree' <- mapM (mapM (mapSndM $ renderMatch t)) tree
         compile $ do
             makeItem (pretty $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
+    return $ hakyllRoute hp tPath
 
 tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a [Link] -> Int -> String -> Html -> Html
 tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do

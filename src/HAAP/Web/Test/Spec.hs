@@ -23,7 +23,7 @@ renderHaapSpecsWith hp getArgs path title specs = do
 renderHaapTest :: HakyllP -> FilePath ->  String -> String -> HaapTestTableRes -> Haap p args db Hakyll FilePath
 renderHaapTest hp path title notes spec = do
     hakyllRules $ create [fromFilePath path] $ do
-        route $ idRoute `composeRoutes` hakyllRoute hp
+        route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let showRes Nothing = "OK"
                 showRes (Just err) = pretty err
@@ -35,15 +35,15 @@ renderHaapTest hp path title notes spec = do
             let specCtx = constField "title" (title)
                          `mappend` listField "headers" headerCtx (mapM makeItem $ haapTestTableHeader spec)
                          `mappend` listField "rows" rowCtx (mapM makeItem $ haapTestTableRows spec)
-                         `mappend` constField "projectpath" (fileToRoot path)
+                         `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp path)
                          `mappend` constField "notes" notes                        
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx >>= hakyllCompile hp
-    return (path)
+    return (hakyllRoute hp path)
 
 renderHaapTests :: HakyllP -> FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db Hakyll FilePath
 renderHaapTests hp path title specs = do
     hakyllRules $ create [fromFilePath path] $ do
-        route $ idRoute `composeRoutes` hakyllRoute hp
+        route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let showRes Nothing = "OK"
                 showRes (Just err) = pretty err
@@ -56,8 +56,8 @@ renderHaapTests hp path title specs = do
                          `mappend` listFieldWith "headers" headerCtx (mapM makeItem . haapTestTableHeader . snd . itemBody)
                          `mappend` listFieldWith "rows" rowCtx (mapM makeItem . haapTestTableRows . snd . itemBody)
             let pageCtx = constField "title" title
-                        `mappend` constField "projectpath" (fileToRoot path)
+                        `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx >>= hakyllCompile hp
-    return (path)
+    return (hakyllRoute hp path)
 

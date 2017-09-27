@@ -62,11 +62,18 @@ runCodeWorld hp cw = do
     hakyllRules $ do
         
         let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
-        match (fromGlob $ tmp </> destfolder </> "*") $ do
+        match (fromGlob $ tmp </> destfolder </> "*.html") $ do
+            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+            compile $ getResourceString >>= hakyllCompile hp
+        let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
+                       .||. fromGlob (tmp </> destfolder </> "*.externs")
+                       .||. fromGlob (tmp </> destfolder </> "*.webapp")
+                       .||. fromGlob (tmp </> destfolder </> "*.stats")
+        match auxFiles $ do
             route   $ relativeRoute tmp
             compile copyFileCompiler
         create [fromFilePath $ destfolder </> "run.html"] $ do
-            route $ idRoute `composeRoutes` hakyllRoute hp
+            route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
             compile $ do
                 let mkImg s = s
                 let imgCtx = field "imgid" (return . fst . itemBody)
@@ -79,5 +86,5 @@ runCodeWorld hp cw = do
                           `mappend` listField "images" imgCtx (mapM makeItem images)
                 makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
         
-    return (destfolder </> "run.html")
+    return (hakyllRoute hp $ destfolder </> "run.html")
     

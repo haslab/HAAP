@@ -110,10 +110,13 @@ matchDataCSSs = do
         route idRoute
         compile compressCssCompiler
 
-data HakyllP = HakyllP { hakyllRoute :: Routes, hakyllCompile :: Item String -> Compiler (Item String) }
+data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
+
+funRoute :: (FilePath -> FilePath) -> Routes
+funRoute f = customRoute (f . toFilePath)
 
 defaultHakyllP :: HakyllP
-defaultHakyllP = HakyllP idRoute return
+defaultHakyllP = HakyllP id return
 
 instance Contravariant Context where
     contramap f (Context g) = Context $ \n ns x -> g n ns (fmap f x)
@@ -131,7 +134,7 @@ orErrorHakyllPage hp page def m = orDo go m
   where
     go e = do
         hakyllRules $ create [fromFilePath page] $ do
-            route $ idRoute `composeRoutes` (hakyllRoute hp)
+            route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ makeItem (show e::String) >>= hakyllCompile hp
         return def
 

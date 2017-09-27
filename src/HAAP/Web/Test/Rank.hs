@@ -27,7 +27,7 @@ renderHaapSpecRankWith hp getArgs rank = do
 renderHaapRankScores :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> HaapRankRes a score -> Haap p args db Hakyll FilePath
 renderHaapRankScores hp rank scores = do
     hakyllRules $ create [fromFilePath $ rankPath rank] $ do
-        route $ idRoute `composeRoutes` hakyllRoute hp
+        route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let headerCtx = field "header" (return . itemBody)
             let colCtx = field "col" (return . scoreShow . snd . itemBody)
@@ -40,13 +40,13 @@ renderHaapRankScores hp rank scores = do
                        `mappend` field "score" (return . scoreShow . Just . thr3 . itemBody)
                        `mappend` field "class" (return . scoreClass . Just . thr3 . itemBody)
             let pageCtx = constField "title" (rankTitle rank)
-                        `mappend` constField "projectpath" (fileToRoot $ rankPath rank)
+                        `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp $ rankPath rank)
                         `mappend` constField "idtag" (rankIdTag rank)
                         `mappend` constField "ranktag" (rankTag rank)
                         `mappend` listField "headers" headerCtx (mapM makeItem headers)
                         `mappend` listField "rows" rowCtx (mapM makeItem scores')
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/ranks.html" pageCtx >>= hakyllCompile hp
-    return $ rankPath rank
+    return $ hakyllRoute hp $ rankPath rank
   where
     scores' = map (mapSnd3 (zipLeft headernums)) scores
     numscores [] = 0

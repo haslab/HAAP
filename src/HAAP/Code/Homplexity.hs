@@ -39,15 +39,15 @@ runHomplexity hp h = do
     hakyllRules $ do
         -- copy the homplexity generated documentation
         create [fromFilePath $ homplexityHtmlPath h] $ do
-            route $  idRoute `composeRoutes` hakyllRoute hp
+            route $  idRoute `composeRoutes` funRoute (hakyllRoute hp)
             compile $ do
                 let msgCtx = field "class" (return . fst3 . itemBody)
                            `mappend` field "suggestion" (return . snd3 . itemBody)
                            `mappend` field "message" (return . thr3 . itemBody)
-                let homCtx = constField "projectpath" (dirToRoot $ homplexityPath h)
+                let homCtx = constField "projectpath" (dirToRoot $ hakyllRoute hp $ homplexityPath h)
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx >>= hakyllCompile hp
-    return (homplexityHtmlPath h)
+    return (hakyllRoute hp $ homplexityHtmlPath h)
       
 parseMessages [] = []
 parseMessages (x:xs)

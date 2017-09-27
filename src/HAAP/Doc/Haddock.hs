@@ -39,7 +39,7 @@ runHaddock hp h = do
     hakyllRules $ do
         -- copy the haddock generated documentation
         match (fromGlob $ (tmp </> haddockHtmlPath h) </> "*.html") $ do
-            route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
             compile $ getResourceString >>= hakyllCompile hp
         let auxFiles = fromGlob (tmp </> haddockHtmlPath h </> "*.js")
                        .||. fromGlob (tmp </> haddockHtmlPath h </> "*.png")
@@ -50,7 +50,7 @@ runHaddock hp h = do
             compile $ copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
         create [fromFilePath indexhtml] $ do
-            route $ idRoute `composeRoutes` hakyllRoute hp
+            route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
             compile $ do
                 let docCtx = constField "title" (haddockTitle h)
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
@@ -58,5 +58,5 @@ runHaddock hp h = do
                            `mappend` constField "stderr" (Text.unpack $ resStderr res)
                            `mappend` constField "link" (takeFileName (haddockHtmlPath h) </> "index.html")
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/doc.html" docCtx >>= hakyllCompile hp
-    return indexhtml
+    return $ hakyllRoute hp indexhtml
         
