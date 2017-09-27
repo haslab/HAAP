@@ -48,7 +48,7 @@ instance HaapMonad Hakyll where
 loadAndApplyHTMLTemplate :: Identifier -> Context a -> Item a -> Compiler (Item String)
 loadAndApplyHTMLTemplate iden ctx item = do
     i <- loadAndApplyTemplate iden ctx item
-    return $ fmap escapeHtml i
+    return i
 
 relativeRoute :: FilePath -> Routes
 relativeRoute prefix = customRoute $ \iden -> makeRelative prefix (toFilePath iden)
@@ -97,6 +97,9 @@ matchDataTemplates = do
     match (fromGlob ("templates" </> "*.html")) $ do
         route idRoute
         compile templateBodyCompiler
+    match (fromGlob ("templates" </> "*.php")) $ do
+        route idRoute
+        compile templateBodyCompiler
     match (fromGlob ("templates" </> "*.markdown")) $ do
         route $ setExtension "html"
         compile $ pandocCompiler
@@ -106,6 +109,11 @@ matchDataCSSs = do
     match (fromGlob ("css" </> "*.css")) $ do
         route idRoute
         compile compressCssCompiler
+
+data HakyllP = HakyllP { hakyllRoute :: Routes, hakyllCompile :: Item String -> Compiler (Item String) }
+
+defaultHakyllP :: HakyllP
+defaultHakyllP = HakyllP idRoute return
 
 instance Contravariant Context where
     contramap f (Context g) = Context $ \n ns x -> g n ns (fmap f x)
@@ -118,13 +126,14 @@ instance Contravariant Context where
 --fromDataFileName :: FilePath -> Compiler Identifier
 --fromDataFileName path = liftM fromFilePath $ unsafeCompiler $ getDataFileName path
 
-orErrorHakyllPage :: (Out a) => FilePath -> a -> Haap p args db Hakyll a -> Haap p args db Hakyll a
-orErrorHakyllPage page def m = orDo go m
+orErrorHakyllPage :: (Out a) => HakyllP -> FilePath -> a -> Haap p args db Hakyll a -> Haap p args db Hakyll a
+orErrorHakyllPage hp page def m = orDo go m
   where
     go e = do
         hakyllRules $ create [fromFilePath page] $ do
-            route idRoute
-            compile $ makeItem (show e::String)
+            route $ idRoute `composeRoutes` (hakyllRoute hp)
+            compile $ makeItem (show e::String) >>= hakyllCompile hp
         return def
 
-
+loadCopyFile :: Item CopyFile -> Compiler (Item String)
+loadCopyFile = load . fromFilePath . (\(CopyFile f) -> f) . itemBody

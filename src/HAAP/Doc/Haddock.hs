@@ -23,8 +23,8 @@ data HaddockArgs = HaddockArgs
     , haddockHtmlPath :: FilePath -- relative to the project path
     }
 
-runHaddock :: HaddockArgs -> Haap p args db Hakyll FilePath
-runHaddock h = do
+runHaddock :: HakyllP -> HaddockArgs -> Haap p args db Hakyll FilePath
+runHaddock hp h = do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (haddockPath h) </>) (haddockSandbox h) }
     let extras = haddockArgs h
@@ -38,18 +38,25 @@ runHaddock h = do
 --    runIO $ putStrLn $ show $ resStdout res
     hakyllRules $ do
         -- copy the haddock generated documentation
-        match (fromGlob $ (tmp </> haddockHtmlPath h) </> "*") $ do
+        match (fromGlob $ (tmp </> haddockHtmlPath h) </> "*.html") $ do
+            route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+            compile $ getResourceString >>= hakyllCompile hp
+        let auxFiles = fromGlob (tmp </> haddockHtmlPath h </> "*.js")
+                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.png")
+                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.gif")
+                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.css")
+        match auxFiles $ do
             route   $ relativeRoute tmp
-            compile copyFileCompiler
+            compile $ copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
         create [fromFilePath indexhtml] $ do
-            route idRoute
+            route $ idRoute `composeRoutes` hakyllRoute hp
             compile $ do
                 let docCtx = constField "title" (haddockTitle h)
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
                            `mappend` constField "stdout" (Text.unpack $ resStdout res)
                            `mappend` constField "stderr" (Text.unpack $ resStderr res)
                            `mappend` constField "link" (takeFileName (haddockHtmlPath h) </> "index.html")
-                makeItem "" >>= loadAndApplyHTMLTemplate "templates/doc.html" docCtx
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/doc.html" docCtx >>= hakyllCompile hp
     return indexhtml
         

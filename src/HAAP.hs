@@ -28,6 +28,7 @@ module HAAP
     , module HAAP.Web.Graphics.CodeWorld
     , module HAAP.Web.HTML.Table
     , module HAAP.Template
+    , module HAAP.Web.PHP.Login
     ) where
 
 import HAAP.Core
@@ -59,6 +60,7 @@ import HAAP.Compiler.GHCJS
 import HAAP.Web.Graphics.CodeWorld
 import HAAP.Web.HTML.Table
 import HAAP.Template
+import HAAP.Web.PHP.Login
 
 
 

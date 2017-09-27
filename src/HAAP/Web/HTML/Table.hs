@@ -21,10 +21,10 @@ data HaapTable = HaapTable
     , haapTablePath :: FilePath
     }
 
-renderHaapTable :: HaapTable -> Haap p args db Hakyll FilePath
-renderHaapTable t = do
+renderHaapTable :: HakyllP -> HaapTable -> Haap p args db Hakyll FilePath
+renderHaapTable hp t = do
     hakyllRules $ create [fromFilePath $ haapTablePath t] $ do
-        route idRoute
+        route $ idRoute `composeRoutes` hakyllRoute hp
         compile $ do
             let headerCtx = field "header" (return . itemBody)
             let colCtx = field "col" (return . itemBody)
@@ -34,7 +34,7 @@ renderHaapTable t = do
                         `mappend` constField "projectpath" (fileToRoot $ haapTablePath t)
                         `mappend` listField "headers" headerCtx (mapM makeItem $ haapTableHeaders t)
                         `mappend` listField "rows" rowCtx (mapM makeItem $ haapTableRows t)
-            makeItem "" >>= loadAndApplyHTMLTemplate "templates/table.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/table.html" pageCtx >>= hakyllCompile hp
     return (haapTablePath t)
 
 

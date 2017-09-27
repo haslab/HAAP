@@ -35,8 +35,8 @@ data CodeWorldArgs args = CodeWorldArgs
     , cwImages :: [(String,FilePath)] -- a list of html identifiers and respective local files for loading images
     }
 
-runCodeWorld :: CodeWorldArgs args -> Haap p args db Hakyll FilePath
-runCodeWorld cw = do
+runCodeWorld :: HakyllP -> CodeWorldArgs args -> Haap p args db Hakyll FilePath
+runCodeWorld hp cw = do
     tmp <- getProjectTmpPath
     let (tpltfile,textmessage) = case cwTemplate cw of
                                     CWGame -> ("templates/cw-game.html","")
@@ -66,7 +66,7 @@ runCodeWorld cw = do
             route   $ relativeRoute tmp
             compile copyFileCompiler
         create [fromFilePath $ destfolder </> "run.html"] $ do
-            route idRoute
+            route $ idRoute `composeRoutes` hakyllRoute hp
             compile $ do
                 let mkImg s = s
                 let imgCtx = field "imgid" (return . fst . itemBody)
@@ -77,7 +77,7 @@ runCodeWorld cw = do
                           `mappend` constField "message" message
                           `mappend` constField "textmessage" textmessage
                           `mappend` listField "images" imgCtx (mapM makeItem images)
-                makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx
+                makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
         
     return (destfolder </> "run.html")
     

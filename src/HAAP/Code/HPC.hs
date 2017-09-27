@@ -21,8 +21,8 @@ data HpcArgs args = HpcArgs
     , hpcHtmlPath :: FilePath -- relative path to the project to store hpc results
     }
 
-runHpc :: HpcArgs args -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
-runHpc hpc m = do
+runHpc :: HakyllP -> HpcArgs args -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
+runHpc hp hpc m = do
     tmp <- getProjectTmpPath
     ghc <- Reader.reader (hpcGHC hpc)
     let ghc' = ghc { ghcHpc = True }
@@ -47,6 +47,6 @@ runHpc hpc m = do
         hakyllRules $ do
             -- copy the hpc generated documentation
             match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
-                route   $ relativeRoute tmp
-                compile $ copyFileCompiler
+                route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+                compile $ getResourceString >>= hakyllCompile hp
         return (x,html)

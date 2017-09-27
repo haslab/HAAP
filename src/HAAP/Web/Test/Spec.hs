@@ -10,20 +10,20 @@ import HAAP.Pretty
 
 import Data.Traversable
 
-renderHaapSpecWith :: (args -> HaapSpecArgs) -> FilePath -> String -> String -> HaapSpec -> Haap p args db Hakyll FilePath
-renderHaapSpecWith getArgs path title notes spec = do
+renderHaapSpecWith :: HakyllP -> (args -> HaapSpecArgs) -> FilePath -> String -> String -> HaapSpec -> Haap p args db Hakyll FilePath
+renderHaapSpecWith hp getArgs path title notes spec = do
     test <- runSpecWith getArgs spec
-    renderHaapTest path title notes test
+    renderHaapTest hp path title notes test
 
-renderHaapSpecsWith :: (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db Hakyll FilePath
-renderHaapSpecsWith getArgs path title specs = do
+renderHaapSpecsWith :: HakyllP -> (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db Hakyll FilePath
+renderHaapSpecsWith hp getArgs path title specs = do
     tests <- forM specs $ mapSndM (runSpecWith getArgs)
-    renderHaapTests path title tests
+    renderHaapTests hp path title tests
 
-renderHaapTest :: FilePath ->  String -> String -> HaapTestTableRes -> Haap p args db Hakyll FilePath
-renderHaapTest path title notes spec = do
+renderHaapTest :: HakyllP -> FilePath ->  String -> String -> HaapTestTableRes -> Haap p args db Hakyll FilePath
+renderHaapTest hp path title notes spec = do
     hakyllRules $ create [fromFilePath path] $ do
-        route idRoute
+        route $ idRoute `composeRoutes` hakyllRoute hp
         compile $ do
             let showRes Nothing = "OK"
                 showRes (Just err) = pretty err
@@ -37,13 +37,13 @@ renderHaapTest path title notes spec = do
                          `mappend` listField "rows" rowCtx (mapM makeItem $ haapTestTableRows spec)
                          `mappend` constField "projectpath" (fileToRoot path)
                          `mappend` constField "notes" notes                        
-            makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx >>= hakyllCompile hp
     return (path)
 
-renderHaapTests :: FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db Hakyll FilePath
-renderHaapTests path title specs = do
+renderHaapTests :: HakyllP -> FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db Hakyll FilePath
+renderHaapTests hp path title specs = do
     hakyllRules $ create [fromFilePath path] $ do
-        route idRoute
+        route $ idRoute `composeRoutes` hakyllRoute hp
         compile $ do
             let showRes Nothing = "OK"
                 showRes (Just err) = pretty err
@@ -58,6 +58,6 @@ renderHaapTests path title specs = do
             let pageCtx = constField "title" title
                         `mappend` constField "projectpath" (fileToRoot path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
-            makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx >>= hakyllCompile hp
     return (path)
 

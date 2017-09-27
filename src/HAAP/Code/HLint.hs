@@ -22,8 +22,8 @@ data HLintArgs = HLintArgs
     , hlintHtmlPath :: FilePath -- relative to the project path
     }
 
-runHLint :: HLintArgs -> Haap p args db Hakyll FilePath
-runHLint h = do
+runHLint :: HakyllP -> HLintArgs -> Haap p args db Hakyll FilePath
+runHLint hp h = do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (hlintPath h) </>) (hlintSandbox h) }
     let extras = hlintArgs h
@@ -37,7 +37,7 @@ runHLint h = do
     hakyllRules $ do
         -- copy the hlint generated documentation
         match (fromGlob $ tmp </> hlintHtmlPath h) $ do
-            route   $ relativeRoute tmp
-            compile copyFileCompiler
+            route   $ relativeRoute tmp `composeRoutes` hakyllRoute hp
+            compile $ getResourceString >>= hakyllCompile hp
     return (hlintHtmlPath h)
       

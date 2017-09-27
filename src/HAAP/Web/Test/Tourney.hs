@@ -36,18 +36,18 @@ instance Out a => Out (ScoredTourneyPlayer a r) where
     docPrec i x = doc x
     doc (ScoredTourneyPlayer x) = doc $ fst x
 
-renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
-renderHaapTourney tourney = do
+renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
+renderHaapTourney hp tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb
-    index <- renderHaapTourneyDB tourney db
-    renderHaapTourneyTree tourney tourneyno tourneyTree tourneyTime
+    index <- renderHaapTourneyDB hp tourney db
+    renderHaapTourneyTree hp tourney tourneyno tourneyTree tourneyTime
     return index
 
-renderHaapTourneyDB :: (TourneyPlayer a) => HaapTourney p args db Hakyll a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) Hakyll FilePath
-renderHaapTourneyDB t db = do
+renderHaapTourneyDB :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) Hakyll FilePath
+renderHaapTourneyDB hp t db = do
     --runIO $ putStrLn $ "render " ++ show (toRoot $ tourneysPath)
-    renderHaapRank rank
+    renderHaapRank hp rank
   where
     tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
     makeTourneyPath tourneyno = "tourneys" </> addExtension ("tourney" ++ pretty tourneyno) "html"
@@ -76,8 +76,8 @@ renderHaapTourneyDB t db = do
 --    ranks :: [(a,[MaybeFloatScore])]
     ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatScore)) $ sortBy cmp $ Map.toList ranksByGroup
     
-renderHaapTourneyTree :: (TourneyPlayer a) => HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll ()
-renderHaapTourneyTree t no tree time = do
+renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll ()
+renderHaapTourneyTree hp t no tree time = do
     let tPath =  tourneyPath t </> "tourneys" </> addExtension ("tourney" ++ pretty no) "html"
     size <- getTourneySize $ tourneyPlayers t
     let title = "Tourney " ++ pretty no ++ " " ++ show time
@@ -85,10 +85,10 @@ renderHaapTourneyTree t no tree time = do
     let csspath = dirToRoot tPath </> "css"
     
     hakyllRules $ create [fromFilePath tPath] $ do
-        route idRoute
+        route $ idRoute `composeRoutes` (hakyllRoute hp)
         tree' <- mapM (mapM (mapSndM $ renderMatch t)) tree
         compile $ do
-            makeItem $ pretty $ tourneyHTML csspath tree' size title header
+            makeItem (pretty $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
 
 tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a [Link] -> Int -> String -> Html -> Html
 tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do

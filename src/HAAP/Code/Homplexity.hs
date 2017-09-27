@@ -23,8 +23,8 @@ data HomplexityArgs = HomplexityArgs
     , homplexityHtmlPath :: FilePath -- relative to the project path
     }
 
-runHomplexity :: HomplexityArgs -> Haap p args db Hakyll FilePath
-runHomplexity h = do
+runHomplexity :: HakyllP -> HomplexityArgs -> Haap p args db Hakyll FilePath
+runHomplexity hp h = do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (homplexityPath h) </>) (homplexitySandbox h) }
     let extras = homplexityArgs h
@@ -39,14 +39,14 @@ runHomplexity h = do
     hakyllRules $ do
         -- copy the homplexity generated documentation
         create [fromFilePath $ homplexityHtmlPath h] $ do
-            route   idRoute
+            route $  idRoute `composeRoutes` hakyllRoute hp
             compile $ do
                 let msgCtx = field "class" (return . fst3 . itemBody)
                            `mappend` field "suggestion" (return . snd3 . itemBody)
                            `mappend` field "message" (return . thr3 . itemBody)
                 let homCtx = constField "projectpath" (dirToRoot $ homplexityPath h)
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
-                makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx >>= hakyllCompile hp
     return (homplexityHtmlPath h)
       
 parseMessages [] = []

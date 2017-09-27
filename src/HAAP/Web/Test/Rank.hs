@@ -14,20 +14,20 @@ import Data.List
 
 import qualified Control.Monad.Reader as Reader
 
-renderHaapRank :: (Out a,Score score) => HaapRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
-renderHaapRank rank = do
+renderHaapRank :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
+renderHaapRank hp rank = do
     scores <- runHaapRank rank
-    renderHaapRankScores rank scores
+    renderHaapRankScores hp rank scores
 
-renderHaapSpecRankWith :: (Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
-renderHaapSpecRankWith getArgs rank = do
+renderHaapSpecRankWith :: (Out a,Score score) => HakyllP -> (args -> HaapSpecArgs) -> HaapSpecRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
+renderHaapSpecRankWith hp getArgs rank = do
     scores <- runHaapSpecRankWith getArgs rank
-    renderHaapRankScores (haapSpecRank getArgs rank) scores
+    renderHaapRankScores hp (haapSpecRank getArgs rank) scores
 
-renderHaapRankScores :: (Out a,Score score) => HaapRank p args db Hakyll a score -> HaapRankRes a score -> Haap p args db Hakyll FilePath
-renderHaapRankScores rank scores = do
+renderHaapRankScores :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> HaapRankRes a score -> Haap p args db Hakyll FilePath
+renderHaapRankScores hp rank scores = do
     hakyllRules $ create [fromFilePath $ rankPath rank] $ do
-        route idRoute
+        route $ idRoute `composeRoutes` hakyllRoute hp
         compile $ do
             let headerCtx = field "header" (return . itemBody)
             let colCtx = field "col" (return . scoreShow . snd . itemBody)
@@ -45,7 +45,7 @@ renderHaapRankScores rank scores = do
                         `mappend` constField "ranktag" (rankTag rank)
                         `mappend` listField "headers" headerCtx (mapM makeItem headers)
                         `mappend` listField "rows" rowCtx (mapM makeItem scores')
-            makeItem "" >>= loadAndApplyHTMLTemplate "templates/ranks.html" pageCtx
+            makeItem "" >>= loadAndApplyHTMLTemplate "templates/ranks.html" pageCtx >>= hakyllCompile hp
     return $ rankPath rank
   where
     scores' = map (mapSnd3 (zipLeft headernums)) scores
