@@ -100,3 +100,8 @@ anyM f (x:xs) = f x >>= \b -> if b then return b else anyM f xs
 concatPaths [] = []
 concatPaths [x] = x
 concatPaths (x:xs) = x ++ ":" ++ concatPaths xs
+
+unSplitOn :: [a] -> [[a]] -> [a]
+unSplitOn tok [] = []
+unSplitOn tok [x] = x
+unSplitOn tok (x:xs) = x ++ tok ++ unSplitOn tok xs

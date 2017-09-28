@@ -29,6 +29,7 @@ module HAAP
     , module HAAP.Web.HTML.Table
     , module HAAP.Template
     , module HAAP.Web.PHP.Login
+    , module HAAP.Web.HTML.Pandoc
     ) where
 
 import HAAP.Core
@@ -61,6 +62,7 @@ import HAAP.Web.Graphics.CodeWorld
 import HAAP.Web.HTML.Table
 import HAAP.Template
 import HAAP.Web.PHP.Login
+import HAAP.Web.HTML.Pandoc
 
 
 

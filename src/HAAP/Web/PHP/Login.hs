@@ -10,11 +10,15 @@ import System.FilePath
 
 
 phpRoute :: Routes
-phpRoute = customRoute (\iden -> replaceExtension (toFilePath iden) "php")
+phpRoute = customRoute $ \iden -> case takeExtension (toFilePath iden) of
+    ".html" -> replaceExtension (toFilePath iden) "php"
+    otherwise -> toFilePath iden
 
 
 phpFunRoute :: FilePath -> FilePath
-phpFunRoute = \iden -> replaceExtension iden "php"
+phpFunRoute = \iden -> case takeExtension iden of
+    ".html" -> replaceExtension iden "php"
+    otherwise -> iden
 
 
 addPHPLogin :: FilePath -> Item String -> Compiler (Item String)

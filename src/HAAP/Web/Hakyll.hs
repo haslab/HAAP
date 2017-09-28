@@ -110,6 +110,9 @@ matchDataCSSs = do
         route idRoute
         compile compressCssCompiler
 
+liftCompiler :: (String -> String) -> Item String -> Compiler (Item String)
+liftCompiler f i = return $ fmap f i
+
 data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
 
 funRoute :: (FilePath -> FilePath) -> Routes
