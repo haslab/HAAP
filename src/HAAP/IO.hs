@@ -115,13 +115,13 @@ shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
 shCommandWith ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
     stderr <- Sh.lastStderr
     exit <- Sh.lastExitCode
     return $ IOResult exit stdout stderr
   where
-    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
+--    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
     addSandbox Nothing cmds = cmds
@@ -131,7 +131,7 @@ ioCommandWith :: IOArgs -> String -> [String] -> IO IOResult
 ioCommandWith ioargs name args = do
     forM_ (ioEnv ioargs) $ \(evar,epath) -> setEnv evar epath
     let stdin = maybe [] Text.unpack $ ioStdin ioargs
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     (exit,stdout,stderr) <- readProcessWithExitCode (head cmds) (tail cmds) stdin
     unless (ioSilent ioargs) $ do
         putStrLn $ "Running IO: " ++ unwords cmds
@@ -139,7 +139,7 @@ ioCommandWith ioargs name args = do
         putStrLn $ stdout
     return $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack stderr)
   where
-    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
+--    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
     addSandbox Nothing cmds = cmds
