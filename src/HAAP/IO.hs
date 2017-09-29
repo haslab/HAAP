@@ -43,7 +43,12 @@ data IOArgs = IOArgs
     , ioSandbox :: Maybe FilePath -- run inside a cabal sandbox (with given config file) or not; relative to the current path
     , ioEscaping :: Bool -- escape shell characters or not
     , ioEnv :: [(String,FilePath)] -- additional environment variables
+    , ioCmd :: Maybe String -- environment command (such as env, bash)
     }
+
+addIOCmd :: Maybe String -> IOArgs -> IOArgs
+addIOCmd Nothing io = io
+addIOCmd (Just cmd) io = io { ioCmd = Just cmd }
 
 addIOEnv :: [(String,FilePath)] -> IOArgs -> IOArgs
 addIOEnv xs io = io { ioEnv = ioEnv io ++ xs }
@@ -72,7 +77,7 @@ instance Out IOResult where
            $+$ text "Exit Code:" <+> doc (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs Nothing False Nothing Nothing True []
+defaultIOArgs = IOArgs Nothing False Nothing Nothing True [] Nothing
 
 instance Default IOArgs where
     def = defaultIOArgs
@@ -108,6 +113,16 @@ runShWith getArgs io = do
 runSh :: HaapMonad m => Sh a -> Haap p args db m a
 runSh = runShWith (const defaultIOArgs)
 
+shExec :: String -> Sh FilePath
+shExec exec = do
+    mb <- Sh.which (shFromFilePath exec)
+    case mb of
+        Nothing -> shAbsolutePath exec
+        Just exec' -> return $ shToFilePath exec'
+
+shAbsolutePath :: FilePath -> Sh FilePath
+shAbsolutePath = liftM shToFilePath . Sh.absPath . shFromFilePath
+
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs
 
@@ -121,7 +136,7 @@ shCommandWith ioargs name args  = do
     exit <- Sh.lastExitCode
     return $ IOResult exit stdout stderr
   where
---    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
     addSandbox Nothing cmds = cmds
@@ -139,7 +154,7 @@ ioCommandWith ioargs name args = do
         putStrLn $ stdout
     return $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack stderr)
   where
---    addEnv cmd = if ioEscaping ioargs then cmd else "env":cmd
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
     addSandbox Nothing cmds = cmds
