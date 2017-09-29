@@ -5,7 +5,7 @@ import HAAP.IO
 import HAAP.Web.Hakyll
 import HAAP.Utils
 import HAAP.Compiler.GHC
-import HAAP.Web.HTML.Pandoc
+import HAAP.Web.HTML.TagSoup
 
 import Data.Traversable
 import Data.Foldable
@@ -51,5 +51,5 @@ runHpc hp hpc m = do
             -- copy the hpc generated documentation
             match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-                compile $ getResourceString >>= liftCompiler (asPandocHTML $ pandocChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
+                compile $ getResourceString >>= liftCompiler (asTagSoupHTML $ tagSoupChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
         return (x,hakyllRoute hp $ html)

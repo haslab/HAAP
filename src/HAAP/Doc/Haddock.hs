@@ -5,7 +5,7 @@ module HAAP.Doc.Haddock where
 import HAAP.Core
 import HAAP.IO
 import HAAP.Web.Hakyll
-import HAAP.Web.HTML.Pandoc
+import HAAP.Web.HTML.TagSoup
 import HAAP.Utils
 
 import Data.Default
@@ -41,7 +41,7 @@ runHaddock hp h = do
         -- copy the haddock generated documentation
         match (fromGlob $ (tmp </> haddockHtmlPath h) </> "*.html") $ do
             route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-            compile $ getResourceString >>= liftCompiler (asPandocHTML $ pandocChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
+            compile $ getResourceString >>= liftCompiler (asTagSoupHTML $ tagSoupChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
         let auxFiles = fromGlob (tmp </> haddockHtmlPath h </> "*.js")
                        .||. fromGlob (tmp </> haddockHtmlPath h </> "*.png")
                        .||. fromGlob (tmp </> haddockHtmlPath h </> "*.gif")
@@ -57,7 +57,7 @@ runHaddock hp h = do
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
                            `mappend` constField "stdout" (Text.unpack $ resStdout res)
                            `mappend` constField "stderr" (Text.unpack $ resStderr res)
-                           `mappend` constField "link" (takeFileName (haddockHtmlPath h) </> "index.html")
+                           `mappend` constField "link" (hakyllRoute hp $ takeFileName (haddockHtmlPath h) </> "index.html")
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/doc.html" docCtx >>= hakyllCompile hp
     return $ hakyllRoute hp indexhtml
         

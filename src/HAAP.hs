@@ -30,6 +30,7 @@ module HAAP
     , module HAAP.Template
     , module HAAP.Web.PHP.Login
     , module HAAP.Web.HTML.Pandoc
+    , module HAAP.Web.HTML.TagSoup
     ) where
 
 import HAAP.Core
@@ -63,6 +64,7 @@ import HAAP.Web.HTML.Table
 import HAAP.Template
 import HAAP.Web.PHP.Login
 import HAAP.Web.HTML.Pandoc
+import HAAP.Web.HTML.TagSoup
 
 
 
