@@ -130,7 +130,7 @@ shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
 shCommandWith ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
     stderr <- Sh.lastStderr
     exit <- Sh.lastExitCode
@@ -146,7 +146,7 @@ ioCommandWith :: IOArgs -> String -> [String] -> IO IOResult
 ioCommandWith ioargs name args = do
     forM_ (ioEnv ioargs) $ \(evar,epath) -> setEnv evar epath
     let stdin = maybe [] Text.unpack $ ioStdin ioargs
-    let cmds = addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     (exit,stdout,stderr) <- readProcessWithExitCode (head cmds) (tail cmds) stdin
     unless (ioSilent ioargs) $ do
         putStrLn $ "Running IO: " ++ unwords cmds
