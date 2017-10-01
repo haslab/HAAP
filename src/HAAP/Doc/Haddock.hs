@@ -36,8 +36,8 @@ runHaddock hp h = do
     files' <- forM files $ \f -> do
         mb <- orEither $ parseModuleFileName $ haddockPath h </> f
         let isMain = either (const False) (=="Main") mb
-        runIO $ putStrLn $ "module " ++ show mb
-        runIO $ putStrLn $ "haddock " ++ show f ++ " " ++ show isMain
+        --runIO $ putStrLn $ "module " ++ show mb
+        --runIO $ putStrLn $ "haddock " ++ show f ++ " " ++ show isMain
         return (f,isMain)
     let (mains,others) = partition (snd) files'
     
