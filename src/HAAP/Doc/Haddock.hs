@@ -7,9 +7,15 @@ import HAAP.IO
 import HAAP.Web.Hakyll
 import HAAP.Web.HTML.TagSoup
 import HAAP.Utils
+import HAAP.Code.Haskell
+
+import qualified Language.Haskell.Exts as Hs
+import qualified Language.Haskell.Exts.Pretty as Hs
 
 import Data.Default
 import qualified Data.Text as Text
+import Data.Traversable
+import Data.List
 
 import qualified Control.Monad.Reader as Reader
 
@@ -24,12 +30,29 @@ data HaddockArgs = HaddockArgs
     , haddockHtmlPath :: FilePath -- relative to the project path
     }
 
-runHaddock :: HakyllP -> HaddockArgs -> Haap p args db Hakyll FilePath
+runHaddock :: HakyllP -> HaddockArgs -> Haap p args db Hakyll [FilePath]
 runHaddock hp h = do
+    let files = haddockFiles h
+    files' <- forM files $ \f -> do
+        mb <- orEither $ parseModuleFileName $ haddockPath h </> f
+        let isMain = either (const False) (=="Main") mb
+        runIO $ putStrLn $ "module " ++ show mb
+        runIO $ putStrLn $ "haddock " ++ show f ++ " " ++ show isMain
+        return (f,isMain)
+    let (mains,others) = partition (snd) files'
+    
+    haddockpath <- runHaddock' (map fst others) hp h
+    mainpaths <- forM (zip [1..] $ nub $ map fst mains) $ \(i,f) -> do
+        let h' = h { haddockHtmlPath = haddockHtmlPath h ++ show i }
+        runHaddock' [f] hp h'
+    return $ haddockpath : mainpaths
+
+runHaddock' :: [FilePath] -> HakyllP -> HaddockArgs -> Haap p args db Hakyll FilePath
+runHaddock' files hp h = do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (haddockPath h) </>) (haddockSandbox h) }
     let extras = haddockArgs h
-    let files = haddockFiles h
+    
     let html = dirToRoot (haddockPath h) </> tmp </> haddockHtmlPath h
     let indexhtml = addExtension (haddockHtmlPath h) "html"
     res <- orErrorWritePage (tmp </> indexhtml) mempty $ runSh $ do

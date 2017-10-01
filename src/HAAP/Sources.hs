@@ -80,11 +80,13 @@ listGroupSourceFiles ctx ignoreLibrary g s = do
         isIgnored HaapTemplateFile = False
     let mkIgnore f = applyTemplate (makeTemplate $ haapRemoteFile f) ctx
     ignorefiles <- runIO $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnored . haapFileType) hfiles
+--    runIO $ putStrLn $ "listing " ++ show ignorefiles
     let notIgnored :: FindClause Bool
         notIgnored = do
             cp <- canonicalPath
             return $ not $ any (equalFilePath cp) ignorefiles
     hsfiles <- runIO $ FilePath.find (return True) (extension ==? ".hs" &&? notIgnored) spath
+--    runIO $ putStrLn $ "hsfiles " ++ show hsfiles
     
     --let listRec :: FilePath -> Sh [FilePath]
     --    listRec p = do

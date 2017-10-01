@@ -31,9 +31,11 @@ module HAAP
     , module HAAP.Web.PHP.Login
     , module HAAP.Web.HTML.Pandoc
     , module HAAP.Web.HTML.TagSoup
+    , module HAAP.Code.Haskell
     ) where
 
 import HAAP.Core
+import HAAP.Code.Haskell
 import HAAP.DB
 import HAAP.DB.State
 import HAAP.DB.Acid

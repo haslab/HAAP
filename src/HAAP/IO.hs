@@ -77,7 +77,7 @@ instance Out IOResult where
            $+$ text "Exit Code:" <+> doc (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs Nothing False Nothing Nothing True [] Nothing
+defaultIOArgs = IOArgs (Just 10) False Nothing Nothing True [] Nothing
 
 instance Default IOArgs where
     def = defaultIOArgs
@@ -221,6 +221,9 @@ runIOCore args io = case ioTimeout args of
 
 runIO' :: (HaapMonad m,NFData a) => IO a -> Haap p args db m a
 runIO' = runIOWith' (const defaultIOArgs)
+
+orEither :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either HaapException a)
+orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
 orMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
 orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
