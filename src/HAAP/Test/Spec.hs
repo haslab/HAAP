@@ -25,6 +25,8 @@ import qualified Control.Monad.State as State
 import Control.Monad.Reader (Reader(..))
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Except
+import Control.Exception
+import Control.DeepSeq
 
 import System.IO
 import System.Environment
@@ -79,14 +81,14 @@ unbounded = HaapSpecUnbounded
 testBool :: IO Bool -> HaapSpec
 testBool = HaapSpecTestBool
 
-testEqual :: (Eq a,Show a) => IO (a,a) -> HaapSpec
+testEqual :: (NFData a,Eq a,Show a) => IO a -> IO a -> HaapSpec
 testEqual = HaapSpecTestEqual
 
 data HaapSpec where
      HaapSpecBounded :: Show a => String -> [a] -> (a -> HaapSpec) -> HaapSpec
      HaapSpecUnbounded :: Show a => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
      HaapSpecTestBool :: IO Bool -> HaapSpec
-     HaapSpecTestEqual :: (Show a,Eq a) => IO (a,a) -> HaapSpec
+     HaapSpecTestEqual :: (NFData a,Show a,Eq a) => IO a -> IO a -> HaapSpec
 
 data HaapTestTable a = HaapTestTable
     { haapTestTableHeader :: [String] -- table header
@@ -160,15 +162,20 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
     haapSpec' mode (HaapSpecTestBool io) = do
         ex <- haapNewExample
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
-            b <- io
+            b <- runSpecIO "test" io
             assertBool "Boolean assertion failed" b
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
-    haapSpec' mode (HaapSpecTestEqual io) = do
+    haapSpec' mode (HaapSpecTestEqual iox ioy) = do
         ex <- haapNewExample
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
-            (x,y) <- io
+            x <- runSpecIO "oracle" iox
+            y <- runSpecIO "solution" ioy
             assertEqual ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y) x y
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
+
+runSpecIO :: NFData a => String -> IO a -> IO a
+runSpecIO side io = do
+    catch (forceM io) (\(e::SomeException) -> error $ side ++ " failed: " ++ pretty e)
 
 instance QuickCheck.Testable HaapSpec where
     property = haapSpecProperty
@@ -182,7 +189,7 @@ haapSpecNames (HaapSpecUnbounded n _ g f) = do
     ns <- haapSpecNames $ f x
     return (n:ns)
 haapSpecNames (HaapSpecTestBool io) = return []
-haapSpecNames (HaapSpecTestEqual io) = return []
+haapSpecNames (HaapSpecTestEqual iox ioy) = return []
 
 haapSpecProperty :: HaapSpec -> Property
 haapSpecProperty (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty . f) xs
@@ -190,7 +197,8 @@ haapSpecProperty (HaapSpecUnbounded n _ g f) = forAll g f
 haapSpecProperty (HaapSpecTestBool io) = counterexample "Boolean assertion failed" $ monadicIO $ do
     b <- run io
     QuickCheck.assert b
-haapSpecProperty (HaapSpecTestEqual io) = monadicIO $ do
-    (x,y) <- run io
+haapSpecProperty (HaapSpecTestEqual iox ioy) = monadicIO $ do
+    x <- run iox
+    y <- run ioy
     unless (x==y) $ fail ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y)
     QuickCheck.assert (x==y)
