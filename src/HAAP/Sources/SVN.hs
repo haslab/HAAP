@@ -85,7 +85,10 @@ getSVNSourceWith getArgs s = do
                 shCd path
                 shCommand_ "svn" ["cleanup"]
                 res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
-                unless (ioOk res) $ do
+                let okRes = resOk res
+                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
+                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
+                unless okRes $ do
                     shCd ".."
                     shRm name
                     shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]

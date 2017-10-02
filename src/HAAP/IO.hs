@@ -59,8 +59,8 @@ data IOResult = IOResult
     , resStderr :: Text
     }
 
-ioOk :: IOResult -> Bool
-ioOk = (==0) . resExitCode
+resOk :: IOResult -> Bool
+resOk = (==0) . resExitCode
 
 exitCode :: ExitCode -> Int
 exitCode (ExitFailure i) = i
