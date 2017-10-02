@@ -6,6 +6,7 @@ import HAAP.Core
 import HAAP.Utils
 import HAAP.IO
 import HAAP.Log
+import HAAP.Pretty
 
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
@@ -16,6 +17,7 @@ import Test.Hspec.Core.Runner
 import Test.Hspec.Formatters
 import Test.Hspec.Contrib.HUnit
 import Test.HUnit as HUnit hiding (State(..))
+import qualified Test.HUnit.Lang as HUnit
 
 import Control.Monad
 import Control.Monad.State (State(..))
@@ -45,6 +47,16 @@ data HaapSpecArgs = HaapSpecArgs
     }
 
 data HaapSpecMode = HaapSpecQuickCheck | HaapSpecHUnit
+
+instance Out HUnit.FailureReason where
+    docPrec i x = doc x
+    doc err = text (HUnit.formatFailureReason err)
+
+instance Out FailureReason where
+    docPrec i x = doc x
+    doc NoReason = text "no reason"
+    doc (Reason str) = text "reason" <+> text str
+    doc (ExpectedButGot msg x y) = doc msg $+$ nest 4 (text "expected:" <+> text x $+$ text "got:" <+> text y)
 
 runSpec :: HaapMonad m => HaapSpec -> Haap p HaapSpecArgs db m HaapTestTableRes
 runSpec = runSpecWith id
@@ -99,7 +111,7 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) 
     runIO $ hPutStr outhandle "[(0,Nothing)"
     let formatter = silent
             { exampleSucceeded = \(parents,name) -> write $ ",(" ++ name ++ "," ++ "Nothing" ++ ")"
-            , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ "Just "  ++ show (either show show err) ++ ")"
+            , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ "Just "  ++ show (either pretty pretty err) ++ ")"
             }
     let cfg = defaultConfig
                 { configQuickCheckMaxSuccess = specQuickCheckMaxSuccess args
