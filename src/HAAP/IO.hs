@@ -185,7 +185,7 @@ shPipeWith io n args x = do
     res <- shCommandWith io' n args
     let out = Text.unpack (resStdout res)
     case readMaybe out of
-        Nothing -> error $ "failed to parse pipe output: " ++ show out
+        Nothing -> error $ "failed to parse result: " ++ pretty res
         Just y -> return y
 
 orErrorWritePage :: (HaapMonad m,Out a) => FilePath -> a -> Haap p args db m a -> Haap p args db m a
