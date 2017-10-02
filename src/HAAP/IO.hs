@@ -196,7 +196,7 @@ orErrorWritePage path def m = orDo go $ do
     return x
   where
     go e = do
-        runIO $ writeFile path $ show e
+        runIO $ writeFile path $ pretty e
         return def
 
 addToError :: (HaapMonad m) => String -> Haap p args db m a -> Haap p args db m a
@@ -263,7 +263,7 @@ orDo' :: (HaapMonad m,NFData a) => (HaapException -> Haap p args db m a) -> Haap
 orDo' ex m = catchError (forceM m) ex
 
 ignoreError :: HaapMonad m => Haap p args db m () -> Haap p args db m ()
-ignoreError m = orDo (\e -> logEvent (show e)) m
+ignoreError m = orDo (\e -> logEvent (pretty e)) m
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do

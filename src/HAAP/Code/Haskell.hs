@@ -2,10 +2,16 @@ module HAAP.Code.Haskell where
 
 import HAAP.Core
 import HAAP.IO
+import HAAP.Pretty
 
 import Language.Haskell.Exts
 
 import Control.Monad.Except
+
+instance Show a => Out (ParseResult a) where
+    docPrec i x = doc x
+    doc (ParseOk x) = text "parsing ok:" <+> text (show x)
+    doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) <> char ':' <+> text s
 
 parseHaskellFile :: HaapMonad m => FilePath -> Haap p args db m (Module SrcSpanInfo)
 parseHaskellFile file = do
@@ -18,7 +24,7 @@ parseHaskellFile file = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        err -> throwError $ HaapException $ show err
+        err -> throwError $ HaapException $ pretty err
 
 parseModuleFileName :: HaapMonad m => FilePath -> Haap p args db m String
 parseModuleFileName file = do

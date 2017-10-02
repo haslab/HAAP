@@ -28,6 +28,9 @@ import GHC.Generics
 
 import System.Directory
 
+import Text.PrettyPrint
+import Text.PrettyPrint.GenericPretty
+
 -- General static project information
 
 data Project p = Project
@@ -75,7 +78,7 @@ runHaap p args (Haap m) = do
     createDirectoryIfMissing True $ projectTmpPath p
     e <- Except.runExceptT $ RWS.runRWST m (p,args) ()
     case e of
-        Left e -> error $ "Haap Error: " ++ show e
+        Left e -> error $ "Haap Error: " ++ pretty e
         Right (a,(),w') -> do
             printLog w'
             return a
@@ -135,14 +138,25 @@ data HaapException = HaapException String
                    | HaapIOException SomeException
   deriving (Typeable,Show,Generic)
   
-instance Exception HaapException
+instance Out HaapException where
+    docPrec i x = doc x
+    doc (HaapException str) = text str
+    doc (HaapTimeout stack i) = text "timed out after" <+> int i <+> text "seconds"
+    doc (HaapIOException e) = text (displayException e)
+  
+instance Exception HaapException where
+    displayException e = pretty e
 
 type HaapLog = DList HaapEvent 
 data HaapEvent = HaapEvent CallStack String
   deriving (Typeable,Show)
+  
+instance Out HaapEvent where
+    docPrec i x = doc x
+    doc (HaapEvent c s) = text (prettyCallStack c) <> char ':' $+$ nest 4 (text s)
 
 printLog :: HaapLog -> IO ()
-printLog l = forM_ l $ \e -> putStrLn $ show e
+printLog l = forM_ l $ \e -> putStrLn $ pretty e
 
 getProject :: HaapMonad m => Haap p args db m (Project p)
 getProject = Haap $ liftM fst ask

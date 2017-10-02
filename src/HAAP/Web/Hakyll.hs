@@ -138,7 +138,7 @@ orErrorHakyllPage hp page def m = orDo go m
     go e = do
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (show e::String) >>= hakyllCompile hp
+            compile $ makeItem (pretty e::String) >>= hakyllCompile hp
         return def
 
 loadCopyFile :: Item CopyFile -> Compiler (Item String)
