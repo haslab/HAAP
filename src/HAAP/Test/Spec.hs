@@ -102,13 +102,13 @@ haapNewExample :: State Int Int
 haapNewExample = do
     i <- State.get
     State.modify succ
-    return i
+    return $ i
 
 runHaapTestTable :: HaapMonad m => HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db m HaapTestTableRes
 runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) tests) $ do
     outknob <- runIO $ newKnob (B.pack [])
     outhandle <- runIO $ newFileHandle outknob "knob" WriteMode
-    runIO $ hPutStr outhandle "[(0,Nothing)"
+    runIO $ hPutStr outhandle "[(-1,Nothing)"
     let formatter = silent
             { exampleSucceeded = \(parents,name) -> write $ ",(" ++ name ++ "," ++ "Nothing" ++ ")"
             , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ "Just "  ++ show (either pretty pretty err) ++ ")"
@@ -119,7 +119,8 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) 
                 , configOutputFile = Left outhandle
                 }
     let spec = forM_ tests $ \(ex,test) -> describe (show ex) test
-    ignoreError $ runIO' $ withArgs [] $ hspecWith cfg spec
+    let ioargs = const $ defaultIOArgs { ioTimeout = Just (10 * 60) }
+    ignoreError $ runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
     runIO $ hPutStr outhandle "]"
     runIO $ hClose outhandle
     
