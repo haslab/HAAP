@@ -77,7 +77,7 @@ instance Out IOResult where
            $+$ text "Exit Code:" <+> doc (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 10) False Nothing Nothing True [] Nothing
+defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing
 
 instance Default IOArgs where
     def = defaultIOArgs

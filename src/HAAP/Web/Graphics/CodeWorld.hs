@@ -36,7 +36,7 @@ data CodeWorldArgs args = CodeWorldArgs
     }
 
 runCodeWorld :: HakyllP -> CodeWorldArgs args -> Haap p args db Hakyll FilePath
-runCodeWorld hp cw = do
+runCodeWorld hp cw = orErrorHakyllPage hp (cwHtmlPath cw) (cwHtmlPath cw) $ do
     tmp <- getProjectTmpPath
     let (tpltfile,textmessage) = case cwTemplate cw of
                                     CWGame -> ("templates/cw-game.html","")
