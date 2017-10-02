@@ -59,6 +59,9 @@ data IOResult = IOResult
     , resStderr :: Text
     }
 
+ioOk :: IOResult -> Bool
+ioOk = (==0) . resExitCode
+
 exitCode :: ExitCode -> Int
 exitCode (ExitFailure i) = i
 exitCode (ExitSuccess) = 0
@@ -122,6 +125,22 @@ shExec exec = do
 
 shAbsolutePath :: FilePath -> Sh FilePath
 shAbsolutePath = liftM shToFilePath . Sh.absPath . shFromFilePath
+
+shCommand_ :: String -> [String] -> Sh ()
+shCommand_ = shCommandWith_ defaultIOArgs
+
+shCommandWith_ :: IOArgs -> String -> [String] -> Sh ()
+shCommandWith_ ioargs name args  = do
+    forM_ (ioStdin ioargs) Sh.setStdin
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    Sh.run_ (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
+  where
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
+    addTimeout Nothing cmds = cmds
+    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addSandbox Nothing cmds = cmds
+    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs

@@ -83,11 +83,15 @@ getSVNSourceWith getArgs s = do
             then do
                 let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
                 shCd path
-                shCommand "svn" ["cleanup"]
-                shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+                shCommand_ "svn" ["cleanup"]
+                res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+                unless (ioOk res) $ do
+                    shCd ".."
+                    shRm name
+                    shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
             else do
                 shCd dir
-                shCommand "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+                shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
     return ()
 
 getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
