@@ -17,6 +17,7 @@
 .hspec-failure {
     white-space: pre-wrap;
     color: red;
+    width: 60%;
 }
 .hspec-debug {
     white-space: pre-wrap;
@@ -26,6 +27,19 @@
     white-space: pre-wrap;
     color: 	#DAA520;
 }
+
+.th1, .td1 {
+  width: 40%;
+}
+
+.th2, .td2 {
+  width: 60%;
+}
+
+.tr1, .tr2 {
+  width: 100%;
+}
+
 
 /* -- Demo style ------------------------------- */
 html,
