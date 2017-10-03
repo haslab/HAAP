@@ -8,6 +8,7 @@ import HAAP.IO
 import HAAP.Log
 import HAAP.Pretty
 
+import Test.QuickCheck.Property as QuickCheck
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
 import Test.QuickCheck.Random as QuickCheck
@@ -71,24 +72,24 @@ runSpecWith getArgs spec = do
     runHaapTestTable args tests
 
 -- generates a list of tests
-bounded :: (Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
+bounded :: (Out a,Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
 bounded = HaapSpecBounded
 
 -- generates a random test (receives a set of seeds for grading)
-unbounded :: Show a => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+unbounded :: (Out a,Show a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
 unbounded = HaapSpecUnbounded
 
 testBool :: IO Bool -> HaapSpec
 testBool = HaapSpecTestBool
 
-testEqual :: (NFData a,Eq a,Show a) => IO a -> IO a -> HaapSpec
+testEqual :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
 testEqual = HaapSpecTestEqual
 
 data HaapSpec where
-     HaapSpecBounded :: Show a => String -> [a] -> (a -> HaapSpec) -> HaapSpec
-     HaapSpecUnbounded :: Show a => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecUnbounded :: (Show a,Out a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
      HaapSpecTestBool :: IO Bool -> HaapSpec
-     HaapSpecTestEqual :: (NFData a,Show a,Eq a) => IO a -> IO a -> HaapSpec
+     HaapSpecTestEqual :: (NFData a,Show a,Out a,Eq a) => IO a -> IO a -> HaapSpec
 
 data HaapTestTable a = HaapTestTable
     { haapTestTableHeader :: [String] -- table header
@@ -170,7 +171,7 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
             x <- runSpecIO "oracle" iox
             y <- runSpecIO "solution" ioy
-            assertEqual ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y) x y
+            assertEqual ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y) x y
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
 
 runSpecIO :: NFData a => String -> IO a -> IO a
@@ -200,5 +201,6 @@ haapSpecProperty (HaapSpecTestBool io) = counterexample "Boolean assertion faile
 haapSpecProperty (HaapSpecTestEqual iox ioy) = monadicIO $ do
     x <- run iox
     y <- run ioy
-    unless (x==y) $ fail ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y)
+    unless (x==y) $ fail ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y)
     QuickCheck.assert (x==y)
+
