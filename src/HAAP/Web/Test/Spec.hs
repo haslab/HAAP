@@ -25,11 +25,12 @@ renderHaapTest hp path title notes spec = do
     hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
-            let showRes Nothing = "OK"
-                showRes (Just err) = pretty err
-            let classCtx i = case snd (itemBody i) of { Nothing -> "hspec-success"; otherwise -> "hspec-failure"}
+            let classCtx i = case snd (itemBody i) of
+                                HaapTestOk -> "hspec-success"
+                                HaapTestError _ -> "hspec-failure"
+                                HaapTestMessage _ -> "hspec-warning datatext"
             let headerCtx = field "header" (return . itemBody)
-            let rowCtx =  field "result" (return . showRes . snd . itemBody)
+            let rowCtx =  field "result" (return . pretty . snd . itemBody)
                         `mappend` field "class" (return . classCtx)
                         `mappend` listFieldWith "cols" (field "col" (return . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
             let specCtx = constField "title" (title)
@@ -45,11 +46,12 @@ renderHaapTests hp path title specs = do
     hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
-            let showRes Nothing = "OK"
-                showRes (Just err) = pretty err
-            let classCtx i = case snd (itemBody i) of { Nothing -> "hspec-success"; otherwise -> "hspec-failure"}
+            let classCtx i = case snd (itemBody i) of
+                                HaapTestOk -> "hspec-success"
+                                HaapTestError _ -> "hspec-failure"
+                                HaapTestMessage _ -> "hspec-warning datatext"
             let headerCtx = field "header" (return . itemBody)
-            let rowCtx =  field "result" (return . showRes . snd . itemBody)
+            let rowCtx =  field "result" (return . pretty . snd . itemBody)
                         `mappend` field "class" (return . classCtx)
                         `mappend` listFieldWith "cols" (field "col" (return . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
             let specCtx = field "name" (return . fst . itemBody)
