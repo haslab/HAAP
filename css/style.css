@@ -27,6 +27,10 @@
     color: 	#DAA520;
 }
 
+.datatext {
+     white-space: pre-wrap;
+}
+
 /* -- Demo style ------------------------------- */
 html,
 body {
