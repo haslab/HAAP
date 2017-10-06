@@ -14,6 +14,16 @@ import Data.List
 
 import qualified Control.Monad.Reader as Reader
 
+data Url a = Url FilePath a
+  deriving (Eq,Ord)
+
+instance Show a => Show (Url a) where
+    show (Url url x) = "<a href=" ++ show url ++ ">" ++ show x ++ "</a>"
+
+instance Out a => Out (Url a) where
+    docPrec i x = doc x
+    doc (Url url x) = text "<a href=" <> text (show url) <> text ">" <> doc x <> text "</a>"
+
 data HaapTable = HaapTable
     { haapTableTitle :: String
     , haapTableHeaders :: [String]

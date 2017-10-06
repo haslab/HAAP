@@ -3,7 +3,7 @@
 <html>
 
 <head>
-    <meta charset=\"UTF-8\">
+    <meta charset="UTF-8">
     <link rel="stylesheet" href=$projectpath$/css/normalize.css>
     <link rel="stylesheet" href=$projectpath$/css/style.css>
     <title>$title$</title>
@@ -28,7 +28,7 @@ $for(specs)$
         $for(rows)$
             <tr>
                 $for(cols)$
-                <td data-title=$col$>$col$</td>
+                <td class="datatext" data-title="arg">$col$</td>
                 $endfor$
                 <td class=$class$ data-title="Resultado">$result$</td>
             </tr>

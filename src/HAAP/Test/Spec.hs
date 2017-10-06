@@ -8,6 +8,7 @@ import HAAP.IO
 import HAAP.Log
 import HAAP.Pretty
 
+import Test.QuickCheck.Property as QuickCheck
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
 import Test.QuickCheck.Random as QuickCheck
@@ -71,24 +72,28 @@ runSpecWith getArgs spec = do
     runHaapTestTable args tests
 
 -- generates a list of tests
-bounded :: (Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
+bounded :: (Out a,Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
 bounded = HaapSpecBounded
 
 -- generates a random test (receives a set of seeds for grading)
-unbounded :: Show a => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+unbounded :: (Out a,Show a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
 unbounded = HaapSpecUnbounded
 
 testBool :: IO Bool -> HaapSpec
 testBool = HaapSpecTestBool
 
-testEqual :: (NFData a,Eq a,Show a) => IO a -> IO a -> HaapSpec
+testEqual :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
 testEqual = HaapSpecTestEqual
 
+testMessage :: IO String -> HaapSpec
+testMessage = HaapSpecTestMessage
+
 data HaapSpec where
-     HaapSpecBounded :: Show a => String -> [a] -> (a -> HaapSpec) -> HaapSpec
-     HaapSpecUnbounded :: Show a => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecUnbounded :: (Show a,Out a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
      HaapSpecTestBool :: IO Bool -> HaapSpec
-     HaapSpecTestEqual :: (NFData a,Show a,Eq a) => IO a -> IO a -> HaapSpec
+     HaapSpecTestEqual :: (NFData a,Show a,Out a,Eq a) => IO a -> IO a -> HaapSpec
+     HaapSpecTestMessage :: IO String -> HaapSpec
 
 data HaapTestTable a = HaapTestTable
     { haapTestTableHeader :: [String] -- table header
@@ -98,7 +103,17 @@ data HaapTestTable a = HaapTestTable
 
 type HaapTestTableRes = HaapTestTable HaapTestRes
 
-type HaapTestRes = Maybe HaapException
+data HaapTestRes
+    = HaapTestOk
+    | HaapTestError String
+    | HaapTestMessage String
+  deriving (Read,Show)
+
+instance Out HaapTestRes where
+    docPrec i x = doc x
+    doc HaapTestOk = text "OK"
+    doc (HaapTestError msg) = text msg
+    doc (HaapTestMessage msg) = text msg
 
 haapNewExample :: State Int Int
 haapNewExample = do
@@ -106,14 +121,20 @@ haapNewExample = do
     State.modify succ
     return $ i
 
+haapTestRes :: Either SomeException FailureReason -> HaapTestRes
+haapTestRes (Left some) = case fromException some of
+    Nothing -> HaapTestError $ pretty some
+    Just (HaapSpecMessage msg) -> HaapTestMessage msg
+haapTestRes (Right msg) = HaapTestError $ pretty msg
+
 runHaapTestTable :: HaapMonad m => HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db m HaapTestTableRes
-runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) tests) $ do
+runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ pretty e) tests) $ do
     outknob <- runIO $ newKnob (B.pack [])
     outhandle <- runIO $ newFileHandle outknob "knob" WriteMode
-    runIO $ hPutStr outhandle "[(-1,Nothing)"
+    runIO $ hPutStr outhandle "[(-1,HaapTestError \"\")"
     let formatter = silent
-            { exampleSucceeded = \(parents,name) -> write $ ",(" ++ name ++ "," ++ "Nothing" ++ ")"
-            , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ "Just "  ++ show (either pretty pretty err) ++ ")"
+            { exampleSucceeded = \(parents,name) -> write $ ",(" ++ name ++ "," ++ "HaapTestOk" ++ ")"
+            , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ show (haapTestRes err) ++ ")"
             }
     let cfg = defaultConfig
                 { configQuickCheckMaxSuccess = specQuickCheckMaxSuccess args
@@ -128,12 +149,12 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ Just e) 
     
     outbstr <- runIO' $ Knob.getContents outknob
     let outstr = B8.unpack outbstr
-    xs <- case readMaybe outstr :: Maybe [(Int,Maybe String)] of
+    xs <- case readMaybe outstr :: Maybe [(Int,HaapTestRes)] of
         Nothing -> throwError $ HaapException $ "failed to parse hspec output: " ++ outstr
         Just xs -> return $ tail xs
     let readTest (i,x) = case lookup i xs of
-                            Just xres -> fmap HaapException xres
-                            Nothing -> Just $ HaapException $ "example name not found " ++ show i ++ " in " ++ show (map fst xs)
+                            Just xres -> xres
+                            Nothing -> HaapTestError $ "example name not found " ++ show i ++ " in " ++ show (map fst xs)
     let res = fmapDefault readTest tests
     return res
 
@@ -170,8 +191,20 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
             x <- runSpecIO "oracle" iox
             y <- runSpecIO "solution" ioy
-            assertEqual ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y) x y
+            assertEqual ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y) x y
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
+    haapSpec' mode (HaapSpecTestMessage io) = do
+        ex <- haapNewExample
+        let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
+            msg <- io 
+            throw $ HaapSpecMessage msg
+        return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
+
+data HaapSpecMessage = HaapSpecMessage String
+  deriving Show
+
+instance Exception HaapSpecMessage where
+    displayException (HaapSpecMessage msg) = msg
 
 runSpecIO :: NFData a => String -> IO a -> IO a
 runSpecIO side io = do
@@ -190,6 +223,7 @@ haapSpecNames (HaapSpecUnbounded n _ g f) = do
     return (n:ns)
 haapSpecNames (HaapSpecTestBool io) = return []
 haapSpecNames (HaapSpecTestEqual iox ioy) = return []
+haapSpecNames (HaapSpecTestMessage io) = return []
 
 haapSpecProperty :: HaapSpec -> Property
 haapSpecProperty (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty . f) xs
@@ -200,5 +234,10 @@ haapSpecProperty (HaapSpecTestBool io) = counterexample "Boolean assertion faile
 haapSpecProperty (HaapSpecTestEqual iox ioy) = monadicIO $ do
     x <- run iox
     y <- run ioy
-    unless (x==y) $ fail ("Equality assertion failed: expected...\n"++show x ++ "\n...but got...\n"++ show y)
+    unless (x==y) $ fail ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y)
     QuickCheck.assert (x==y)
+haapSpecProperty (HaapSpecTestMessage io) = monadicIO $ do
+    msg <- run io
+    throw $ HaapSpecMessage msg
+    return ()
+

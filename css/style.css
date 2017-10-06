@@ -20,9 +20,6 @@
     width: 60%; /* to shrink error messages */
     font-family: monospace; /* for ascii art */
 }
-.datatext {
-    font-family: monospace; /* for ascii art */
-}
 .datatext > a {
     text-decoration: none;  /* for ascii art */
 }
@@ -35,18 +32,10 @@
     color: 	#DAA520;
 }
 
-.th1, .td1 {
-  width: 40%;
+.datatext {
+     font-family: monospace; /* for ascii art */
+     white-space: pre-wrap;
 }
-
-.th2, .td2 {
-  width: 60%;
-}
-
-.tr1, .tr2 {
-  width: 100%;
-}
-
 
 /* -- Demo style ------------------------------- */
 html,
