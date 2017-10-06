@@ -22,3 +22,18 @@ instance Out SomeException where
     docPrec i x = doc x
     doc x = text (displayException x)
 
+
+data Pretty a = Pretty { prettyPrint :: (a -> Doc), prettyValue :: a }
+
+instance Eq a => Eq (Pretty a) where
+    x == y = prettyValue x == prettyValue y
+instance Ord a => Ord (Pretty a) where
+    compare x y = compare (prettyValue x) (prettyValue y)
+
+instance Show (Pretty a) where
+    show x = show $ (prettyPrint x) (prettyValue x)
+
+instance Out (Pretty a) where
+    docPrec i x = doc x
+    doc (Pretty f x) = f x
+
