@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
+      <title>CodeWorld - $title$</title>
+      <link rel="stylesheet" href="$projectpath$/css/codeworld.css">
+    
+    <script language="javascript" src="$runpath$/rts.js"></script>
+    <script language="javascript" src="$runpath$/lib.js"></script>
+    <script language="javascript" src="$runpath$/out.js"></script>
+  </head>
+  <body style="text-align: center">
+      
+    $for(images)$
+    <img style="display: none;" id="$imgid$" src="$projectpath$/$imgfile$">
+    $endfor$
+      
+    <canvas id="screen"></canvas>
+    <textarea id="text">$textmessage$</textarea>
+    <button id="textbutton" class="cw-button" onclick="drawCW()">Draw</button>
+    <pre id="message" class="dropbox draw">$message$</pre>
+  </body>
+  
+  <script type="text/javascript">
+  function drawCW() {
+      var imported = document.createElement('script');
+      imported.src = '$runpath$/runmain.js';
+      document.head.appendChild(imported);
+  }
+  </script>
+  
+  <script type="text/javascript">
+    function reportRuntimeError(err, str) {
+      if (window.parent.addToMessage) {
+        var message = window.parent.addToMessage('\n' + str);
+
+        if (err) {
+          var message = window.parent.document.getElementById('message');
+          message.classList.add('error');
+        }
+      } else {
+        console.log(str);
+      }
+    }
+  </script>
+  
+  <script type="text/javascript" src="$projectpath$/js/ghcjs-debugmode.js"></script>
+  <script type="text/javascript" src="$projectpath$/js/cw-demo.js"></script>
+</html>
