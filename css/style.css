@@ -17,7 +17,14 @@
 .hspec-failure {
     white-space: pre-wrap;
     color: red;
-    width: 60%;
+    width: 60%; /* to shrink error messages */
+    font-family: monospace; /* for ascii art */
+}
+.datatext {
+    font-family: monospace; /* for ascii art */
+}
+.datatext > a {
+    text-decoration: none;  /* for ascii art */
 }
 .hspec-debug {
     white-space: pre-wrap;
