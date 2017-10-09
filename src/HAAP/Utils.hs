@@ -49,7 +49,8 @@ fou4 :: (a,b,c,d) -> d
 fou4 (x,y,z,w) = w
 
 averageList :: Fractional a => [a] -> a
-averageList xs = sum xs / realToFrac (length xs)
+averageList xs | length xs == 0 = 0
+               | otherwise = sum xs / realToFrac (length xs)
 
 zipLeft :: [a] -> [b] -> [(a,Maybe b)]
 zipLeft [] [] = []
