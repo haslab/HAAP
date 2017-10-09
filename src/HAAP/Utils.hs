@@ -105,3 +105,5 @@ unSplitOn :: [a] -> [[a]] -> [a]
 unSplitOn tok [] = []
 unSplitOn tok [x] = x
 unSplitOn tok (x:xs) = x ++ tok ++ unSplitOn tok xs
+
+compareSnd x y = compare (snd x) (snd y)

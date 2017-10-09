@@ -27,6 +27,8 @@ import System.Process
 import System.Directory
 import System.Environment
 
+import Test.QuickCheck
+
 import Text.Read
 
 import GHC.Stack
@@ -330,7 +332,10 @@ equalPathSh x y = do
     y' <- shCanonalize y
     return $ equalFilePath x y
 
-        
+forAllIO :: Int -> Gen a -> (a -> IO b) -> IO [b]
+forAllIO num gen f = do
+    xs <- generate $ vectorOf num gen
+    mapM f xs
         
         
         
