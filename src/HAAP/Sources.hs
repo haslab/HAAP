@@ -60,15 +60,17 @@ populateGroupSourceWith getArgs ctx overwriteTemplateFiles g s = do
         let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteTemplateFiles
         let localfile = haapLocalFile file
         let remotefile = applyTemplate (makeTemplate $ haapRemoteFile file) ctx
-        if copy
-            then do
---                Sh.liftIO $ putStrLn $ "from " ++ show  (ppath </> localfile)
---                Sh.liftIO $ putStrLn $ "to " ++ show (spath </> remotefile)
-                shRecursive (shLoadApplyAndCopyTemplate ctx) (ppath </> localfile) (spath </> remotefile)
-                case haapFileType file of
-                    HaapOracleFile -> return []
-                    otherwise -> return [remotefile]
-            else return []
+        let shCopy ctx from to = do
+            docopy <- case haapFileType file of
+                HaapTemplateFile -> do
+                    isto <- shDoesFileExist to
+                    return $ if isto then overwriteTemplateFiles else True
+                otherwise -> return True
+            when docopy $ shLoadApplyAndCopyTemplate ctx from to
+        shRecursive (shCopy ctx) (ppath </> localfile) (spath </> remotefile)
+        case haapFileType file of
+            HaapOracleFile -> return []
+            otherwise -> return [remotefile]
     return $ concat remotefiles
 
 listGroupSourceFiles :: (HaapMonad m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap p (SourceArgs s) db m [FilePath]

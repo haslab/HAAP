@@ -117,6 +117,9 @@ runShWith getArgs io = do
     args <- Reader.reader getArgs
     runShCore args io
 
+runShIOResult :: HaapMonad m => Sh IOResult -> Haap p args db m IOResult
+runShIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runSh m)
+
 runSh :: HaapMonad m => Sh a -> Haap p args db m a
 runSh = runShWith (const defaultIOArgs)
 
@@ -292,6 +295,9 @@ shToFilePath = Text.unpack . Sh.toTextIgnore
 shCd :: FilePath -> Sh ()
 shCd = Sh.cd . shFromFilePath
 
+shMkDir :: FilePath -> Sh ()
+shMkDir = Sh.mkdir_p . shFromFilePath
+
 shCp :: FilePath -> FilePath -> Sh ()
 shCp from to = Sh.cp_r (shFromFilePath from) (shFromFilePath to)
 
@@ -307,17 +313,22 @@ shCanonalize = liftM shToFilePath . Sh.canonicalize . shFromFilePath
 shDoesDirectoryExist :: FilePath -> Sh Bool
 shDoesDirectoryExist = Sh.test_d . shFromFilePath
 
+shDoesFileExist :: FilePath -> Sh Bool
+shDoesFileExist = Sh.test_f . shFromFilePath
+
 shCpRecursive :: FilePath -> FilePath -> Sh ()
 shCpRecursive = shRecursive shCp
 
 shRecursive :: (FilePath -> FilePath -> Sh ()) -> FilePath -> FilePath -> Sh ()
 shRecursive op from to = do
     isfromdir <- shDoesDirectoryExist from
-    istodir <- shDoesDirectoryExist to
-    if (isfromdir && istodir)
+    shMkDir $ takeDirectory to
+    if isfromdir
         then do
+            istodir <- shDoesDirectoryExist to
+            unless (istodir) $ shMkDir to
             froms <- shLs from
-            forM_ froms $ \x -> shRecursive op (from </> x) to
+            forM_ froms $ \x -> shRecursive op (from </> x) to       
         else op from to
 
 equalPathIO :: FilePath -> FilePath -> IO Bool

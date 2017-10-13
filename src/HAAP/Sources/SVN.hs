@@ -78,23 +78,24 @@ getSVNSourceWith getArgs s = do
     let repo = svnRepository s
     let (dir,name) = splitFileName path
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    runSh $ do
-        if exists
-            then do
-                let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
-                shCd path
-                shCommand_ "svn" ["cleanup"]
-                res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
-                let okRes = resOk res
-                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
-                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
-                unless okRes $ do
-                    shCd ".."
-                    shRm name
-                    shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
-            else do
-                shCd dir
-                shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let checkout = runSh $ do
+        shCd dir
+        shRm name
+        shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let update = runShIOResult $ do
+        let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
+        shCd path
+        shCommand_ "svn" ["cleanup"]
+        res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+        let okRes = resOk res
+                    && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
+                    && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
+        return $ res { resExitCode = if okRes then 0 else (-1) }
+    if exists 
+        then do
+            ok <- update
+            unless (resOk ok) checkout
+        else checkout
     return ()
 
 getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
@@ -134,7 +135,7 @@ putSVNSourceWith getArgs files s = do
     let msg = svnCommitMessage args
     runSh $ do
         shCd path
-        forM_ files $ \file -> shCommand "svn" ["add",file]
+        forM_ files $ \file -> shCommand "svn" ["add","--force","--parents",file]
         shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 
