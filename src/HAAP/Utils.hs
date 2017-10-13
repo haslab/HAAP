@@ -2,9 +2,15 @@ module HAAP.Utils where
 
 import Data.Map (Map(..))
 import qualified Data.Map as Map
+import Data.Time.LocalTime
 
 import System.FilePath
 import System.FilePath.Find
+
+instance Eq ZonedTime where
+    x == y = zonedTimeToUTC x == zonedTimeToUTC y
+instance Ord ZonedTime where
+    compare x y = compare (zonedTimeToUTC x) (zonedTimeToUTC y)
 
 mapFst :: (a -> c) -> (a,b) -> (c,b)
 mapFst f (x,y) = (f x,y)

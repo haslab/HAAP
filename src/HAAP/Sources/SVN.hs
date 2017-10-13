@@ -11,6 +11,8 @@ import Data.List.Split
 import Data.List
 import qualified Data.Text as Text
 import Data.SafeCopy
+import Data.Time.Format
+import Data.Time.LocalTime
 
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Except
@@ -24,6 +26,11 @@ import Safe
 
 data SVN
 
+parseSVNDate :: Monad m => String -> m ZonedTime
+parseSVNDate str = parseTimeM True defaultTimeLocale format str
+    where
+    format = "%F %T %z (%a, %d %b %Y)"
+
 data SVNSource = SVNSource
     { svnUser :: String
     , svnPass :: String
@@ -36,7 +43,7 @@ $(deriveSafeCopy 0 'base ''SVNSource)
 data SVNSourceInfo = SVNSourceInfo
     { svnRevision :: Int
     , svnAuthor  :: String
-    , svnDate     :: String
+    , svnDate     :: ZonedTime
     }
   deriving Show
 $(deriveSafeCopy 0 'base ''SVNSourceInfo)
@@ -110,7 +117,8 @@ getSVNSourceInfoWith getArgs s = do
     logRev <- runSh $ do
         shCd path
         shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
-    (author,date) <- parseLogRev $ resStdout logRev
+    (author,datestr) <- parseLogRev $ resStdout logRev
+    date <- parseSVNDate datestr
     return $ SVNSourceInfo rev author date
   where
     parseInfo txt = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt) of
