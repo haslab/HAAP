@@ -21,13 +21,22 @@ import Text.Read
 
 import System.FilePath
 import System.Directory
+import System.Locale.Read
 
 import Safe
 
 data SVN
 
-parseSVNDate :: Monad m => String -> m ZonedTime
-parseSVNDate str = parseTimeM True defaultTimeLocale format str
+parseSVNDateDefault :: MonadIO m => String -> m ZonedTime
+parseSVNDateDefault str = parseSVNDateWith defaultTimeLocale str
+
+parseSVNDateCurrent :: MonadIO m => String -> m ZonedTime
+parseSVNDateCurrent str = do
+    locale <- liftIO $ getCurrentLocale
+    parseSVNDateWith locale str
+
+parseSVNDateWith :: Monad m => TimeLocale -> String -> m ZonedTime
+parseSVNDateWith locale str = parseTimeM True locale format str
     where
     format = "%F %T %z (%a, %d %b %Y)"
 
@@ -118,7 +127,7 @@ getSVNSourceInfoWith getArgs s = do
         shCd path
         shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     (author,datestr) <- parseLogRev $ resStdout logRev
-    date <- parseSVNDate datestr
+    date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
   where
     parseInfo txt = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt) of
