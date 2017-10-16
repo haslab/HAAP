@@ -30,7 +30,7 @@ newtype PercentageScore = PercentageScore { unPercentageScore :: Double }
 
 instance Out PercentageScore where
     docPrec i  = doc
-    doc (PercentageScore x) = doc x <> text "%"
+    doc (PercentageScore x) = text (printDouble x 2) <> text "%"
 
 instance Score PercentageScore where
     okScore (PercentageScore x) = x > 50

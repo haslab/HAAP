@@ -52,7 +52,7 @@ Library
     HAAP.Web.HTML.Pandoc
     HAAP.Web.HTML.TagSoup
     HAAP.Code.Haskell
-    HAAP.Code.Haddock
+    HAAP.Code.Analysis.Haddock
         
   Hs-source-dirs:   src
   Other-Modules:

@@ -32,11 +32,11 @@ module HAAP
     , module HAAP.Web.HTML.Pandoc
     , module HAAP.Web.HTML.TagSoup
     , module HAAP.Code.Haskell
-    , module HAAP.Code.Haddock
+    , module HAAP.Code.Analysis.Haddock
     ) where
 
 import HAAP.Core
-import HAAP.Code.Haddock
+import HAAP.Code.Analysis.Haddock
 import HAAP.Code.Haskell
 import HAAP.DB
 import HAAP.DB.State

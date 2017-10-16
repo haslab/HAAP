@@ -7,10 +7,18 @@ import Data.Time.LocalTime
 import System.FilePath
 import System.FilePath.Find
 
+import Text.Printf
+
 instance Eq ZonedTime where
     x == y = zonedTimeToUTC x == zonedTimeToUTC y
 instance Ord ZonedTime where
     compare x y = compare (zonedTimeToUTC x) (zonedTimeToUTC y)
+
+printFloat :: Float -> Int -> String
+printFloat f i = printf ("%."++show i++"f") f
+
+printDouble :: Double -> Int -> String
+printDouble f i = printf ("%."++show i++"f") f
 
 mapFst :: (a -> c) -> (a,b) -> (c,b)
 mapFst f (x,y) = (f x,y)

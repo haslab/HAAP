@@ -1,6 +1,6 @@
 {-# LANGUAGE StandaloneDeriving, DeriveDataTypeable, ScopedTypeVariables #-}
 
-module HAAP.Code.Haddock where
+module HAAP.Code.Analysis.Haddock where
 
 import HAAP.Core
 import HAAP.Utils
