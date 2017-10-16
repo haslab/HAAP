@@ -89,6 +89,11 @@ defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing
 instance Default IOArgs where
     def = defaultIOArgs
 
+runIOWithTimeout :: HaapMonad m => Int -> IO a -> Haap p args db m a
+runIOWithTimeout timeout m = runIOWith (const args) m
+    where
+    args = def { ioTimeout = Just timeout }
+
 runIOWith :: HaapMonad m => (args -> IOArgs) -> IO a -> Haap p args db m a
 runIOWith getArgs io = do
     args <- Reader.reader getArgs
