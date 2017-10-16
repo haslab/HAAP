@@ -53,6 +53,7 @@ Library
     HAAP.Web.HTML.TagSoup
     HAAP.Code.Haskell
     HAAP.Code.Analysis.Haddock
+    HAAP.Code.Git
         
   Hs-source-dirs:   src
   Other-Modules:

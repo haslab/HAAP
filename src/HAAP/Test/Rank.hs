@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Test.Rank where
 
@@ -11,6 +11,7 @@ import HAAP.Web.Hakyll
 import Data.Traversable
 import Data.List
 import Data.Maybe
+import Data.SafeCopy
 
 import qualified Control.Monad.Reader as Reader
 
@@ -20,6 +21,7 @@ class (Eq score,Ord score,Out score) => Score score where
 
 newtype FloatScore = FloatScore { unFloatScore :: Float }
   deriving (Out,Eq,Ord,Show)
+$(deriveSafeCopy 0 'base ''FloatScore)
 
 instance Score FloatScore where
     okScore (FloatScore x) = x > 0
@@ -27,6 +29,7 @@ instance Score FloatScore where
 
 newtype PercentageScore = PercentageScore { unPercentageScore :: Double }
   deriving (Eq,Ord,Show)
+$(deriveSafeCopy 0 'base ''PercentageScore)
 
 instance Out PercentageScore where
     docPrec i  = doc
@@ -38,6 +41,7 @@ instance Score PercentageScore where
 
 newtype MaybeFloatScore = MaybeFloatScore { unMaybeFloatScore :: Maybe Float }
   deriving (Eq,Ord,Show)
+$(deriveSafeCopy 0 'base ''MaybeFloatScore)
 
 instance Score MaybeFloatScore where
     okScore (MaybeFloatScore Nothing) = False

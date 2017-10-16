@@ -14,6 +14,10 @@ instance Eq ZonedTime where
 instance Ord ZonedTime where
     compare x y = compare (zonedTimeToUTC x) (zonedTimeToUTC y)
 
+sameJust :: Eq a => Maybe a -> Maybe a -> Bool
+sameJust (Just x) (Just y) = x == y
+sameJust _ _ = False
+
 printFloat :: Float -> Int -> String
 printFloat f i = printf ("%."++show i++"f") f
 

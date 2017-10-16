@@ -272,6 +272,9 @@ orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
 orDefault :: HaapMonad m => a -> Haap p args db m a -> Haap p args db m a
 orDefault a m = orDo (\e -> return a) m
 
+orMaybeIO :: IO a -> IO (Maybe a)
+orMaybeIO m = catch (liftM Just m) (\(err::SomeException) -> return Nothing)
+
 orError :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either a HaapException)
 orError m = orDo (return . Right) (liftM Left m)
 
