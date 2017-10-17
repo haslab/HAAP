@@ -142,7 +142,7 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTest
                 , configOutputFile = Left outhandle
                 }
     let spec = forM_ tests $ \(ex,test) -> describe (show ex) test
-    let ioargs = const $ defaultIOArgs { ioTimeout = Just (10 * 60) }
+    let ioargs = const $ defaultIOArgs { ioTimeout = fmap (\t -> length tests * 2 * t) $ ioTimeout defaultIOArgs }
     ignoreError $ runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
     runIO $ hPutStr outhandle "]"
     runIO $ hClose outhandle
