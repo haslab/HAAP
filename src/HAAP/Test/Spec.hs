@@ -154,7 +154,7 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTest
         Just xs -> return $ tail xs
     let readTest (i,x) = case lookup i xs of
                             Just xres -> xres
-                            Nothing -> HaapTestError $ "example name not found " ++ show i ++ " in " ++ show (map fst xs)
+                            Nothing -> HaapTestError $ "example name not found " ++ show i ++ " in " ++ show (map fst xs) ++ "\n" ++ "running tests probably took too long"
     let res = fmapDefault readTest tests
     return res
 
