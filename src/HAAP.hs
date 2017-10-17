@@ -34,6 +34,7 @@ module HAAP
     , module HAAP.Code.Haskell
     , module HAAP.Code.Analysis.Haddock
     , module HAAP.Code.Git
+    , module HAAP.Code.Analysis.Modularity
     ) where
 
 import HAAP.Core
@@ -71,6 +72,7 @@ import HAAP.Web.PHP.Login
 import HAAP.Web.HTML.Pandoc
 import HAAP.Web.HTML.TagSoup
 import HAAP.Code.Git
+import HAAP.Code.Analysis.Modularity
 
 
 

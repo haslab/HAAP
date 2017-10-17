@@ -115,6 +115,10 @@ liftCompiler f i = return $ fmap f i
 
 data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
 
+instance Monoid HakyllP where
+    mempty = defaultHakyllP
+    mappend x y = HakyllP (hakyllRoute y . hakyllRoute x) (hakyllCompile x >=> hakyllCompile y)
+
 funRoute :: (FilePath -> FilePath) -> Routes
 funRoute f = customRoute (f . toFilePath)
 

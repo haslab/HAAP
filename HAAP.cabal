@@ -54,6 +54,7 @@ Library
     HAAP.Code.Haskell
     HAAP.Code.Analysis.Haddock
     HAAP.Code.Git
+    HAAP.Code.Analysis.Modularity
         
   Hs-source-dirs:   src
   Other-Modules:
