@@ -19,6 +19,7 @@ import qualified Data.Text as Text
 import Data.Foldable
 import Data.Typeable
 import Data.Proxy
+import Data.String
 
 import System.Timeout
 import System.FilePath
@@ -283,6 +284,9 @@ orDo' ex m = catchError (forceM m) ex
 
 ignoreError :: HaapMonad m => Haap p args db m () -> Haap p args db m ()
 ignoreError m = orDo (\e -> logEvent (pretty e)) m
+
+orLogError :: IsString str => HaapMonad m => Haap p args db m str -> Haap p args db m str
+orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do

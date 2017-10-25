@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, ScopedTypeVariables, DeriveTraversable #-}
+{-# LANGUAGE OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where
 
@@ -142,12 +142,13 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTest
                 , configOutputFile = Left outhandle
                 }
     let spec = forM_ tests $ \(ex,test) -> describe (show ex) test
-    let ioargs = const $ defaultIOArgs { ioTimeout = fmap (\t -> length tests * 2 * t) $ ioTimeout defaultIOArgs }
-    ignoreError $ runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
-    runIO $ hPutStr outhandle "]"
-    runIO $ hClose outhandle
-    
-    outbstr <- runIO' $ Knob.getContents outknob
+    let ioargs = const $ defaultIOArgs { ioTimeout = fmap (\t -> 3 * t + length tests * 3 * t) $ ioTimeout defaultIOArgs }
+    outbstr <- orLogError $ do
+        runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
+        runIO $ hPutStr outhandle "]"
+        runIO $ hClose outhandle
+        runIO' $ Knob.getContents outknob
+
     let outstr = B8.unpack outbstr
     xs <- case readMaybe outstr :: Maybe [(Int,HaapTestRes)] of
         Nothing -> throwError $ HaapException $ "failed to parse hspec output: " ++ outstr

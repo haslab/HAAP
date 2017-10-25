@@ -24,7 +24,7 @@ data HomplexityArgs = HomplexityArgs
     }
 
 runHomplexity :: HakyllP -> HomplexityArgs -> Haap p args db Hakyll FilePath
-runHomplexity hp h = do
+runHomplexity hp h = orErrorHakyllPage hp homerrorpath homerrorpath $ do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (homplexityPath h) </>) (homplexitySandbox h) }
     let extras = homplexityArgs h
@@ -48,6 +48,8 @@ runHomplexity hp h = do
                            `mappend` listField "messages" msgCtx (mapM makeItem messages)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx >>= hakyllCompile hp
     return (hakyllRoute hp $ homplexityHtmlPath h)
+  where
+    homerrorpath = homplexityHtmlPath h
       
 parseMessages [] = []
 parseMessages (x:xs)

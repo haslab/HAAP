@@ -38,7 +38,7 @@ data CodeWorldArgs args = CodeWorldArgs
     }
 
 runCodeWorld :: HakyllP -> CodeWorldArgs args -> Haap p args db Hakyll FilePath
-runCodeWorld hp cw = orErrorHakyllPage hp (cwHtmlPath cw) (cwHtmlPath cw) $ do
+runCodeWorld hp cw = orErrorHakyllPage hp cwerrorpath cwerrorpath $ do
     tmp <- getProjectTmpPath
     let (tpltfile,textmessage) = case cwTemplate cw of
                                     CWGame -> ("templates/cw-game.html","")
@@ -100,4 +100,6 @@ runCodeWorld hp cw = orErrorHakyllPage hp (cwHtmlPath cw) (cwHtmlPath cw) $ do
                 makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
         
     return (hakyllRoute hp $ destfolder </> "run.html")
+  where
+    cwerrorpath = addExtension (cwHtmlPath cw) "html"
     
