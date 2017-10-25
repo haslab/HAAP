@@ -14,7 +14,7 @@ type TagHtml = [Tag String]
 
 parseTagSoupHTML :: HaapMonad m => FilePath -> Haap p args db m TagHtml
 parseTagSoupHTML file = do
-    str <- runIO $ readFile file
+    str <- runIO' $ readFile file
     return $ parseTags str
 
 asTagSoupHTML :: (TagHtml -> TagHtml) -> String -> String

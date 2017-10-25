@@ -79,8 +79,8 @@ runHakyllWith getCfg (Haap mrules) = do
 
 copyDataFiles :: HaapMonad m => Configuration -> Haap p args db m ()
 copyDataFiles cfg = do
-    datapath <- runIO $ getDataFileName ""
-    xs <- runIO $ listDirectory datapath
+    datapath <- runIO' $ getDataFileName ""
+    xs <- runIO' $ listDirectory datapath
     runSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> x)
 
 --dataRoute :: FilePath -> Routes

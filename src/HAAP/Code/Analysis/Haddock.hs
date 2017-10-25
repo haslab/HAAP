@@ -81,7 +81,7 @@ commentString :: Comment -> String
 commentString (Comment _ _ str) = str
 
 parseFileComments :: HaapMonad m => FilePath -> Haap p args db m [String]
-parseFileComments file = orDefault [] $ runIO $ do
+parseFileComments file = orDefault [] $ runIO' $ do
     str <- readFile file
     case parseWithComments defaultParseMode str of
         ParseOk (_::Module SrcSpanInfo,comments) -> return $ map (commentString) comments

@@ -23,6 +23,7 @@ import Data.Traversable
 import Data.Foldable
 
 import Control.Monad
+import Control.DeepSeq
 
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -36,7 +37,7 @@ instance Out a => Out (ScoredTourneyPlayer a r) where
     docPrec i x = doc x
     doc (ScoredTourneyPlayer x) = doc $ fst x
 
-renderHaapTourney :: (HaapDB db,TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
+renderHaapTourney :: (NFData a,HaapDB db,TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourney hp tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb

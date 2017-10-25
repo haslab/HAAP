@@ -29,6 +29,7 @@ data AcidDB st
 data AcidDBArgs st = AcidDBArgs
     { acidDBFile :: FilePath -- relative filepath
     , acidDBInit :: st -- initial database
+    , acidDBIOArgs :: IOArgs -- timeout for acid-db operations
     }
 
 data AcidDBQuery st a where
@@ -38,7 +39,7 @@ data AcidDBUpdate st a where
     AcidDBUpdate :: (UpdateEvent ev,EventState ev ~ st,EventResult ev ~ a) => ev -> AcidDBUpdate st a
 
 instance IsAcidic st => HaapDB (AcidDB st) where
-    type DB (AcidDB st) = AcidState st
+    type DB (AcidDB st) = (IOArgs,AcidState st)
     type DBArgs (AcidDB st) = AcidDBArgs st
     type DBQuery (AcidDB st) a = AcidDBQuery st a
     type DBUpdate (AcidDB st) a = AcidDBUpdate st a
@@ -46,19 +47,21 @@ instance IsAcidic st => HaapDB (AcidDB st) where
     useDB getArgs m = do
         path <- getProjectPath
         args <- liftM getArgs Reader.ask
-        acid <- runIO $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
-        x <- haapDBLens'' (constLens'' acid) m
-        runIO $ createArchive acid
-        runIO $ closeAcidState acid
+        let ioargs = acidDBIOArgs args
+        acid <- runIOWith (const ioargs) $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
+        x <- haapDBLens'' (constLens'' (ioargs,acid)) m
+        ignoreError $ do
+            runIOWith (const ioargs) $ createArchive acid
+            runIOWith (const ioargs) $ closeAcidState acid
         return x
         
     queryDB (AcidDBQuery q) = do
-        acid <- getDB
-        runIO $ query acid q
+        (ioargs,acid) <- getDB
+        runIOWith (const ioargs) $ query acid q
         
     updateDB (AcidDBUpdate u) = do
-        acid <- getDB
-        runIO $ update acid u
+        (ioargs,acid) <- getDB
+        runIOWith (const ioargs) $ update acid u
 
 
     

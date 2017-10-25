@@ -19,7 +19,7 @@ instance Show a => Out (ParseResult a) where
 
 parseHaskellFile :: HaapMonad m => FilePath -> Haap p args db m (Module SrcSpanInfo)
 parseHaskellFile file = do
-    str <- runIO $ readFile file
+    str <- runIO' $ readFile file
     let mb = readExtensions str
     let mblang = join $ fmap fst mb
     let exts = maybe [] snd mb
