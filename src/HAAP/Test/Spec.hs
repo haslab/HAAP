@@ -129,34 +129,31 @@ haapTestRes (Right msg) = HaapTestError $ pretty msg
 
 runHaapTestTable :: HaapMonad m => HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db m HaapTestTableRes
 runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ pretty e) tests) $ do
+    forM tests $ \(i,spec) -> runHaapTest args i spec
+    
+runHaapTest :: HaapMonad m => HaapSpecArgs -> Int -> Spec -> Haap p args db m HaapTestRes
+runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
     outknob <- runIO $ newKnob (B.pack [])
     outhandle <- runIO $ newFileHandle outknob "knob" WriteMode
-    runIO $ hPutStr outhandle "[(-1,HaapTestError \"\")"
     let formatter = silent
-            { exampleSucceeded = \(parents,name) -> write $ ",(" ++ name ++ "," ++ "HaapTestOk" ++ ")"
-            , exampleFailed = \(parents,name) err -> write $ ",(" ++ name ++ "," ++ show (haapTestRes err) ++ ")"
+            { exampleSucceeded = \(parents,name) -> write $ "HaapTestOk"
+            , exampleFailed = \(parents,name) err -> write $ show (haapTestRes err)
             }
     let cfg = defaultConfig
                 { configQuickCheckMaxSuccess = specQuickCheckMaxSuccess args
                 , configFormatter = Just formatter
                 , configOutputFile = Left outhandle
                 }
-    let spec = forM_ tests $ \(ex,test) -> describe (show ex) test
-    let ioargs = const $ defaultIOArgs { ioTimeout = fmap (\t -> 3 * t + length tests * 3 * t) $ ioTimeout defaultIOArgs }
-    outbstr <- orLogError $ do
-        runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
-        runIO $ hPutStr outhandle "]"
-        runIO $ hClose outhandle
-        runIO' $ Knob.getContents outknob
+    let spec = describe (show ex) test
+    let ioargs = const $ defaultIOArgs { ioTimeout = fmap (\t -> 2 * t) $ ioTimeout defaultIOArgs }
+    ignoreError $ runIOWith' ioargs $ withArgs [] $ hspecWith cfg spec
+    ignoreError $ runIO' $ hClose outhandle
+    outbstr <- orLogError $ runIO' $ Knob.getContents outknob
 
     let outstr = B8.unpack outbstr
-    xs <- case readMaybe outstr :: Maybe [(Int,HaapTestRes)] of
+    res <- case readMaybe outstr :: Maybe HaapTestRes of
         Nothing -> throwError $ HaapException $ "failed to parse hspec output: " ++ outstr
-        Just xs -> return $ tail xs
-    let readTest (i,x) = case lookup i xs of
-                            Just xres -> xres
-                            Nothing -> HaapTestError $ "example name not found " ++ show i ++ " in " ++ show (map fst xs) ++ "\n" ++ "running tests probably took too long"
-    let res = fmapDefault readTest tests
+        Just res -> return res
     return res
 
 haapSpec :: HaapSpecMode -> HaapSpec -> HaapTestTable (Int,Spec)
