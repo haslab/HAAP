@@ -50,9 +50,8 @@ instance IsAcidic st => HaapDB (AcidDB st) where
         let ioargs = acidDBIOArgs args
         acid <- runIOWith (const ioargs) $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
         x <- haapDBLens'' (constLens'' (ioargs,acid)) m
-        ignoreError $ do
-            runIOWith (const ioargs) $ createArchive acid
-            runIOWith (const ioargs) $ closeAcidState acid
+        ignoreError $ runIOWith (const ioargs) $ createArchive acid
+        ignoreError $ runIOWith (const ioargs) $ closeAcidState acid
         return x
         
     queryDB (AcidDBQuery q) = do
