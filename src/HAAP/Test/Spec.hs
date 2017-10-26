@@ -133,8 +133,8 @@ runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTest
     
 runHaapTest :: HaapMonad m => HaapSpecArgs -> Int -> Spec -> Haap p args db m HaapTestRes
 runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
-    outknob <- runIO $ newKnob (B.pack [])
-    outhandle <- runIO $ newFileHandle outknob "knob" WriteMode
+    outknob <- addMessageToError ("initializing test knob" ++ show ex) $ runIO $ newKnob (B.pack [])
+    outhandle <- addMessageToError ("initializing test handle" ++ show ex) $ runIO $ newFileHandle outknob "knob" WriteMode
     let formatter = silent
             { exampleSucceeded = \(parents,name) -> write $ "HaapTestOk"
             , exampleFailed = \(parents,name) err -> write $ show (haapTestRes err)
@@ -194,7 +194,7 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
     haapSpec' mode (HaapSpecTestMessage io) = do
         ex <- haapNewExample
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
-            msg <- io 
+            msg <- runSpecIO "test" io 
             throw $ HaapSpecMessage msg
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
 
@@ -227,15 +227,15 @@ haapSpecProperty :: HaapSpec -> Property
 haapSpecProperty (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty . f) xs
 haapSpecProperty (HaapSpecUnbounded n _ g f) = forAll g f
 haapSpecProperty (HaapSpecTestBool io) = counterexample "Boolean assertion failed" $ monadicIO $ do
-    b <- run io
+    b <- run $ runSpecIO "test" io
     QuickCheck.assert b
 haapSpecProperty (HaapSpecTestEqual iox ioy) = monadicIO $ do
-    x <- run iox
-    y <- run ioy
+    x <- run $ runSpecIO "oracle" iox
+    y <- run $ runSpecIO "solution" ioy
     unless (x==y) $ fail ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y)
     QuickCheck.assert (x==y)
 haapSpecProperty (HaapSpecTestMessage io) = monadicIO $ do
-    msg <- run io
+    msg <- run $ runSpecIO "test" io
     throw $ HaapSpecMessage msg
     return ()
 

@@ -95,6 +95,11 @@ runIOWithTimeout timeout m = runIOWith (const args) m
     where
     args = def { ioTimeout = Just timeout }
 
+runShWithTimeout :: HaapMonad m => Int -> Sh a -> Haap p args db m a
+runShWithTimeout timeout m = runShWith (const args) m
+    where
+    args = def { ioTimeout = Just timeout }
+
 runIOWith :: HaapMonad m => (args -> IOArgs) -> IO a -> Haap p args db m a
 runIOWith getArgs io = do
     args <- Reader.reader getArgs
@@ -158,6 +163,10 @@ shCommandWith_ ioargs name args  = do
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs
 
+haapRetry :: HaapMonad m => Int -> Haap p args db m a -> Haap p args db m a
+haapRetry 0 m = m
+haapRetry i m = orDo (\e -> logError e >> haapRetry (pred i) m) m
+
 shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
 shCommandWith ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
@@ -215,9 +224,6 @@ orErrorWritePage path def m = orDo go $ do
     go e = do
         runIO $ writeFile path $ pretty e
         return def
-
-addToError :: (HaapMonad m) => String -> Haap p args db m a -> Haap p args db m a
-addToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ "\n" ++ pretty e) m
 
 haapLiftIO :: HaapMonad m => IO a -> Haap p args db m a
 haapLiftIO io = Haap $ catch (liftIO io) (\(e::SomeException) -> throwError $ HaapIOException e)
@@ -285,7 +291,10 @@ orDo' ex m = catchError (forceM m) ex
 ignoreError :: HaapMonad m => Haap p args db m () -> Haap p args db m ()
 ignoreError m = orDo (\e -> logEvent (pretty e)) m
 
-orLogError :: IsString str => HaapMonad m => Haap p args db m str -> Haap p args db m str
+addMessageToError :: HaapMonad m => String -> Haap p args db m a -> Haap p args db m a
+addMessageToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ pretty e) m
+
+orLogError :: (IsString str,HaapMonad m) => Haap p args db m str -> Haap p args db m str
 orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
 
 forceM :: (Monad m,NFData a) => m a -> m a
