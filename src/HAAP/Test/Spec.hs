@@ -173,7 +173,7 @@ haapSpec mode s = State.evalState (haapSpec' mode s) 0
     haapSpec' HaapSpecQuickCheck spec@(HaapSpecUnbounded n seeds g f) = do
         ex <- haapNewExample
         let ns = unsafePerformIO $ haapSpecNames spec
-        return $ HaapTestTable ns [(replicate (length ns) "-",(ex,it (show ex) $ forAll g f))]
+        return $ HaapTestTable ns [(replicate (length ns) "randomly sampled",(ex,it (show ex) $ forAll g f))]
     haapSpec' HaapSpecHUnit (HaapSpecUnbounded n seeds g f) = do
         let mkArg i = unGen g (mkQCGen i) i
         let xs = map mkArg seeds
