@@ -23,11 +23,22 @@
   </body>
   
   <script type="text/javascript">
-  function drawCW() {
+  var count = 0;
+  function importScript(script) {
       var imported = document.createElement('script');
-      imported.src = '$runpath$/runmain.js';
+      imported.src = script;
       document.head.appendChild(imported);
   }
+  
+  function drawCW() {
+      if (count == 0) {
+          importScript('$runpath$/runmain.js'); count=1;
+          var property = document.getElementById('textbutton');
+          property.style.display = "none";
+      }
+      else { reportRuntimeError(true,'Please Reload'); }
+  }
+  
   </script>
   
   <script type="text/javascript">

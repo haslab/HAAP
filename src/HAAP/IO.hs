@@ -19,6 +19,7 @@ import qualified Data.Text as Text
 import Data.Foldable
 import Data.Typeable
 import Data.Proxy
+import Data.String
 
 import System.Timeout
 import System.FilePath
@@ -26,6 +27,8 @@ import System.Exit
 import System.Process
 import System.Directory
 import System.Environment
+
+import Test.QuickCheck
 
 import Text.Read
 
@@ -87,6 +90,16 @@ defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing
 instance Default IOArgs where
     def = defaultIOArgs
 
+runIOWithTimeout :: HaapMonad m => Int -> IO a -> Haap p args db m a
+runIOWithTimeout timeout m = runIOWith (const args) m
+    where
+    args = def { ioTimeout = Just timeout }
+
+runShWithTimeout :: HaapMonad m => Int -> Sh a -> Haap p args db m a
+runShWithTimeout timeout m = runShWith (const args) m
+    where
+    args = def { ioTimeout = Just timeout }
+
 runIOWith :: HaapMonad m => (args -> IOArgs) -> IO a -> Haap p args db m a
 runIOWith getArgs io = do
     args <- Reader.reader getArgs
@@ -114,6 +127,9 @@ runShWith :: HaapMonad m => (args -> IOArgs) -> Sh a -> Haap p args db m a
 runShWith getArgs io = do
     args <- Reader.reader getArgs
     runShCore args io
+
+runShIOResult :: HaapMonad m => Sh IOResult -> Haap p args db m IOResult
+runShIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runSh m)
 
 runSh :: HaapMonad m => Sh a -> Haap p args db m a
 runSh = runShWith (const defaultIOArgs)
@@ -146,6 +162,10 @@ shCommandWith_ ioargs name args  = do
 
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs
+
+haapRetry :: HaapMonad m => Int -> Haap p args db m a -> Haap p args db m a
+haapRetry 0 m = m
+haapRetry i m = orDo (\e -> logError e >> haapRetry (pred i) m) m
 
 shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
 shCommandWith ioargs name args  = do
@@ -205,9 +225,6 @@ orErrorWritePage path def m = orDo go $ do
         runIO $ writeFile path $ pretty e
         return def
 
-addToError :: (HaapMonad m) => String -> Haap p args db m a -> Haap p args db m a
-addToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ "\n" ++ pretty e) m
-
 haapLiftIO :: HaapMonad m => IO a -> Haap p args db m a
 haapLiftIO io = Haap $ catch (liftIO io) (\(e::SomeException) -> throwError $ HaapIOException e)
 
@@ -262,6 +279,9 @@ orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
 orDefault :: HaapMonad m => a -> Haap p args db m a -> Haap p args db m a
 orDefault a m = orDo (\e -> return a) m
 
+orMaybeIO :: IO a -> IO (Maybe a)
+orMaybeIO m = catch (liftM Just m) (\(err::SomeException) -> return Nothing)
+
 orError :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either a HaapException)
 orError m = orDo (return . Right) (liftM Left m)
 
@@ -270,6 +290,12 @@ orDo' ex m = catchError (forceM m) ex
 
 ignoreError :: HaapMonad m => Haap p args db m () -> Haap p args db m ()
 ignoreError m = orDo (\e -> logEvent (pretty e)) m
+
+addMessageToError :: HaapMonad m => String -> Haap p args db m a -> Haap p args db m a
+addMessageToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ pretty e) m
+
+orLogError :: (IsString str,HaapMonad m) => Haap p args db m str -> Haap p args db m str
+orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do
@@ -290,6 +316,9 @@ shToFilePath = Text.unpack . Sh.toTextIgnore
 shCd :: FilePath -> Sh ()
 shCd = Sh.cd . shFromFilePath
 
+shMkDir :: FilePath -> Sh ()
+shMkDir = Sh.mkdir_p . shFromFilePath
+
 shCp :: FilePath -> FilePath -> Sh ()
 shCp from to = Sh.cp_r (shFromFilePath from) (shFromFilePath to)
 
@@ -305,17 +334,22 @@ shCanonalize = liftM shToFilePath . Sh.canonicalize . shFromFilePath
 shDoesDirectoryExist :: FilePath -> Sh Bool
 shDoesDirectoryExist = Sh.test_d . shFromFilePath
 
+shDoesFileExist :: FilePath -> Sh Bool
+shDoesFileExist = Sh.test_f . shFromFilePath
+
 shCpRecursive :: FilePath -> FilePath -> Sh ()
 shCpRecursive = shRecursive shCp
 
 shRecursive :: (FilePath -> FilePath -> Sh ()) -> FilePath -> FilePath -> Sh ()
 shRecursive op from to = do
     isfromdir <- shDoesDirectoryExist from
-    istodir <- shDoesDirectoryExist to
-    if (isfromdir && istodir)
+    shMkDir $ takeDirectory to
+    if isfromdir
         then do
+            istodir <- shDoesDirectoryExist to
+            unless (istodir) $ shMkDir to
             froms <- shLs from
-            forM_ froms $ \x -> shRecursive op (from </> x) to
+            forM_ froms $ \x -> shRecursive op (from </> x) to       
         else op from to
 
 equalPathIO :: FilePath -> FilePath -> IO Bool
@@ -330,7 +364,10 @@ equalPathSh x y = do
     y' <- shCanonalize y
     return $ equalFilePath x y
 
-        
+forAllIO :: Int -> Gen a -> (a -> IO b) -> IO [b]
+forAllIO num gen f = do
+    xs <- generate $ vectorOf num gen
+    mapM f xs
         
         
         

@@ -23,6 +23,7 @@ data BinaryDBDB st = BinaryDBDB st
 data BinaryDBArgs st = BinaryDBArgs
     { binaryDBFile :: FilePath -- relative filepath
     , binaryDBInit :: st -- initial database
+    , binaryDBIOArgs :: IOArgs 
     }
 
 data BinaryDBQuery st a = BinaryDBQuery (st -> a)
@@ -38,8 +39,8 @@ instance Binary st => HaapDB (BinaryDB st) where
         path <- getProjectPath
         args <- Reader.reader getArgs
         let file = path </> binaryDBFile args
-        let get = liftM BinaryDBDB $ orDo (\err -> return $ binaryDBInit args) (runIO $ decodeFile file)
-        let put (BinaryDBDB st) = runIO $ encodeFile file st
+        let get = liftM BinaryDBDB $ orDo (\err -> return $ binaryDBInit args) (runIOWith (const $ binaryDBIOArgs args) $ decodeFile file)
+        let put (BinaryDBDB st) = runIOWith (const $ binaryDBIOArgs args) $ encodeFile file st
         mapHaapDB get put m
         
     queryDB (BinaryDBQuery q) = do

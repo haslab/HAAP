@@ -79,8 +79,8 @@ runHakyllWith getCfg (Haap mrules) = do
 
 copyDataFiles :: HaapMonad m => Configuration -> Haap p args db m ()
 copyDataFiles cfg = do
-    datapath <- runIO $ getDataFileName ""
-    xs <- runIO $ listDirectory datapath
+    datapath <- runIO' $ getDataFileName ""
+    xs <- runIO' $ listDirectory datapath
     runSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> x)
 
 --dataRoute :: FilePath -> Routes
@@ -114,6 +114,10 @@ liftCompiler :: (String -> String) -> Item String -> Compiler (Item String)
 liftCompiler f i = return $ fmap f i
 
 data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
+
+instance Monoid HakyllP where
+    mempty = defaultHakyllP
+    mappend x y = HakyllP (hakyllRoute y . hakyllRoute x) (hakyllCompile x >=> hakyllCompile y)
 
 funRoute :: (FilePath -> FilePath) -> Routes
 funRoute f = customRoute (f . toFilePath)

@@ -18,8 +18,10 @@ function http_digest_parse($$txt)
 
 # TODO
 function get_group_from_url()
-{
-  return $$url = explode('/', $$_SERVER['REQUEST_URI'])[2];
+{ 
+  $$string = explode('/', $$_SERVER['REQUEST_URI'])[2];
+    $$url = sprintf( "%03d", (int) $$string );
+    return $$url;
 }
 
 function check_group($$group,$$username)

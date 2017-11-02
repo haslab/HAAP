@@ -129,7 +129,7 @@ exTourney = HaapTourney 10 "Tourney" "Grupo" grupos "torneio" lnsTourney match r
     where
     grupos = map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
     match tno rno mno players = do
-        players' <- runIO $ shuffleM players
+        players' <- runIO' $ shuffleM players
         return (zip players' [1..],["link"])
 
 

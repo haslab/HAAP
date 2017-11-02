@@ -23,7 +23,7 @@ data HLintArgs = HLintArgs
     }
 
 runHLint :: HakyllP -> HLintArgs -> Haap p args db Hakyll FilePath
-runHLint hp h = do
+runHLint hp h = orErrorHakyllPage hp hlinterrorpath hlinterrorpath $ do
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (hlintPath h) </>) (hlintSandbox h) }
     let extras = hlintArgs h
@@ -40,4 +40,6 @@ runHLint hp h = do
             route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
             compile $ getResourceString >>= hakyllCompile hp
     return (hakyllRoute hp $ hlintHtmlPath h)
+  where
+    hlinterrorpath = addExtension (hlintHtmlPath h) "html"
       

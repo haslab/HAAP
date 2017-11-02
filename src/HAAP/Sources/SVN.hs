@@ -11,6 +11,8 @@ import Data.List.Split
 import Data.List
 import qualified Data.Text as Text
 import Data.SafeCopy
+import Data.Time.Format
+import Data.Time.LocalTime
 
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Except
@@ -19,10 +21,24 @@ import Text.Read
 
 import System.FilePath
 import System.Directory
+import System.Locale.Read
 
 import Safe
 
 data SVN
+
+parseSVNDateDefault :: MonadIO m => String -> m ZonedTime
+parseSVNDateDefault str = parseSVNDateWith defaultTimeLocale str
+
+parseSVNDateCurrent :: MonadIO m => String -> m ZonedTime
+parseSVNDateCurrent str = do
+    locale <- liftIO $ getCurrentLocale
+    parseSVNDateWith locale str
+
+parseSVNDateWith :: Monad m => TimeLocale -> String -> m ZonedTime
+parseSVNDateWith locale str = parseTimeM True locale format str
+    where
+    format = "%F %T %z (%a, %d %b %Y)"
 
 data SVNSource = SVNSource
     { svnUser :: String
@@ -36,7 +52,7 @@ $(deriveSafeCopy 0 'base ''SVNSource)
 data SVNSourceInfo = SVNSourceInfo
     { svnRevision :: Int
     , svnAuthor  :: String
-    , svnDate     :: String
+    , svnDate     :: ZonedTime
     }
   deriving Show
 $(deriveSafeCopy 0 'base ''SVNSourceInfo)
@@ -78,23 +94,24 @@ getSVNSourceWith getArgs s = do
     let repo = svnRepository s
     let (dir,name) = splitFileName path
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    runSh $ do
-        if exists
-            then do
-                let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
-                shCd path
-                shCommand_ "svn" ["cleanup"]
-                res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
-                let okRes = resOk res
-                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
-                            && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
-                unless okRes $ do
-                    shCd ".."
-                    shRm name
-                    shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
-            else do
-                shCd dir
-                shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let checkout = runSh $ do
+        shCd dir
+        shRm name
+        shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let update = runShIOResult $ do
+        let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
+        shCd path
+        shCommand_ "svn" ["cleanup"]
+        res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+        let okRes = resOk res
+                    && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
+                    && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
+        return $ res { resExitCode = if okRes then 0 else (-1) }
+    if exists 
+        then do
+            ok <- update
+            unless (resOk ok) checkout
+        else checkout
     return ()
 
 getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
@@ -109,7 +126,8 @@ getSVNSourceInfoWith getArgs s = do
     logRev <- runSh $ do
         shCd path
         shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
-    (author,date) <- parseLogRev $ resStdout logRev
+    (author,datestr) <- parseLogRev $ resStdout logRev
+    date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
   where
     parseInfo txt = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt) of
@@ -134,7 +152,7 @@ putSVNSourceWith getArgs files s = do
     let msg = svnCommitMessage args
     runSh $ do
         shCd path
-        forM_ files $ \file -> shCommand "svn" ["add",file]
+        forM_ files $ \file -> shCommand "svn" ["add","--force","--parents",file]
         shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 

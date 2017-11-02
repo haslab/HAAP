@@ -21,6 +21,7 @@ import Data.Typeable
 import Control.Monad.Except
 import Control.Monad.State (StateT(..))
 import qualified Control.Monad.State as State
+import Control.DeepSeq
 
 import System.Random.Shuffle
 import System.Directory
@@ -122,7 +123,7 @@ playerPos 1 xs = error $ "playerPos1 " ++ show xs
 playerPos roundno [x] = nextRound roundno + 1
 playerPos roundno (x:xs) = playerPos (nextRound roundno) xs
 
-runHaapTourney :: (HaapMonad m,HaapDB db,TourneyPlayer a) => HaapTourney p args db m a r -> Haap p args (DB db) m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
+runHaapTourney :: (NFData a,HaapMonad m,HaapDB db,TourneyPlayer a) => HaapTourney p args db m a r -> Haap p args (DB db) m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
 runHaapTourney tourney = do
     let players = tourneyPlayers tourney
     tourneySize <- getTourneySize players
@@ -135,13 +136,13 @@ runHaapTourney tourney = do
 --    runIO $ putStrLn $ pretty $ sort $ Map.toAscList tourneyst'
     db' <- insertHaapTourneySt tourney tourneyno tourneyst' db
     updateDB $ dbPut (lensTourneyDB tourney) db'
-    tourneytime <- runIO getZonedTime
+    tourneytime <- runIO' getZonedTime
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: (HaapMonad m,TourneyPlayer a) => [a] -> Int -> Haap p args db m [[a]]
+pairPlayers :: (NFData a,HaapMonad m,TourneyPlayer a) => [a] -> Int -> Haap p args db m [[a]]
 pairPlayers players tourneySize = do
-    players' <- runIO $ shuffleM players
+    players' <- runIO' $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
     let bots = replicate (tourneySize-length players') defaultPlayer
     let by = fromIntegral (length bots + length randoms) / fromIntegral (tourneyDiv tourneySize)
