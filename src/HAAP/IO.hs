@@ -20,6 +20,7 @@ import Data.Foldable
 import Data.Typeable
 import Data.Proxy
 import Data.String
+import Data.Bifunctor (bimap)
 
 import System.Timeout
 import System.FilePath
@@ -34,7 +35,7 @@ import Text.Read
 
 import GHC.Stack
 
-import Shelly (Sh(..))
+import Shelly (Sh(..),catchany_sh)
 import qualified Shelly as Sh
 
 instance HaapMonad m => MonadIO (Haap p args db m) where
@@ -206,13 +207,16 @@ shPipeWith io n args x = shPipeWithType io n args x Proxy
     where
     shPipeWithType :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Proxy b -> Sh b
     shPipeWithType io n args x (_::Proxy b) = do
-        let io' = io { ioStdin = Just $ Text.pack $ show x }
-        res <- shCommandWith io' n args
-        let out = Text.unpack (resStdout res)
         let typeb = typeOf (undefined::b)
-        case readMaybe out of
-            Nothing -> error $ "failed to parse result...\n" ++ show out ++ "\n...as type...\n" ++ show typeb ++ "\n" ++ pretty res
-            Just y -> return y
+        let io' = io { ioStdin = Just $ Text.pack $ show x }
+        res <- orEitherSh $ shCommandWith io' n args
+        case res of
+            Left err -> error $ "error...\n" ++ pretty err ++ "\n...on parsing result as type...\n" ++ show typeb
+            Right res -> do
+                let out = (Text.unpack . resStdout) res
+                case readMaybe out of
+                    Nothing -> error $ "failed to parse result...\n" ++ show out ++ "\n...as type...\n" ++ show typeb ++ "\n" ++ pretty res
+                    Just y -> return y
 
 orErrorWritePage :: (HaapMonad m,Out a) => FilePath -> a -> Haap p args db m a -> Haap p args db m a
 orErrorWritePage path def m = orDo go $ do
@@ -281,6 +285,9 @@ orDefault a m = orDo (\e -> return a) m
 
 orMaybeIO :: IO a -> IO (Maybe a)
 orMaybeIO m = catch (liftM Just m) (\(err::SomeException) -> return Nothing)
+
+orEitherSh :: Sh a -> Sh (Either SomeException a)
+orEitherSh m = catchany_sh (liftM Right m) (\err -> return $ Left err)
 
 orError :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either a HaapException)
 orError m = orDo (return . Right) (liftM Left m)
