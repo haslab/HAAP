@@ -30,9 +30,16 @@ tagSoupChangeLinkUrls furl = map felem
     fatt ("href",url) = ("href",furl url)
     fatt att = att
 
-injectHTMLHead :: TagHtml -> String -> String
-injectHTMLHead newhead = asTagSoupHTML aux
+injectHTMLHead :: TagHtml -> TagHtml -> TagHtml
+injectHTMLHead newhead = aux
     where
     aux [] = []
     aux (tag@(TagOpen "head" atts):tags) = tag : newhead ++ tags
+    aux (x:xs) = x : aux xs
+
+injectHTMLBody :: TagHtml -> TagHtml -> TagHtml
+injectHTMLBody newbody = aux
+    where
+    aux [] = []
+    aux (tag@(TagOpen "body" atts):tags) = tag : newbody ++ tags
     aux (x:xs) = x : aux xs

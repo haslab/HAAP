@@ -11,6 +11,9 @@ import HAAP.Pretty
 import Data.Traversable
 import Data.Foldable
 import Data.Maybe
+import Data.List
+
+import Text.HTML.TagSoup
 
 import Control.Monad
 import qualified Control.Monad.Reader as Reader
@@ -51,11 +54,22 @@ runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
                 -- copy the hpc generated documentation
                 match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
                     route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-                    compile $ getResourceString >>= liftCompiler (asTagSoupHTML $ tagSoupChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
+                    compile $ do
+                        file <- getResourceFilePath
+                        getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
         return (x,outhtml)
   where
     (dir,exec) = splitFileName (hpcExecutable hpc)
     html = hpcHtmlPath hpc </> exec </> "hpc_index.html"
     outhtml = hakyllRoute hp $ html
+
+addLegend :: FilePath -> TagHtml -> TagHtml
+addLegend file html = if isInfixOf ".hs" file
+    then injectHTMLBody hpcLegend html
+    else html
+
+hpcLegend :: TagHtml
+hpcLegend = parseTags 
+    "<pre>\n<span class=\"decl\"><span class=\"nottickedoff\">never executed</span> <span class=\"tickonlytrue\">always true</span> <span class=\"tickonlyfalse\">always false</span></span>\n</pre>"
 
 
