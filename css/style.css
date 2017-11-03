@@ -94,7 +94,7 @@ body {
 /* -- Material Design Table style -------------- */
 .table {
   width: 100%;
-  max-width: 100%;
+  /*max-width: 100%;*/
   margin-bottom: 2rem;
   background-color: #ffffff;
 }
