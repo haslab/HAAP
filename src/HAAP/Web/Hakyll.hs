@@ -42,7 +42,7 @@ newtype Hakyll a = Hakyll { unHakyll :: WriterT (Rules ()) IO a }
   deriving (Functor,Applicative,Monad,MonadIO,MonadCatch,MonadThrow,MonadWriter (Rules ()))
 
 instance HaapMonad Hakyll where
-    type HaapMonadArgs Hakyll = (Configuration,Bool)
+    type HaapMonadArgs Hakyll = (Configuration,Bool,Bool)
     runHaapMonadWith = runHakyllWith
 
 loadAndApplyHTMLTemplate :: Identifier -> Context a -> Item a -> Compiler (Item String)
@@ -58,7 +58,7 @@ hakyllRules r = Haap $ lift $ lift $ Writer.tell r
 
 runHakyllWith :: (args -> HaapMonadArgs Hakyll) -> Haap p args db Hakyll a -> Haap p args db IO a
 runHakyllWith getCfg (Haap mrules) = do
-    (cfg,doClean) <- Reader.reader getCfg
+    (cfg,doClean,doCopyData) <- Reader.reader getCfg
     let g (Hakyll m) = do
         (e,rules) <- Writer.runWriterT m
         let datarules = do
@@ -70,11 +70,12 @@ runHakyllWith getCfg (Haap mrules) = do
         let clean = withArgs ["clean"] $ hakyllWithExitCode cfg datarules
         if doClean
             then clean >> build
-            else catch
-                (build >>= \e -> case e of { ExitFailure _ -> clean >> build; otherwise -> return e })
-                (\(err::SomeException) -> clean >> build)
+            else build
+        --    else catch
+        --        (build >>= \e -> case e of { ExitFailure _ -> clean >> build; otherwise -> return e })
+        --        (\(err::SomeException) -> clean >> build)
         return e
-    copyDataFiles cfg
+    when doCopyData $ copyDataFiles cfg
     Haap $ RWS.mapRWST (Except.mapExceptT g) mrules
 
 copyDataFiles :: HaapMonad m => Configuration -> Haap p args db m ()
