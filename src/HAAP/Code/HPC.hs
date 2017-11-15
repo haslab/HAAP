@@ -36,10 +36,13 @@ runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
     io <- Reader.reader (hpcIO hpc)
     let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
     do
+        ignoreError $ runSh $ do
+            shCd dir
+            shRm $ addExtension exec "tix"
+            
         ghcres <- runShIOResult $ do
             shCd dir
             res <- shGhcWith io' ghc' [exec]
-            shRm $ addExtension exec "tix"
             return res
             
         x <- m ghcres
