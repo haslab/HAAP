@@ -48,8 +48,10 @@ data SVNSource = SVNSource
     , svnPath :: FilePath -- path on disk
     , svnRepository :: FilePath -- repository url
     }
-  deriving Show
 $(deriveSafeCopy 0 'base ''SVNSource)
+
+instance Show SVNSource where
+    show (SVNSource user pass path repo) = show user
 
 data SVNSourceInfo = SVNSourceInfo
     { svnRevision :: Int
@@ -86,6 +88,7 @@ defaultSVNSourceArgs = SVNSourceArgs "system commit" True
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
+svnArgs = hiddenIOArgs
     
 getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
 getSVNSourceWith getArgs s = do
@@ -96,24 +99,24 @@ getSVNSourceWith getArgs s = do
     let repo = svnRepository s
     let (dir,name) = splitFileName path
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    let checkout = runSh $ do
+    let checkout = runShWith (const defaultIOArgs) $ do
         shCd dir
         shRm name
-        shCommand_ "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
-    let update = runShIOResult $ do
+        shCommandWith defaultIOArgs "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let update = runShWith (const defaultIOArgs) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
-        shCommand_ "svn" ["cleanup"]
-        res <- shCommand "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+        shCommandWith defaultIOArgs "svn" ["cleanup"]
+        res <- shCommandWith defaultIOArgs "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
         let okRes = resOk res
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
         return $ res { resExitCode = if okRes then 0 else (-1) }
-    if exists 
+    ignoreError $ if (exists)
         then do
             ok <- update
-            unless (resOk ok) checkout
-        else checkout
+            unless (resOk ok) (checkout >> return ())
+        else (checkout >> return ())
     return ()
 
 getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
@@ -121,29 +124,29 @@ getSVNSourceInfoWith getArgs s = do
     let path = svnPath s
     let user = svnUser s
     let pass = svnPass s
-    info <- runSh $ do
+    info <- runShIOResultWith (const defaultIOArgs) $ do
         shCd path
-        Sh.tracing False $ shCommand "svn" ["info","--non-interactive","--username",user,"--password",pass]
-    rev <- parseInfo $ resStdout info
-    logRev <- runSh $ do
+        shCommandWith defaultIOArgs "svn" ["info","--non-interactive","--username",user,"--password",pass]
+    rev <- parseInfo (resStdout info) (resStderr info)
+    logRev <- runShIOResultWith (const defaultIOArgs) $ do
         shCd path
-        Sh.tracing False $ shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
-    (author,datestr) <- parseLogRev $ resStdout logRev
+        shCommandWith defaultIOArgs "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
+    (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
     date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
   where
-    parseInfo txt = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt) of
+    parseInfo txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
         (x:xs) -> case readMaybe (drop 10 x) :: Maybe Int of
             Just rev -> return rev
-            Nothing -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s
-        [] -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s
-    parseLogRev txt = case tailMay (lines $ Text.unpack txt) of
+            Nothing -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+        [] -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+    parseLogRev txt1 txt2 = case tailMay (lines $ Text.unpack txt1) of
         Nothing -> return ("","")
         Just t -> case headMay t of
             Nothing -> return ("","")
             Just str -> case splitOn "|" str of
                 [_,author,date,_] -> return (author,date)
-                otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s
+                otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
 
 putSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> [FilePath] -> SVNSource -> Haap p args db m ()
 putSVNSourceWith getArgs files s = do
@@ -152,10 +155,10 @@ putSVNSourceWith getArgs files s = do
     let pass = svnPass s
     let path = svnPath s
     let msg = svnCommitMessage args
-    runSh $ do
+    runShIOResultWith (const defaultIOArgs) $ do
         shCd path
-        forM_ files $ \file -> shCommand "svn" ["add","--force","--parents",file]
-        Sh.tracing False $ shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
+        forM_ files $ \file -> shCommandWith_ defaultIOArgs "svn" ["add","--force","--parents",file]
+        shCommandWith defaultIOArgs "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 
 

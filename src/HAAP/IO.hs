@@ -50,6 +50,7 @@ data IOArgs = IOArgs
     , ioEscaping :: Bool -- escape shell characters or not
     , ioEnv :: [(String,FilePath)] -- additional environment variables
     , ioCmd :: Maybe String -- environment command (such as env, bash)
+    , ioHidden :: Bool -- run without reporting errors 
     }
 
 addIOCmd :: Maybe String -> IOArgs -> IOArgs
@@ -86,7 +87,10 @@ instance Out IOResult where
            $+$ text "Exit Code:" <+> doc (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing
+defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing False
+
+hiddenIOArgs :: IOArgs
+hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
 
 instance Default IOArgs where
     def = defaultIOArgs
@@ -129,6 +133,9 @@ runShWith getArgs io = do
     args <- Reader.reader getArgs
     runShCore args io
 
+runShIOResultWith :: HaapMonad m => (args -> IOArgs) -> Sh IOResult -> Haap p args db m IOResult
+runShIOResultWith args m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runShWith args m)
+
 runShIOResult :: HaapMonad m => Sh IOResult -> Haap p args db m IOResult
 runShIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runSh m)
 
@@ -152,12 +159,13 @@ shCommandWith_ :: IOArgs -> String -> [String] -> Sh ()
 shCommandWith_ ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addRedir $ addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     Sh.run_ (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
     addSandbox Nothing cmds = cmds
     addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
@@ -174,7 +182,7 @@ shCommandWith ioargs name args  = do
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
-    stderr <- Sh.lastStderr
+    stderr <- if ioHidden ioargs then return Text.empty else Sh.lastStderr
     exit <- Sh.lastExitCode
     return $ IOResult exit stdout stderr
   where
@@ -184,13 +192,16 @@ shCommandWith ioargs name args  = do
     addSandbox Nothing cmds = cmds
     addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
+ioCommandWith_ :: IOArgs -> String -> [String] -> IO ()
+ioCommandWith_ ioargs name args = ioCommandWith ioargs name args >> return ()
+
 ioCommandWith :: IOArgs -> String -> [String] -> IO IOResult
-ioCommandWith ioargs name args = do
+ioCommandWith ioargs name args = addHiddenIO $ do
     forM_ (ioEnv ioargs) $ \(evar,epath) -> setEnv evar epath
     let stdin = maybe [] Text.unpack $ ioStdin ioargs
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    let cmds = addRedir $ addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     (exit,stdout,stderr) <- readProcessWithExitCode (head cmds) (tail cmds) stdin
-    unless (ioSilent ioargs) $ do
+    unless (ioSilent ioargs || ioHidden ioargs) $ do
         putStrLn $ "Running IO: " ++ unwords cmds
         putStrLn $ stderr
         putStrLn $ stdout
@@ -199,8 +210,15 @@ ioCommandWith ioargs name args = do
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
     addSandbox Nothing cmds = cmds
     addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
+
+hiddenSh :: Sh a -> Sh a
+hiddenSh m = Sh.catchany_sh (hide m) (const $ return $ error "result is hidden!")
+    where
+    hide = Sh.print_commands False . Sh.log_stderr_with (const $ return ()) . Sh.silently . Sh.tracing False
 
 shPipeWith :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Sh b
 shPipeWith io n args x = shPipeWithType io n args x Proxy
@@ -242,7 +260,9 @@ runShCore args sh = case ioTimeout args of
             Just a -> return a
   where
     io = Sh.shelly $ silent $ Sh.escaping (ioEscaping args) sh
-    silent = if ioSilent args then Sh.silently else Sh.verbosely
+    silent = if ioHidden args
+        then hiddenSh
+        else if ioSilent args then Sh.silently else Sh.verbosely
 
 runShCoreIO :: IOArgs -> Sh a -> IO a
 runShCoreIO args sh = case ioTimeout args of
