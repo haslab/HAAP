@@ -23,6 +23,8 @@ import System.FilePath
 import System.Directory
 import System.Locale.Read
 
+import qualified Shelly as Sh
+
 import Safe
 
 data SVN
@@ -121,11 +123,11 @@ getSVNSourceInfoWith getArgs s = do
     let pass = svnPass s
     info <- runSh $ do
         shCd path
-        shCommand "svn" ["info","--non-interactive","--username",user,"--password",pass]
+        Sh.tracing False $ shCommand "svn" ["info","--non-interactive","--username",user,"--password",pass]
     rev <- parseInfo $ resStdout info
     logRev <- runSh $ do
         shCd path
-        shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
+        Sh.tracing False $ shCommand "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     (author,datestr) <- parseLogRev $ resStdout logRev
     date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
@@ -153,7 +155,7 @@ putSVNSourceWith getArgs files s = do
     runSh $ do
         shCd path
         forM_ files $ \file -> shCommand "svn" ["add","--force","--parents",file]
-        shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
+        Sh.tracing False $ shCommand "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 
 
