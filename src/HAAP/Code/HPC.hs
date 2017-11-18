@@ -26,13 +26,14 @@ data HpcArgs args = HpcArgs
     , hpcIO :: args -> IOArgs
     , hpcSandbox :: Maybe FilePath
     , hpcHtmlPath :: FilePath -- relative path to the project to store hpc results
+    , hpcRTS :: Bool
     }
 
 runHpc :: Out a => HakyllP -> HpcArgs args -> a -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
 runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
     tmp <- getProjectTmpPath
     ghc <- Reader.reader (hpcGHC hpc)
-    let ghc' = ghc { ghcHpc = True }
+    let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc }
     io <- Reader.reader (hpcIO hpc)
     let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
     do

@@ -7,17 +7,18 @@ import HAAP.Core
 import HAAP.Utils
 import HAAP.Test.Spec
 import HAAP.Pretty
+import HAAP.IO
 
 import Data.Traversable
 
-renderHaapSpecWith :: HakyllP -> (args -> HaapSpecArgs) -> FilePath -> String -> String -> HaapSpec -> Haap p args db Hakyll FilePath
-renderHaapSpecWith hp getArgs path title notes spec = do
-    test <- runSpecWith getArgs spec
+renderHaapSpecWith :: HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> FilePath -> String -> String -> HaapSpec -> Haap p args db Hakyll FilePath
+renderHaapSpecWith hp getIOArgs getArgs path title notes spec = do
+    test <- runSpecWith getIOArgs getArgs spec
     renderHaapTest hp path title notes test
 
-renderHaapSpecsWith :: HakyllP -> (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db Hakyll FilePath
-renderHaapSpecsWith hp getArgs path title specs = do
-    tests <- forM specs $ mapSndM (runSpecWith getArgs)
+renderHaapSpecsWith :: HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db Hakyll FilePath
+renderHaapSpecsWith hp getIOArgs getArgs path title specs = do
+    tests <- forM specs $ mapSndM (runSpecWith getIOArgs getArgs)
     renderHaapTests hp path title tests
 
 renderHaapTest :: HakyllP -> FilePath ->  String -> String -> HaapTestTableRes -> Haap p args db Hakyll FilePath

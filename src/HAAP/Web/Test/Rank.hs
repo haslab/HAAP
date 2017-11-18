@@ -8,6 +8,7 @@ import HAAP.Test.Spec
 import HAAP.Test.Rank
 import HAAP.Utils
 import HAAP.Web.Hakyll
+import HAAP.IO
 
 import Data.Traversable
 import Data.List
@@ -19,10 +20,10 @@ renderHaapRank hp rank = do
     scores <- runHaapRank rank
     renderHaapRankScores hp rank scores
 
-renderHaapSpecRankWith :: (Out a,Score score) => HakyllP -> (args -> HaapSpecArgs) -> HaapSpecRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
-renderHaapSpecRankWith hp getArgs rank = do
-    scores <- runHaapSpecRankWith getArgs rank
-    renderHaapRankScores hp (haapSpecRank getArgs rank) scores
+renderHaapSpecRankWith :: (Out a,Score score) => HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
+renderHaapSpecRankWith hp getIOArgs getArgs rank = do
+    scores <- runHaapSpecRankWith getIOArgs getArgs rank
+    renderHaapRankScores hp (haapSpecRank getIOArgs getArgs rank) scores
 
 renderHaapRankScores :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> HaapRankRes a score -> Haap p args db Hakyll FilePath
 renderHaapRankScores hp rank scores = do

@@ -7,6 +7,7 @@ import HAAP.Pretty
 import HAAP.Test.Spec
 import HAAP.Utils
 import HAAP.Web.Hakyll
+import HAAP.IO
 
 import Data.Traversable
 import Data.List
@@ -86,14 +87,14 @@ data HaapSpecRank p args db m a score = HaapSpecRank
     , sRankScore :: HaapTestRes -> Haap p args db m score
     }
 
-runHaapSpecRankWith :: (HaapMonad m,Out a,Score score) => (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> Haap p args db m (HaapRankRes a score)
-runHaapSpecRankWith getArgs r = runHaapRank (haapSpecRank getArgs r)
+runHaapSpecRankWith :: (HaapMonad m,Out a,Score score) => (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> Haap p args db m (HaapRankRes a score)
+runHaapSpecRankWith getIOArgs getArgs r = runHaapRank (haapSpecRank getIOArgs getArgs r)
 
-haapSpecRank :: HaapMonad m => (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> HaapRank p args db m a score
-haapSpecRank getArgs r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
+haapSpecRank :: HaapMonad m => (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> HaapRank p args db m a score
+haapSpecRank getIOArgs getArgs r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
     where
     rSc a = do
-        table <- runSpecWith getArgs (sRankSpec r a)
+        table <- runSpecWith getIOArgs getArgs (sRankSpec r a)
         mapM (sRankScore r . snd) $ haapTestTableRows table
 
 
