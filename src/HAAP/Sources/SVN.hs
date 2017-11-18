@@ -88,7 +88,7 @@ defaultSVNSourceArgs = SVNSourceArgs "system commit" True
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
-svnArgs = hiddenIOArgs
+svnIOArgs = hiddenIOArgs
     
 getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
 getSVNSourceWith getArgs s = do
@@ -99,15 +99,15 @@ getSVNSourceWith getArgs s = do
     let repo = svnRepository s
     let (dir,name) = splitFileName path
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    let checkout = runShWith (const defaultIOArgs) $ do
+    let checkout = runShWith (const svnIOArgs) $ do
         shCd dir
         shRm name
-        shCommandWith defaultIOArgs "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
-    let update = runShWith (const defaultIOArgs) $ do
+        shCommandWith svnIOArgs "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+    let update = runShWith (const svnIOArgs) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
-        shCommandWith defaultIOArgs "svn" ["cleanup"]
-        res <- shCommandWith defaultIOArgs "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+        shCommandWith svnIOArgs "svn" ["cleanup"]
+        res <- shCommandWith svnIOArgs "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
         let okRes = resOk res
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
@@ -124,13 +124,13 @@ getSVNSourceInfoWith getArgs s = do
     let path = svnPath s
     let user = svnUser s
     let pass = svnPass s
-    info <- runShIOResultWith (const defaultIOArgs) $ do
+    info <- runShIOResultWith (const svnIOArgs) $ do
         shCd path
-        shCommandWith defaultIOArgs "svn" ["info","--non-interactive","--username",user,"--password",pass]
+        shCommandWith svnIOArgs "svn" ["info","--non-interactive","--username",user,"--password",pass]
     rev <- parseInfo (resStdout info) (resStderr info)
-    logRev <- runShIOResultWith (const defaultIOArgs) $ do
+    logRev <- runShIOResultWith (const svnIOArgs) $ do
         shCd path
-        shCommandWith defaultIOArgs "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
+        shCommandWith svnIOArgs "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
     date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
@@ -155,10 +155,10 @@ putSVNSourceWith getArgs files s = do
     let pass = svnPass s
     let path = svnPath s
     let msg = svnCommitMessage args
-    runShIOResultWith (const defaultIOArgs) $ do
+    runShIOResultWith (const svnIOArgs) $ do
         shCd path
-        forM_ files $ \file -> shCommandWith_ defaultIOArgs "svn" ["add","--force","--parents",file]
-        shCommandWith defaultIOArgs "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
+        forM_ files $ \file -> shCommandWith_ svnIOArgs "svn" ["add","--force","--parents",file]
+        shCommandWith svnIOArgs "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 
 
