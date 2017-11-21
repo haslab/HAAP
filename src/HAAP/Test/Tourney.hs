@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
+{-# LANGUAGE TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
 module HAAP.Test.Tourney where
 
 import HAAP.Core
@@ -17,6 +17,8 @@ import qualified Data.Map as Map
 import Data.Time.LocalTime
 import Data.Binary
 import Data.Typeable
+import Data.Acid
+import Data.SafeCopy
 
 import Control.Monad.Except
 import Control.Monad.State (StateT(..))
@@ -40,12 +42,19 @@ data HaapTourney p args db m a r = HaapTourney
     , tourneyPlayers :: [a]
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
-    , tourneyMatch :: Int -> Int -> Int -> [a] -> Haap p args (DB db) m ([(a,Int)],r) -- receives a tmp folder and runs the match there, returning a match result
+    , tourneyMatch :: Int -- tourneyno
+                   -> Int -- roundno
+                   -> Int -- matchno
+                   -> [a] -- players
+                   -> Haap p args (DB db) m ([(a,Int)],r) -- returning a match result
     , renderMatch :: r -> Rules [Link] -- renders a match result as a series of links
-    , deleteTourney :: Int -> Haap p args (DB db) m () -- cleanup procedure
+    , deleteTourney :: Int -- tourneyno
+                    -> Haap p args (DB db) m () -- cleanup procedure
     }
 
 type Link = FilePath
+
+emptyHaapTourneyDB = HaapTourneyDB 1 []
 
 data HaapTourneyDB a = HaapTourneyDB
     { tourneyNo :: Int
@@ -214,6 +223,18 @@ playMatches xs = do
 playMatch :: (HaapMonad m,TourneyPlayer a) => [a] -> HaapPlay p args db m a r ([(a,Int)],r)
 playMatch xs = do
     (tourney,tourneyno,roundno,matchno,_) <- State.get
-    lift $ tourneyMatch tourney tourneyno roundno matchno xs
+    r <- lift $ tourneyMatch tourney tourneyno roundno matchno xs
+    State.modify $ \(tourney,tourneyno,roundno,matchno,w) -> (tourney,tourneyno,roundno,matchno+1,w)
+    return r
+    
+
+instance (Ord a,SafeCopy a) => SafeCopy (HaapTourneyDB a) where
+    putCopy (HaapTourneyDB no db) = contain $ do
+        safePut no
+        safePut db
+    getCopy = contain $ do
+        no <- safeGet
+        db <- safeGet
+        return $ HaapTourneyDB no db
 
 

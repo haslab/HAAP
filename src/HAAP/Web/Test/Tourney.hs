@@ -51,7 +51,7 @@ renderHaapTourneyDB hp t db = do
     renderHaapRank hp rank
   where
     tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
-    makeTourneyPath tourneyno = hakyllRoute hp $ "tourneys" </> addExtension ("tourney" ++ pretty tourneyno) "html"
+    makeTourneyPath tourneyno = hakyllRoute hp $ addExtension ("tourney" ++ pretty tourneyno) "html"
     makeHeader i = pretty $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
     headers = map (makeHeader) (map fst db)
     rank = HaapRank
@@ -79,7 +79,7 @@ renderHaapTourneyDB hp t db = do
     
 renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourneyTree hp t no tree time = do
-    let tPath =  tourneyPath t </> "tourneys" </> addExtension ("tourney" ++ pretty no) "html"
+    let tPath =  tourneyPath t </> addExtension ("tourney" ++ pretty no) "html"
     size <- getTourneySize $ tourneyPlayers t
     let title = "Tourney " ++ pretty no ++ " " ++ show time
     let header = H.h1 $ fromString title

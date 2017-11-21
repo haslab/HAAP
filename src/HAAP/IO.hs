@@ -21,6 +21,8 @@ import Data.Typeable
 import Data.Proxy
 import Data.String
 import Data.Bifunctor (bimap)
+import Data.Binary
+import qualified Data.ByteString.Lazy as BS
 
 import System.Timeout
 import System.FilePath
@@ -34,6 +36,7 @@ import Test.QuickCheck
 import Text.Read
 
 import GHC.Stack
+import System.IO
 
 import Shelly (Sh(..),catchany_sh)
 import qualified Shelly as Sh
@@ -168,6 +171,23 @@ shCommandWith_ ioargs name args  = do
     addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
     addSandbox Nothing cmds = cmds
     addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    
+shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
+shCommandToFileWith_ ioargs name args file = do
+    forM_ (ioStdin ioargs) Sh.setStdin
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    let cmds = addRedir $ addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
+  where
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
+    addTimeout Nothing cmds = cmds
+    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
+    addSandbox Nothing cmds = cmds
+    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    handle h = do
+        bs <- liftIO $ BS.hGetContents h
+        liftIO $ BS.writeFile file bs
 
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs
@@ -185,6 +205,27 @@ shCommandWith ioargs name args  = do
     stderr <- if ioHidden ioargs then return Text.empty else Sh.lastStderr
     exit <- Sh.lastExitCode
     return $ IOResult exit stdout stderr
+  where
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
+    addTimeout Nothing cmds = cmds
+    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addSandbox Nothing cmds = cmds
+    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+
+shPipeBinaryWith :: Binary a => IOArgs -> String -> [String] -> Sh a
+shPipeBinaryWith ioargs name args = shCommandHandleWith ioargs name args handle
+    where
+    handle h = do
+        bs <- liftIO $ BS.hGetContents h
+        return $ decode bs
+
+shCommandHandleWith :: IOArgs -> String -> [String] -> (Handle -> Sh a) -> Sh a
+shCommandHandleWith ioargs name args handle = do
+    forM_ (ioStdin ioargs) Sh.setStdin
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    a <- Sh.errExit False $ Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
+    return a
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds

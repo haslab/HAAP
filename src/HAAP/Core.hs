@@ -17,6 +17,7 @@ import Control.Monad.Except (MonadError(..),ExceptT(..))
 import qualified Control.Monad.Except as Except
 import Control.Monad.Catch
 import Control.Monad.Signatures
+import Control.DeepSeq
 
 import Data.DList as DList
 import Data.Typeable
@@ -46,7 +47,13 @@ data Group = Group
 	{ groupId :: String
 	, groupStudents :: [String]
     }
-  deriving (Data,Typeable,Read,Show,Eq,Ord)
+  deriving (Data,Typeable,Read,Show,Eq,Ord,Generic)
+
+instance Out Group where
+    docPrec i x = doc x
+    doc x = text $ show x
+
+instance NFData Group
 
 data HaapFileType
     = HaapTemplateFile -- student files with a given template

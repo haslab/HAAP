@@ -86,6 +86,12 @@ testBool = HaapSpecTestBool
 testEqual :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
 testEqual = HaapSpecTestEqual
 
+testEqualWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+testEqualWith eq iox ioy = HaapSpecTestBool $ do
+    x <- iox
+    y <- ioy
+    return $ x `eq` y
+
 testMessage :: IO String -> HaapSpec
 testMessage = HaapSpecTestMessage
 
