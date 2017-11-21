@@ -67,7 +67,7 @@ runCodeWorld hp cw = orErrorHakyllPage hp cwerrorpath cwerrorpath $ do
         otherwise -> return $ IOResult 0 (Text.pack $ "Pre-compiled at " ++ show (cwExecutable cw)) Text.empty
     let images = (cwImages cw)
         
-    hakyllRules $ do
+    addMessageToError (pretty res) $ hakyllRules $ do
         
         let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
         match (fromGlob $ tmp </> destfolder </> "*.html") $ do
