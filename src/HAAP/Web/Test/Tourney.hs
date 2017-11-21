@@ -168,7 +168,7 @@ playerHMTL :: TourneyPlayer a => Int -> a -> Bool -> Html
 playerHMTL i p win = do
     let wintag = if isDefaultPlayer p then "bot" else if win then "win" else "loss"
     H.div ! A.class_ (fromString $ "player top "++wintag) $ do
-        H.preEscapedToMarkup (pretty p)
+        renderPlayer p
         H.div ! A.class_ "score" $ H.preEscapedToMarkup i
 
 

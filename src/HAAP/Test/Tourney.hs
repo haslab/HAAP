@@ -8,6 +8,7 @@ import HAAP.DB
 import HAAP.DB.State
 import HAAP.Utils
 import HAAP.Web.Hakyll
+import HAAP.Web.Blaze
 import HAAP.Log
 
 import Data.Maybe
@@ -31,9 +32,13 @@ import System.FilePath
 
 import GHC.Generics (Generic(..))
 
+import qualified Text.Blaze.Html5 as H
+
 class (Ord a,Out a) => TourneyPlayer a where
     defaultPlayer :: a
     isDefaultPlayer :: a -> Bool
+    renderPlayer :: a -> Html
+    renderPlayer p = H.preEscapedToMarkup (pretty p)
 
 data HaapTourney p args db m a r = HaapTourney
     { tourneyMax :: Int -- maximum number of table entries for the tournament
