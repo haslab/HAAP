@@ -53,6 +53,8 @@ Library
     HAAP.Web.HTML.TagSoup
     HAAP.Code.Haskell
     HAAP.Code.Analysis.Haddock
+    HAAP.Code.Analysis.CComplexity
+    HAAP.Code.Analysis.Usage
     HAAP.Code.Git
     HAAP.Code.Analysis.Modularity
         

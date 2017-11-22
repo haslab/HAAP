@@ -35,6 +35,8 @@ module HAAP
     , module HAAP.Code.Analysis.Haddock
     , module HAAP.Code.Git
     , module HAAP.Code.Analysis.Modularity
+    , module HAAP.Code.Analysis.CComplexity
+    , module HAAP.Code.Analysis.Usage
     ) where
 
 import HAAP.Core
@@ -73,6 +75,8 @@ import HAAP.Web.HTML.Pandoc
 import HAAP.Web.HTML.TagSoup
 import HAAP.Code.Git
 import HAAP.Code.Analysis.Modularity
+import HAAP.Code.Analysis.CComplexity
+import HAAP.Code.Analysis.Usage
 
 
 

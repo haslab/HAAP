@@ -19,6 +19,7 @@ import qualified Data.Set as Set
 import Data.Generics
 import Data.List as List
 import qualified Data.Text as Text
+import Data.Default
 
 import Control.Monad
 
@@ -34,6 +35,9 @@ data HaddockStats = HaddockStats
     { haddockComments :: (Int,Int) -- (number of special annotations / total size of comments)
     , haddockCoverage :: (Int,Int) -- (number of haddock comments / number of definitions)
     }
+
+instance Default HaddockStats where
+    def = HaddockStats (-1,-1) (-1,-1)
 
 runHaddockStats :: HaapMonad m => [FilePath] -> Haap p args db m HaddockStats
 runHaddockStats files = do

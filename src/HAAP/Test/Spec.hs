@@ -108,19 +108,36 @@ data HaapTestTable a = HaapTestTable
     }
   deriving (Functor,Traversable,Foldable,Show,Read,Typeable)
 
+haapTableResOksPercentage :: HaapTestTableRes -> Float
+haapTableResOksPercentage t = (fromIntegral (length oks) / fromIntegral (length rows)) * 100
+    where
+    rows = haapTestTableRows t
+    oks = filter ((==HaapTestOk) . snd) rows
+
+haapTableResPercentage :: HaapTestTableRes -> Float
+haapTableResPercentage t = oks
+    where
+    rows = haapTestTableRows t
+    oks = averageList $ map (haapTestResPercentage . snd) rows
+
 type HaapTestTableRes = HaapTestTable HaapTestRes
 
 data HaapTestRes
     = HaapTestOk
     | HaapTestError String
     | HaapTestMessage String
-  deriving (Read,Show)
+  deriving (Eq,Ord,Read,Show)
 
 instance Out HaapTestRes where
     docPrec i x = doc x
     doc HaapTestOk = text "OK"
     doc (HaapTestError msg) = text msg
     doc (HaapTestMessage msg) = text msg
+
+haapTestResPercentage :: HaapTestRes -> Float
+haapTestResPercentage HaapTestOk = 100
+haapTestResPercentage (HaapTestError _) = 0
+haapTestResPercentage (HaapTestMessage str) = read str
 
 haapNewExample :: State Int Int
 haapNewExample = do

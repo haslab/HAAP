@@ -7,8 +7,13 @@ import HAAP.Pretty
 import Data.Generics
 import Data.List as List
 import Data.Maybe
+import qualified Data.Map as Map 
+import Data.Map (Map(..))
 
 import Language.Haskell.Exts
+
+import System.FilePath.Find as FilePath
+import System.FilePath
 
 import Control.Monad.Except
 
@@ -83,3 +88,33 @@ removeLets = everywhere (mkT unlet)
     unlet (Let l _ e) = Let l (BDecls l []) e
     unlet e = e
 
+moduFunctionNames :: Module SrcSpanInfo -> Map (Name ()) Bool
+moduFunctionNames m = everything Map.union (mkQ Map.empty aux) m
+    where
+    aux :: Decl SrcSpanInfo -> Map (Name ()) Bool
+    aux (TypeSig _ ns t) = Map.fromList $ zip (List.map noloc ns) (repeat $ isHO t)
+    aux _ = Map.empty
+    isHO :: Type SrcSpanInfo -> Bool
+    isHO (TyForall _ _ _ t) = isHO t
+    isHO (TyFun _ t1 t2) = isHO t1 || isHO t2
+    isHO t = everything (||) (mkQ False aux1) t
+        where
+        aux1 :: Type SrcSpanInfo -> Bool
+        aux1 (TyFun {}) = True
+        aux1 _ = False
+
+moduNames :: Module SrcSpanInfo -> Map (Name ()) Int
+moduNames m = everything (Map.unionWith (+)) (mkQ Map.empty aux) m
+    where
+    aux :: Name SrcSpanInfo -> Map (Name ()) Int
+    aux n = Map.singleton (noloc n) 1
+
+-- * Find Haskell files
+
+hsFiles :: HaapMonad m => FilePath -> Haap p args db m [FilePath]
+hsFiles path = orDefault [] $ liftIO $ FilePath.fold (depth >=? 0) addHsFile [] path
+    where
+    addHsFile :: [FilePath] -> FileInfo -> [FilePath]
+    addHsFile t i = if evalClause (extension ==? ".hs") i
+        then let p = evalClause filePath i in t++[p]
+        else t

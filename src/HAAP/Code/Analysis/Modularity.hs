@@ -9,6 +9,7 @@ import Data.Generics
 import Data.Traversable
 import Data.Either
 import Data.Maybe
+import Data.Default
 
 import Control.Monad
 
@@ -18,6 +19,9 @@ data Modularity = Modularity
     { blockSize :: Float -- average block size
     , totalSize :: Int -- total size
     }
+
+instance Default Modularity where
+    def = Modularity (-1) (-1)
 
 runModularity :: HaapMonad m => [FilePath] -> Haap p args db m Modularity
 runModularity files = do

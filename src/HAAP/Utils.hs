@@ -3,6 +3,8 @@ module HAAP.Utils where
 import Data.Map (Map(..))
 import qualified Data.Map as Map
 import Data.Time.LocalTime
+import Data.Time.Calendar
+import Data.Time.Format
 
 import System.FilePath
 import System.FilePath.Find
@@ -126,3 +128,6 @@ unSplitOn tok [x] = x
 unSplitOn tok (x:xs) = x ++ tok ++ unSplitOn tok xs
 
 compareSnd x y = compare (snd x) (snd y)
+
+readDay :: String -> Day
+readDay str = readTime defaultTimeLocale (iso8601DateFormat Nothing) str

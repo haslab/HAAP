@@ -1,3 +1,5 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module HAAP.Code.HPC where
 
 import HAAP.Core
@@ -12,6 +14,9 @@ import Data.Traversable
 import Data.Foldable
 import Data.Maybe
 import Data.List
+import Data.Default
+import Data.List.Split
+import qualified Data.Text as Text
 
 import Text.HTML.TagSoup
 
@@ -28,6 +33,53 @@ data HpcArgs args = HpcArgs
     , hpcHtmlPath :: FilePath -- relative path to the project to store hpc results
     , hpcRTS :: Bool
     }
+
+type HpcItem = (Int,Int,Int) -- (percentage,used,total)
+    
+defaultHpcItem :: HpcItem
+defaultHpcItem = (-1,-1,-1)
+    
+data HpcReport = HpcReport
+    { hpcExpressions :: HpcItem -- expressions used
+    , hpcBolean :: HpcItem -- boolean coverage
+    , hpcAlternatives :: HpcItem -- alternatives used
+    , hpcLocalDeclarations :: HpcItem -- local declarations used
+    , hpcTopDeclarations :: HpcItem -- top-level declarations used
+    }
+
+instance Default HpcReport where
+    def = HpcReport defaultHpcItem defaultHpcItem defaultHpcItem defaultHpcItem defaultHpcItem
+
+runHpcReport :: HpcArgs args -> a -> (IOResult -> Haap p args db IO a) -> Haap p args db IO (a,HpcReport)
+runHpcReport hpc defa m = orDefault (defa,def) $ do
+    tmp <- getProjectTmpPath
+    ghc <- Reader.reader (hpcGHC hpc)
+    let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc }
+    io <- Reader.reader (hpcIO hpc)
+    let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
+    do
+        ignoreError $ runSh $ do
+            shCd dir
+            shRm $ addExtension exec "tix"
+            
+        ghcres <- runShIOResult $ do
+            shCd dir
+            res <- shGhcWith io' ghc' [exec]
+            return res
+            
+        x <- m ghcres
+        
+        hpcres <- runSh $ do
+            shCd dir
+            shCommandWith io' "hpc" ["report",exec]
+        let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
+        return (x,HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7))
+         
+  where
+    parseHpcItem xs i = case xs!!i of
+        [percentage,_,fraction] -> case tail (init fraction) of
+            (splitOn "/" -> [l,r]) -> (read percentage,read l,read r)
+    (dir,exec) = splitFileName (hpcExecutable hpc)
 
 runHpc :: Out a => HakyllP -> HpcArgs args -> a -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
 runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do

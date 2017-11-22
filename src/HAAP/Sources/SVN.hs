@@ -13,6 +13,8 @@ import qualified Data.Text as Text
 import Data.SafeCopy
 import Data.Time.Format
 import Data.Time.LocalTime
+import Data.Time.Calendar
+import Data.Maybe
 
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Except
@@ -70,6 +72,7 @@ instance Ord SVNSourceInfo where
 data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
     , svnAcceptConflicts :: Bool
+    , svnDay :: Maybe Day
     }
   deriving Show
 
@@ -83,7 +86,7 @@ instance HaapSource SVN where
     
     sourcePath = svnPath
 
-defaultSVNSourceArgs = SVNSourceArgs "system commit" True
+defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing
 
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
@@ -98,16 +101,20 @@ getSVNSourceWith getArgs s = do
     let path = svnPath s
     let repo = svnRepository s
     let (dir,name) = splitFileName path
+    let date = case svnDay args of
+                    Nothing -> []
+                    Just day -> ["-r","{" ++ showGregorian day ++ "}"]
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
     let checkout = runShWith (const svnIOArgs) $ do
         shCd dir
         shRm name
-        shCommandWith svnIOArgs "svn" ["checkout",repo,"--non-interactive",name,"--username",user,"--password",pass]
+        shCommandWith svnIOArgs "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
     let update = runShWith (const svnIOArgs) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
         shCommandWith svnIOArgs "svn" ["cleanup"]
-        res <- shCommandWith svnIOArgs "svn" (["update","--non-interactive","--username",user,"--password",pass]++conflicts)
+        when (isJust $ svnDay args) $ shCommandWith_ svnIOArgs "svn" ["revert","-R","."]
+        res <- shCommandWith svnIOArgs "svn" (["update","--non-interactive"] ++ date ++ ["--username",user,"--password",pass]++conflicts)
         let okRes = resOk res
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
