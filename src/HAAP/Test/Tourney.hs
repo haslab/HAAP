@@ -230,7 +230,9 @@ playMatch xs = do
     (tourney,tourneyno,roundno,matchno,_) <- State.get
     r <- lift $ tourneyMatch tourney tourneyno roundno matchno xs
     State.modify $ \(tourney,tourneyno,roundno,matchno,w) -> (tourney,tourneyno,roundno,matchno+1,w)
-    return r
+    return $ mapFst (sortBy cmpsnd) r
+  where
+    cmpsnd x y = compare (snd x) (snd y)
     
 
 instance (Ord a,SafeCopy a) => SafeCopy (HaapTourneyDB a) where
