@@ -73,6 +73,7 @@ data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
     , svnAcceptConflicts :: Bool
     , svnDay :: Maybe Day
+    , svnHidden :: Bool
     }
   deriving Show
 
@@ -86,12 +87,13 @@ instance HaapSource SVN where
     
     sourcePath = svnPath
 
-defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing
+defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing True
 
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
-svnIOArgs = hiddenIOArgs
+svnIOArgs :: SVNSourceArgs -> IOArgs
+svnIOArgs args = if svnHidden args then hiddenIOArgs else defaultIOArgs
     
 getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
 getSVNSourceWith getArgs s = do
@@ -105,16 +107,16 @@ getSVNSourceWith getArgs s = do
                     Nothing -> []
                     Just day -> ["-r","{" ++ showGregorian day ++ "}"]
     exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    let checkout = runShWith (const svnIOArgs) $ do
+    let checkout = runShWith (const $ svnIOArgs args) $ do
         shCd dir
         shRm name
-        shCommandWith svnIOArgs "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
-    let update = runShWith (const svnIOArgs) $ do
+        shCommandWith (svnIOArgs args) "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
+    let update = runShWith (const $ svnIOArgs args) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
-        shCommandWith svnIOArgs "svn" ["cleanup"]
-        when (isJust $ svnDay args) $ shCommandWith_ svnIOArgs "svn" ["revert","-R","."]
-        res <- shCommandWith svnIOArgs "svn" (["update","--non-interactive"] ++ date ++ ["--username",user,"--password",pass]++conflicts)
+        shCommandWith (svnIOArgs args) "svn" ["cleanup"]
+        when (isJust $ svnDay args) $ shCommandWith_ (svnIOArgs args) "svn" ["revert","-R","."]
+        res <- shCommandWith (svnIOArgs args) "svn" (["update","--non-interactive"] ++ date ++ ["--username",user,"--password",pass]++conflicts)
         let okRes = resOk res
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
@@ -131,13 +133,14 @@ getSVNSourceInfoWith getArgs s = do
     let path = svnPath s
     let user = svnUser s
     let pass = svnPass s
-    info <- runShIOResultWith (const svnIOArgs) $ do
+    args <- Reader.reader getArgs
+    info <- runShIOResultWith (const $ svnIOArgs args) $ do
         shCd path
-        shCommandWith svnIOArgs "svn" ["info","--non-interactive","--username",user,"--password",pass]
+        shCommandWith (svnIOArgs args) "svn" ["info","--non-interactive","--username",user,"--password",pass]
     rev <- parseInfo (resStdout info) (resStderr info)
-    logRev <- runShIOResultWith (const svnIOArgs) $ do
+    logRev <- runShIOResultWith (const $ svnIOArgs args) $ do
         shCd path
-        shCommandWith svnIOArgs "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
+        shCommandWith (svnIOArgs args) "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
     date <- parseSVNDateCurrent datestr
     return $ SVNSourceInfo rev author date
@@ -162,10 +165,10 @@ putSVNSourceWith getArgs files s = do
     let pass = svnPass s
     let path = svnPath s
     let msg = svnCommitMessage args
-    runShIOResultWith (const svnIOArgs) $ do
+    runShIOResultWith (const $ svnIOArgs args) $ do
         shCd path
-        forM_ files $ \file -> shCommandWith_ svnIOArgs "svn" ["add","--force","--parents",file]
-        shCommandWith svnIOArgs "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
+        forM_ files $ \file -> shCommandWith_ (svnIOArgs args) "svn" ["add","--force","--parents",file]
+        shCommandWith (svnIOArgs args) "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
     return ()
 
 
