@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TemplateHaskell, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.Test.Tourney where
 
@@ -21,6 +21,7 @@ import Data.String
 import Data.Time.LocalTime
 import Data.Traversable
 import Data.Foldable
+import Data.SafeCopy
 
 import Control.Monad
 import Control.DeepSeq
@@ -75,7 +76,7 @@ renderHaapTourneyDB hp t db = do
     getRank :: [Maybe Float] -> Float
     getRank = averageList . catMaybes
 --    ranks :: [(a,[MaybeFloatScore])]
-    ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatScore)) $ sortBy cmp $ Map.toList ranksByGroup
+    ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatRank)) $ sortBy cmp $ Map.toList ranksByGroup
     
 renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll FilePath
 renderHaapTourneyTree hp t no tree time = do
@@ -172,5 +173,23 @@ playerHMTL i p win = do
         H.div ! A.class_ "score" $ H.preEscapedToMarkup i
 
 
+newtype MaybeFloatRank = MaybeFloatRank { unMaybeFloatRank :: Maybe Float }
+  deriving (Eq,Show)
+$(deriveSafeCopy 0 'base ''MaybeFloatRank)
 
+instance Ord MaybeFloatRank where
+    compare (MaybeFloatRank x) (MaybeFloatRank y) = compare y x
+
+instance Score MaybeFloatRank where
+    okScore (MaybeFloatRank Nothing) = False
+    okScore (MaybeFloatRank (Just x)) = okScore $ FloatScore x
+    appendScores = appendScores' . catMaybes . map unMaybeFloatRank
+        where
+        appendScores' [] = MaybeFloatRank $ Nothing
+        appendScores' xs = MaybeFloatRank $ Just $ unFloatScore $ appendScores $ map FloatScore xs
+
+instance Out MaybeFloatRank where
+    docPrec i x = doc x
+    doc (MaybeFloatRank Nothing) = text "-"
+    doc (MaybeFloatRank (Just x)) = doc x
 
