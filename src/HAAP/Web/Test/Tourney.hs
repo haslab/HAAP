@@ -71,7 +71,7 @@ renderHaapTourneyDB hp t db = do
     rightRanks = Map.map (\(fs) -> (Nothing:fs))
 --    ranksByGroup :: Map a [Maybe Float]
     ranksByGroup = foldr0 (Map.mergeWithKey joinRanks leftRanks rightRanks) (map (rankByGroup . snd) db) Map.empty
-    cmp (_,s1) (_,s2) = compare (getRank s1) (getRank s2)
+    cmp (_,s1) (_,s2) = compare (getRank s2) (getRank s1)
     getRank :: [Maybe Float] -> Float
     getRank = averageList . catMaybes
 --    ranks :: [(a,[MaybeFloatScore])]
