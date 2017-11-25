@@ -56,7 +56,7 @@ runCodeWorld hp cw = orErrorHakyllPage hp cwerrorpath cwerrorpath $ do
         Right htmldir -> return (cwHtmlPath cw,cwHtmlPath cw)
     
     res <- case cwExecutable cw of
-        Left cwexec -> runShWith (const io) $ do
+        Left cwexec -> runShIOResultWith (const io) $ do
             let (dir,exec) = splitFileName cwexec
             let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir] }
             Sh.mkdir_p (fromString $ tmp </> destfolder)
@@ -64,7 +64,9 @@ runCodeWorld hp cw = orErrorHakyllPage hp cwerrorpath cwerrorpath $ do
             --Sh.setenv "GHC_PACKAGE_PATH" (Text.pack $ concatPaths ghcpackagedbs)
             --Sh.setenv "GHCJS_PACKAGE_PATH" (Text.pack $ concatPaths ghcjspackagedbs)
             shGhcjsWith io ghcjs' [exec]
-        otherwise -> return $ IOResult 0 (Text.pack $ "Pre-compiled at " ++ show (cwExecutable cw)) Text.empty
+        otherwise -> do
+            let precompiled = Text.pack $ "Pre-compiled at " ++ show (cwExecutable cw)
+            return $ IOResult 0 precompiled precompiled
     let images = (cwImages cw)
         
     addMessageToError (pretty res) $ hakyllRules $ do

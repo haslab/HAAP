@@ -202,7 +202,7 @@ shCommandWith ioargs name args  = do
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
-    stderr <- if ioHidden ioargs then return Text.empty else Sh.lastStderr
+    stderr <- if ioHidden ioargs then return (Text.pack "hidden") else Sh.lastStderr
     exit <- Sh.lastExitCode
     return $ IOResult exit stdout stderr
   where
