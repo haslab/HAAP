@@ -136,6 +136,9 @@ runShWith getArgs io = do
     args <- Reader.reader getArgs
     runShCore args io
 
+runIOResultWith :: (args -> IOArgs) -> IO IOResult -> IO IOResult
+runIOResultWith args m = orDoIO (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) m
+
 runShIOResultWith :: HaapMonad m => (args -> IOArgs) -> Sh IOResult -> Haap p args db m IOResult
 runShIOResultWith args m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runShWith args m)
 
@@ -337,6 +340,9 @@ orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
 
 orDo :: HaapMonad m => (HaapException -> Haap p args db m a) -> Haap p args db m a -> Haap p args db m a
 orDo ex m = catchError m ex
+
+orDoIO :: (SomeException -> IO a) -> IO a -> IO a
+orDoIO ex m = catch m ex
 
 orLogDefault :: HaapMonad m => a -> Haap p args db m a -> Haap p args db m a
 orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
