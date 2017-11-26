@@ -11,6 +11,7 @@ import HAAP.Pretty
 
 import Control.Monad
 import qualified Control.Monad.Reader as Reader
+import Control.Monad.Except
 
 import Data.Foldable
 import Data.Either
@@ -70,37 +71,38 @@ runCodeWorld hp cw = orErrorHakyllPage hp cwerrorpath cwerrorpath $ do
     let images = (cwImages cw)
     
     if resOk res
-        then addMessageToError (pretty res) $ hakyllRules $ do 
-            let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
-            match (fromGlob $ tmp </> destfolder </> "*.html") $ do
-                route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-                compile $ getResourceString >>= hakyllCompile hp
-            let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
-                           .||. fromGlob (tmp </> destfolder </> "*.externs")
-                           .||. fromGlob (tmp </> destfolder </> "*.webapp")
-                           .||. fromGlob (tmp </> destfolder </> "*.stats")
-            when (isLeft $ cwExecutable cw) $ match auxFiles $ do
-                route   $ relativeRoute tmp
-                compile copyFileCompiler
-            let runpath = case cwExecutable cw of
-                            Left _ -> "."
-                            Right html -> dirToRoot destfolder </> html
-            create [fromFilePath $ destfolder </> "run.html"] $ do
-                route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
-                compile $ do
-                    let mkImg s = s
-                    let imgCtx = field "imgid" (return . fst . itemBody)
-                               `mappend` constField "projectpath" (dirToRoot destfolder)
-                               `mappend` field "imgfile" (return . mkImg . snd . itemBody)
-                               `mappend` constField "runpath" (runpath)
-                    let cwCtx = constField "title" (cwTitle cw)
-                              `mappend` constField "projectpath" (dirToRoot destfolder)
-                              `mappend` constField "runpath" runpath
-                              `mappend` constField "message" message
-                              `mappend` constField "textmessage" textmessage
-                              `mappend` listField "images" imgCtx (mapM makeItem images)
-                    makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
-            
+        then addMessageToError (pretty res) $ do
+            hakyllRules $ do 
+                let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
+                match (fromGlob $ tmp </> destfolder </> "*.html") $ do
+                    route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                    compile $ getResourceString >>= hakyllCompile hp
+                let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
+                               .||. fromGlob (tmp </> destfolder </> "*.externs")
+                               .||. fromGlob (tmp </> destfolder </> "*.webapp")
+                               .||. fromGlob (tmp </> destfolder </> "*.stats")
+                when (isLeft $ cwExecutable cw) $ match auxFiles $ do
+                    route   $ relativeRoute tmp
+                    compile copyFileCompiler
+                let runpath = case cwExecutable cw of
+                                Left _ -> "."
+                                Right html -> dirToRoot destfolder </> html
+                create [fromFilePath $ destfolder </> "run.html"] $ do
+                    route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
+                    compile $ do
+                        let mkImg s = s
+                        let imgCtx = field "imgid" (return . fst . itemBody)
+                                   `mappend` constField "projectpath" (dirToRoot destfolder)
+                                   `mappend` field "imgfile" (return . mkImg . snd . itemBody)
+                                   `mappend` constField "runpath" (runpath)
+                        let cwCtx = constField "title" (cwTitle cw)
+                                  `mappend` constField "projectpath" (dirToRoot destfolder)
+                                  `mappend` constField "runpath" runpath
+                                  `mappend` constField "message" message
+                                  `mappend` constField "textmessage" textmessage
+                                  `mappend` listField "images" imgCtx (mapM makeItem images)
+                        makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
+                
             return (hakyllRoute hp $ destfolder </> "run.html")
         else throwError $ HaapException $ pretty res
   where
