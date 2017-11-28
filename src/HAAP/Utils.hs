@@ -17,6 +17,9 @@ import System.FilePath.Find
 
 import Text.Printf
 
+addPrefixHeader :: String -> Header -> Header
+addPrefixHeader n xs = Vector.map (ByteString.append (fromString n)) xs
+
 addPrefixNamedRecord :: String -> NamedRecord -> NamedRecord
 addPrefixNamedRecord n xs = HashMap.fromList $ map (\(k,v) -> (ByteString.append (fromString n) k,v)) $ HashMap.toList xs
 

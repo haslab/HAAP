@@ -12,7 +12,7 @@ import Data.Traversable
 import Data.Either
 import Data.Maybe
 import Data.Default
-import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 
 import Control.Monad
 
@@ -24,6 +24,9 @@ data Modularity = Modularity
     { blockSize :: Float -- average block size
     , totalSize :: Int -- total size
     }
+    
+instance DefaultOrdered Modularity where
+    headerOrder _ = header ["blockSize","totalSize"]
 
 instance ToNamedRecord Modularity where
     toNamedRecord (Modularity x y) = namedRecord ["blockSize" .= x,"totalSize" .= y]

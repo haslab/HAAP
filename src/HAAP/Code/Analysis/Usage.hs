@@ -15,7 +15,7 @@ import qualified Data.Map as Map
 import Data.Map (Map(..))
 import Data.List as List
 import Data.Either
-import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -40,6 +40,9 @@ data Usage = Usage
     , baseNonHighOrderUsage :: Int -- number of used non-high-order base definitions
     , baseHighOrderUsage :: Int -- number of used high-order base definitions
     }
+    
+instance DefaultOrdered Usage where
+    headerOrder _ = header ["typesUsage","datasUsage","preludeUsage","baseNonHighOrderUsage","baseHighOrderUsage"]
 
 instance ToNamedRecord Usage where
     toNamedRecord (Usage x1 x2 x3 x4 x5) = namedRecord

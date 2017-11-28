@@ -20,6 +20,9 @@ data CComplexity = CComplexity
     }
   deriving (Show,Generic)
 
+instance DefaultOrdered CComplexity where
+    headerOrder _ = header ["maxCC"]
+
 instance ToNamedRecord CComplexity where
     toNamedRecord (CComplexity x) = namedRecord ["maxCC" .= x]
 instance FromNamedRecord CComplexity where

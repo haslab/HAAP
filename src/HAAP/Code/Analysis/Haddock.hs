@@ -20,7 +20,7 @@ import Data.Generics hiding (Generic)
 import Data.List as List
 import qualified Data.Text as Text
 import Data.Default
-import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
 
@@ -47,7 +47,15 @@ data Fraction = Fraction
     , denominador :: Int
     }
   deriving (Show,Generic)
-
+  
+instance DefaultOrdered Fraction where
+    headerOrder _ = header ["numerador", "denominador"]
+instance DefaultOrdered HaddockStats where
+    headerOrder (HaddockStats x y) = Vector.concat
+        [addPrefixHeader "haddockComments" (headerOrder x)
+        ,addPrefixHeader "haddockCoverage" (headerOrder y)
+        ]
+        
 instance Default Fraction where
     def = Fraction (-1) (-1)
 
