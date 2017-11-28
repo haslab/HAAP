@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
 
 module HAAP.Code.Analysis.Haddock where
 
@@ -16,14 +16,19 @@ import Language.Haskell.Exts.SrcLoc
 
 import Data.Set (Set(..))
 import qualified Data.Set as Set
-import Data.Generics
+import Data.Generics hiding (Generic)
 import Data.List as List
 import qualified Data.Text as Text
 import Data.Default
+import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import qualified Data.Vector as Vector
+import qualified Data.HashMap.Strict as HashMap
 
 import Control.Monad
 
 import System.FilePath
+
+import GHC.Generics (Generic)
 
 deriving instance Data Hyperlink
 deriving instance Data Example
@@ -32,12 +37,37 @@ deriving instance (Data x) => Data (Header x)
 deriving instance Data Picture
 
 data HaddockStats = HaddockStats
-    { haddockComments :: (Int,Int) -- (number of special annotations / total size of comments)
-    , haddockCoverage :: (Int,Int) -- (number of haddock comments / number of definitions)
+    { haddockComments :: Fraction -- (number of special annotations / total size of comments)
+    , haddockCoverage :: Fraction -- (number of haddock comments / number of definitions)
     }
+  deriving (Show,Generic)
+
+data Fraction = Fraction
+    { numerador :: Int
+    , denominador :: Int
+    }
+  deriving (Show,Generic)
+
+instance Default Fraction where
+    def = Fraction (-1) (-1)
+
+instance ToNamedRecord Fraction where
+    toNamedRecord (Fraction x y) = namedRecord ["numerador" .= x,"denominador" .= y]
+instance FromNamedRecord Fraction where
+    parseNamedRecord m = Fraction <$> m .: "numerador" <*> m .: "denominador"
+
+instance ToNamedRecord HaddockStats where
+    toNamedRecord (HaddockStats x y) = HashMap.union
+        (addPrefixNamedRecord "haddockComments" $ toNamedRecord x)
+        (addPrefixNamedRecord "haddockCoverage" $ toNamedRecord y)
+instance FromNamedRecord HaddockStats where
+    parseNamedRecord m = do
+        x <- parseNamedRecord (remPrefixNamedRecord "haddockComments" m)
+        y <- parseNamedRecord (remPrefixNamedRecord "haddockCoverage" m)
+        return $ HaddockStats x y
 
 instance Default HaddockStats where
-    def = HaddockStats (-1,-1) (-1,-1)
+    def = HaddockStats def def
 
 runHaddockStats :: HaapMonad m => [FilePath] -> Haap p args db m HaddockStats
 runHaddockStats files = do
@@ -46,11 +76,11 @@ runHaddockStats files = do
     return $ HaddockStats comments coverage
 
 -- returns (number of special annotations,total size of comments)
-runHaddockComments :: HaapMonad m => [FilePath] -> Haap p args db m (Int,Int)
+runHaddockComments :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
 runHaddockComments files = do
     strs <- liftM concat $ mapM (parseFileComments) files
     let docs::[DocH Identifier Identifier] = map (_doc . parseParas) strs
-    return (Set.size $ specialDocs docs,sum $ map length strs)
+    return $ Fraction (Set.size $ specialDocs docs) (sum $ map length strs)
 
 specialDoc :: DocH mod id -> Maybe Int
 specialDoc (DocParagraph {}) = Just 1
@@ -91,11 +121,11 @@ parseFileComments file = orDefault [] $ runIO' $ do
         ParseOk (_::Module SrcSpanInfo,comments) -> return $ map (commentString) comments
         ParseFailed _ _ -> return []
 
-runHaddockCoverage :: HaapMonad m => [FilePath] -> Haap p args db m (Int,Int)
+runHaddockCoverage :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
 runHaddockCoverage files = do
     ccs <- mapM hadCoverage files
-    let cc = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs
-    return cc
+    let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs
+    return $ Fraction cc1 cc2
 
 hadCoverage :: HaapMonad m => FilePath -> Haap p args db m (Int,Int)
 hadCoverage file = orDefault (0,0) $ do
@@ -107,9 +137,11 @@ hadCoverage file = orDefault (0,0) $ do
     return coverage
 
 filterHad :: [String] -> String -> (Int,Int)
-filterHad l s = head $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
-    where g :: String -> (Int, Int)
-          g a = (read $ (words a) !! 2, read $ init $ (words a) !! 4)
+filterHad l s = x
+    where
+    g :: String -> (Int, Int)
+    g a = (read $ (words a) !! 2, read $ init $ (words a) !! 4)
+    x = head $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
 
 
 

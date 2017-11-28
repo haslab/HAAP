@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+
 module HAAP.Code.Analysis.CComplexity where
 
 import HAAP.IO
@@ -7,12 +9,21 @@ import HAAP.Code.Haskell
 import Data.Default
 import qualified Data.Text as Text
 import Data.Traversable
+import Data.Csv
 
 import System.FilePath
+
+import GHC.Generics (Generic)
 
 data CComplexity = CComplexity
     { maxCC :: Int -- maximum cyclomatic complexity
     }
+  deriving (Show,Generic)
+
+instance ToNamedRecord CComplexity where
+    toNamedRecord (CComplexity x) = namedRecord ["maxCC" .= x]
+instance FromNamedRecord CComplexity where
+    parseNamedRecord m = CComplexity <$> m .: "maxCC"
 
 instance Default CComplexity where
     def = CComplexity (-1)

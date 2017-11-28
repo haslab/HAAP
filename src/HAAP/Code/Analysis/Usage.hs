@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+
 module HAAP.Code.Analysis.Usage where
 
 import HAAP.IO
@@ -13,6 +15,7 @@ import qualified Data.Map as Map
 import Data.Map (Map(..))
 import Data.List as List
 import Data.Either
+import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -28,6 +31,8 @@ import Language.Haskell.Exts.Comments
 import Language.Haskell.Exts.ExactPrint
 import Language.Haskell.Exts.Extension
 
+import GHC.Generics (Generic)
+
 data Usage = Usage
     { typesUsage :: Int -- number of type declarations
     , datasUsage :: Int -- number of data/newtype declarations
@@ -35,6 +40,13 @@ data Usage = Usage
     , baseNonHighOrderUsage :: Int -- number of used non-high-order base definitions
     , baseHighOrderUsage :: Int -- number of used high-order base definitions
     }
+
+instance ToNamedRecord Usage where
+    toNamedRecord (Usage x1 x2 x3 x4 x5) = namedRecord
+        ["typesUsage" .= x1,"datasUsage" .= x2,"preludeUsage" .= x3,"baseNonHighOrderUsage" .= x4,"baseHighOrderUsage" .= x5]
+instance FromNamedRecord Usage where
+    parseNamedRecord m = Usage <$>
+        m .: "typesUsage" <*> m .: "datasUsage" <*> m .: "preludeUsage"  <*> m .: "baseNonHighOrderUsage" <*> m .: "baseHighOrderUsage"
 
 instance Default Usage where
     def = Usage (-1) (-1) (-1) (-1) (-1)

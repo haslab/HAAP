@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
+
 module HAAP.Code.Analysis.Modularity where
 
 import HAAP.Core
@@ -5,20 +7,28 @@ import HAAP.IO
 import HAAP.Code.Haskell
 
 import Data.List as List
-import Data.Generics
+import Data.Generics hiding (Generic)
 import Data.Traversable
 import Data.Either
 import Data.Maybe
 import Data.Default
+import Data.Csv (Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 
 import Control.Monad
 
 import Language.Haskell.Exts
 
+import GHC.Generics (Generic)
+
 data Modularity = Modularity
     { blockSize :: Float -- average block size
     , totalSize :: Int -- total size
     }
+
+instance ToNamedRecord Modularity where
+    toNamedRecord (Modularity x y) = namedRecord ["blockSize" .= x,"totalSize" .= y]
+instance FromNamedRecord Modularity where
+    parseNamedRecord m = Modularity <$> m .: "blockSize" <*> m .: "totalSize"
 
 instance Default Modularity where
     def = Modularity (-1) (-1)

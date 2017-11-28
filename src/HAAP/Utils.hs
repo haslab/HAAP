@@ -5,11 +5,28 @@ import qualified Data.Map as Map
 import Data.Time.LocalTime
 import Data.Time.Calendar
 import Data.Time.Format
+import Data.Csv
+import Data.List
+import Data.String
+import qualified Data.Vector as Vector
+import qualified Data.HashMap.Strict as HashMap
+import qualified Data.ByteString as ByteString
 
 import System.FilePath
 import System.FilePath.Find
 
 import Text.Printf
+
+addPrefixNamedRecord :: String -> NamedRecord -> NamedRecord
+addPrefixNamedRecord n xs = HashMap.fromList $ map (\(k,v) -> (ByteString.append (fromString n) k,v)) $ HashMap.toList xs
+
+remPrefixNamedRecord :: String -> NamedRecord -> NamedRecord
+remPrefixNamedRecord n xs = HashMap.fromList $ aux $ HashMap.toList xs
+    where
+    aux [] = []
+    aux ((k,v):xs) = case stripPrefix n (show k) of
+        Nothing -> aux xs
+        Just k' -> (fromString k',v) : aux xs
 
 instance Eq ZonedTime where
     x == y = zonedTimeToUTC x == zonedTimeToUTC y
