@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ViewPatterns, DeriveGeneric, OverloadedStrings #-}
 
 module HAAP.Code.HPC where
 
@@ -17,6 +17,9 @@ import Data.List
 import Data.Default
 import Data.List.Split
 import qualified Data.Text as Text
+import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import qualified Data.Vector as Vector
+import qualified Data.HashMap.Strict as HashMap
 
 import Text.HTML.TagSoup
 
@@ -24,6 +27,8 @@ import Control.Monad
 import qualified Control.Monad.Reader as Reader
 
 import System.FilePath
+
+import GHC.Generics (Generic)
 
 data HpcArgs args = HpcArgs
     { hpcExecutable :: FilePath -- executables to run with hpc
@@ -34,21 +39,63 @@ data HpcArgs args = HpcArgs
     , hpcRTS :: Bool
     }
 
-type HpcItem = (Int,Int,Int) -- (percentage,used,total)
+data HpcItem = HpcItem
+    { hpcPercentage :: Int
+    , hpcUsed :: Int
+    , hpcTotal :: Int
+    }
+  deriving (Generic,Show)
     
-defaultHpcItem :: HpcItem
-defaultHpcItem = (-1,-1,-1)
+instance Default HpcItem where
+    def = HpcItem (-1) (-1) (-1)
+    
+instance DefaultOrdered HpcItem where
+    headerOrder _ = header ["hpcPercentage","hpcUsed","hpcTotal"]
+
+instance ToNamedRecord HpcItem where
+    toNamedRecord (HpcItem x y z) = namedRecord ["hpcPercentage" .= x,"hpcUsed" .= y,"hpcTotal" .= z]
+instance FromNamedRecord HpcItem where
+    parseNamedRecord m = HpcItem <$> m .: "hpcPercentage" <*> m .: "hpcUsed" <*> m .: "hpcTotal"
+
     
 data HpcReport = HpcReport
     { hpcExpressions :: HpcItem -- expressions used
-    , hpcBolean :: HpcItem -- boolean coverage
+    , hpcBoolean :: HpcItem -- boolean coverage
     , hpcAlternatives :: HpcItem -- alternatives used
     , hpcLocalDeclarations :: HpcItem -- local declarations used
     , hpcTopDeclarations :: HpcItem -- top-level declarations used
     }
+  deriving (Generic,Show)
 
 instance Default HpcReport where
-    def = HpcReport defaultHpcItem defaultHpcItem defaultHpcItem defaultHpcItem defaultHpcItem
+    def = HpcReport def def def def def
+
+instance DefaultOrdered HpcReport where
+    headerOrder (HpcReport x1 x2 x3 x4 x5) = Vector.concat
+        [addPrefixHeader "hpcExpressions" (headerOrder x1)
+        ,addPrefixHeader "hpcBoolean" (headerOrder x2)
+        ,addPrefixHeader "hpcAlternatives" (headerOrder x3)
+        ,addPrefixHeader "hpcLocalDeclarations" (headerOrder x4)
+        ,addPrefixHeader "hpcTopDeclarations" (headerOrder x5)
+        ]
+
+instance ToNamedRecord HpcReport where
+    toNamedRecord (HpcReport x1 x2 x3 x4 x5) = HashMap.unions
+        [(addPrefixNamedRecord "hpcExpressions" $ toNamedRecord x1)
+        ,(addPrefixNamedRecord "hpcBoolean" $ toNamedRecord x2)
+        ,(addPrefixNamedRecord "hpcAlternatives" $ toNamedRecord x3)
+        ,(addPrefixNamedRecord "hpcLocalDeclarations" $ toNamedRecord x4)
+        ,(addPrefixNamedRecord "hpcTopDeclarations" $ toNamedRecord x5)
+        ]
+instance FromNamedRecord HpcReport where
+    parseNamedRecord m = do
+        x1 <- parseNamedRecord (remPrefixNamedRecord "hpcExpressions" m)
+        x2 <- parseNamedRecord (remPrefixNamedRecord "hpcBoolean" m)
+        x3 <- parseNamedRecord (remPrefixNamedRecord "hpcAlternatives" m)
+        x4 <- parseNamedRecord (remPrefixNamedRecord "hpcLocalDeclarations" m)
+        x5 <- parseNamedRecord (remPrefixNamedRecord "hpcTopDeclarations" m)
+        return $ HpcReport x1 x2 x3 x4 x5
+
 
 runHpcReport :: HpcArgs args -> a -> (IOResult -> Haap p args db IO a) -> Haap p args db IO (a,HpcReport)
 runHpcReport hpc defa m = orDefault (defa,def) $ do
@@ -78,7 +125,7 @@ runHpcReport hpc defa m = orDefault (defa,def) $ do
   where
     parseHpcItem xs i = case xs!!i of
         [percentage,_,fraction] -> case tail (init fraction) of
-            (splitOn "/" -> [l,r]) -> (read percentage,read l,read r)
+            (splitOn "/" -> [l,r]) -> HpcItem (read percentage) (read l) (read r)
     (dir,exec) = splitFileName (hpcExecutable hpc)
 
 runHpc :: Out a => HakyllP -> HpcArgs args -> a -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
