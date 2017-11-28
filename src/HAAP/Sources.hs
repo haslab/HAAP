@@ -49,7 +49,7 @@ getSourceInfo = getSourceInfoWith id
 
 -- | pushes project files to the group's local copy of the source; returns the files to be commited to version control system
 populateGroupSourceWith :: (HaapMonad m,HaapSource s) => (args -> SourceArgs s) -> HaapContext -> Bool -> Group -> Source s -> Haap p args db m [FilePath]
-populateGroupSourceWith getArgs ctx overwriteTemplateFiles g s = do
+populateGroupSourceWith getArgs ctx overwriteStudentFiles g s = do
     logEvent "populating source"
     sargs <- Reader.reader getArgs
     ppath <- getProjectPath
@@ -57,16 +57,18 @@ populateGroupSourceWith getArgs ctx overwriteTemplateFiles g s = do
     files <- getProjectTaskFiles
     remotefiles <- runSh $ forM files $ \file -> do
         --Sh.liftIO $ putStrLn $ "populating file " ++ show file
-        let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteTemplateFiles
+        let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles
         let localfile = haapLocalFile file
         let remotefile = applyTemplate (makeTemplate $ haapRemoteFile file) ctx
         let shCopy ctx from to = do
             docopy <- case haapFileType file of
                 HaapTemplateFile -> do
                     isto <- shDoesFileExist to
-                    return $ if isto then overwriteTemplateFiles else True
+                    return $ if isto then overwriteStudentFiles else True
                 otherwise -> return True
-            when docopy $ shLoadApplyAndCopyTemplate ctx from to
+            case haapFileType file of
+                HaapBinaryFile -> when docopy $ shCp from to
+                otherwise -> when docopy $ shLoadApplyAndCopyTemplate ctx from to
         shRecursive (shCopy ctx) (ppath </> localfile) (spath </> remotefile)
         case haapFileType file of
             HaapOracleFile -> return []
@@ -80,6 +82,7 @@ listGroupSourceFiles ctx ignoreLibrary g s = do
     let isIgnored HaapLibraryFile = ignoreLibrary
         isIgnored HaapOracleFile = True
         isIgnored HaapTemplateFile = False
+        isIgnored HaapBinaryFile = False
     let mkIgnore f = applyTemplate (makeTemplate $ haapRemoteFile f) ctx
     ignorefiles <- runIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnored . haapFileType) hfiles
 --    runIO $ putStrLn $ "listing " ++ show ignorefiles

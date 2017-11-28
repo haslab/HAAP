@@ -57,6 +57,7 @@ instance NFData Group
 
 data HaapFileType
     = HaapTemplateFile -- student files with a given template
+    | HaapBinaryFile -- student files without a given template
     | HaapLibraryFile  -- common libraries for both students and instructors
     | HaapOracleFile -- instructor code that students can't see
   deriving (Data,Typeable,Eq,Show,Ord)
