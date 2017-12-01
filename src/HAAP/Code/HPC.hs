@@ -23,10 +23,15 @@ import qualified Data.HashMap.Strict as HashMap
 
 import Text.HTML.TagSoup
 
+import Control.DeepSeq
 import Control.Monad
+import Control.Monad.IO.Class
+import Control.Exception
 import qualified Control.Monad.Reader as Reader
 
 import System.FilePath
+
+import Safe
 
 import GHC.Generics (Generic)
 
@@ -45,6 +50,8 @@ data HpcItem = HpcItem
     , hpcTotal :: Int
     }
   deriving (Generic,Show)
+  
+instance NFData HpcItem
     
 instance Default HpcItem where
     def = HpcItem (-1) (-1) (-1)
@@ -67,16 +74,18 @@ data HpcReport = HpcReport
     }
   deriving (Generic,Show)
 
+instance NFData HpcReport
+
 instance Default HpcReport where
     def = HpcReport def def def def def
 
 instance DefaultOrdered HpcReport where
-    headerOrder (HpcReport x1 x2 x3 x4 x5) = Vector.concat
-        [addPrefixHeader "hpcExpressions" (headerOrder x1)
-        ,addPrefixHeader "hpcBoolean" (headerOrder x2)
-        ,addPrefixHeader "hpcAlternatives" (headerOrder x3)
-        ,addPrefixHeader "hpcLocalDeclarations" (headerOrder x4)
-        ,addPrefixHeader "hpcTopDeclarations" (headerOrder x5)
+    headerOrder _ = Vector.concat
+        [addPrefixHeader "hpcExpressions" (headerOrder (undefined::HpcItem))
+        ,addPrefixHeader "hpcBoolean" (headerOrder (undefined::HpcItem))
+        ,addPrefixHeader "hpcAlternatives" (headerOrder (undefined::HpcItem))
+        ,addPrefixHeader "hpcLocalDeclarations" (headerOrder (undefined::HpcItem))
+        ,addPrefixHeader "hpcTopDeclarations" (headerOrder (undefined::HpcItem))
         ]
 
 instance ToNamedRecord HpcReport where
@@ -98,7 +107,7 @@ instance FromNamedRecord HpcReport where
 
 
 runHpcReport :: HpcArgs args -> a -> (IOResult -> Haap p args db IO a) -> Haap p args db IO (a,HpcReport)
-runHpcReport hpc defa m = orDefault (defa,def) $ do
+runHpcReport hpc defa m = orLogDefault (defa,def) $ do
     tmp <- getProjectTmpPath
     ghc <- Reader.reader (hpcGHC hpc)
     let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc }
@@ -119,13 +128,20 @@ runHpcReport hpc defa m = orDefault (defa,def) $ do
         hpcres <- runSh $ do
             shCd dir
             shCommandWith io' "hpc" ["report",exec]
-        let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
-        return (x,HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7))
+        addMessageToError (pretty hpcres) $ do
+            let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
+            report <- orLogDefault def $ liftIO $ evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
+            return (x,report)
          
   where
-    parseHpcItem xs i = case xs!!i of
-        [percentage,_,fraction] -> case tail (init fraction) of
-            (splitOn "/" -> [l,r]) -> HpcItem (read percentage) (read l) (read r)
+    parseHpcItem xs i = case (atNote "parseHpcItem" xs i) of
+        (percentage:(last -> fraction)) -> case tail (init fraction) of
+            (splitOn "/" -> [l,r]) -> HpcItem
+                (readNote "read percentage" $ init percentage)
+                (readNote "read fraction l" l)
+                (readNote "read fraction r" r)
+            frac -> error $ "hpc fraction " ++ show frac
+        line -> error $ "hpc line " ++ show line
     (dir,exec) = splitFileName (hpcExecutable hpc)
 
 runHpc :: Out a => HakyllP -> HpcArgs args -> a -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)

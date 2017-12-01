@@ -12,6 +12,7 @@ import qualified Control.Monad.Reader as Reader
 import Control.Monad.Catch
 import Control.Monad.Except
 import Control.Monad
+import Control.Exception (evaluate)
 
 import Data.Default
 import Data.Text (Text(..))
@@ -269,7 +270,7 @@ shPipeWith io n args x = shPipeWithType io n args x Proxy
     where
     shPipeWithType :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Proxy b -> Sh b
     shPipeWithType io n args x (_::Proxy b) = do
-        let typeb = typeOf (undefined::b)
+        let typeb = typeOf (error "shPipeWith"::b)
         let io' = io { ioStdin = Just $ Text.pack $ show x }
         res <- orEitherSh $ shCommandWith io' n args
         case res of
@@ -335,8 +336,14 @@ runIO' = runIOWith' (const defaultIOArgs)
 orEither :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either HaapException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
+orLogEither :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either HaapException a)
+orLogEither m = orDo (\e -> logEvent (pretty e) >> return (Left e)) (liftM Right m)
+
 orMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
 orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
+
+orLogMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
+orLogMaybe m = orDo (\e -> logEvent (pretty e) >> return Nothing) (liftM Just m)
 
 orDo :: HaapMonad m => (HaapException -> Haap p args db m a) -> Haap p args db m a -> Haap p args db m a
 orDo ex m = catchError m ex
@@ -370,6 +377,9 @@ addMessageToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ pretty
 
 orLogError :: (IsString str,HaapMonad m) => Haap p args db m str -> Haap p args db m str
 orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
+
+forceHaap :: (NFData a,HaapMonad m) => a -> Haap p args db m a
+forceHaap x = liftIO $ evaluate $ force x
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do

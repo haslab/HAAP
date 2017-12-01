@@ -5,6 +5,7 @@ module HAAP.Code.Analysis.Usage where
 import HAAP.IO
 import HAAP.Core
 import HAAP.Code.Haskell
+import HAAP.Log
 
 import qualified Data.Foldable as Foldable
 import Data.Default
@@ -17,6 +18,7 @@ import Data.List as List
 import Data.Either
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 
+import Control.DeepSeq
 import Control.Monad
 import Control.Monad.IO.Class
 
@@ -40,6 +42,9 @@ data Usage = Usage
     , baseNonHighOrderUsage :: Int -- number of used non-high-order base definitions
     , baseHighOrderUsage :: Int -- number of used high-order base definitions
     }
+  deriving (Show,Generic)
+
+instance NFData Usage where
     
 instance DefaultOrdered Usage where
     headerOrder _ = header ["typesUsage","datasUsage","preludeUsage","baseNonHighOrderUsage","baseHighOrderUsage"]
@@ -69,16 +74,19 @@ runDatatypes files = do
 datatypes :: HaapMonad m => FilePath -> Haap p args db m (Int,Int,Int)
 datatypes m = do
     let ioargs = def
-    orDefault (-1,-1,-1) $ runShWith (const ioargs) $ do
+    orLogDefault (-1,-1,-1) $ runShWith (const ioargs) $ do
         x <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","type",m]
         y <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","data|newtype",m]
         z <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R"," Maybe| Either",m]
         return (length $ lines x,length $ lines y,length $ lines z)
     
 getBaseDefs :: HaapMonad m => FilePath -> Haap p args db m BaseDefs
-getBaseDefs basepath = orDefault (Set.empty,Set.empty) $ do
+getBaseDefs basepath = orLogDefault (Set.empty,Set.empty) $ do
     hs <- hsFiles basepath
-    mods <- liftM (rights) $ mapM (orEither . parseHaskellFile) hs
+    let parse f = do
+        --logEvent $ "parsing base usage for " ++ f
+        parseHaskellFile f
+    mods <- liftM (rights) $ mapM (orLogEither . parse) hs
     let ns = Map.unions $ map moduFunctionNames mods
     let (nonho,ho) = Map.partition not ns
     return (Map.keysSet nonho,Map.keysSet ho)
@@ -86,8 +94,11 @@ getBaseDefs basepath = orDefault (Set.empty,Set.empty) $ do
 type BaseDefs = (Set (Name ()),Set (Name ()))
     
 runFunctionUsage :: HaapMonad m => BaseDefs -> [FilePath] -> Haap p args db m (Int,Int)
-runFunctionUsage (nho,ho) files = orDefault (-1,-1) $ do
-    ms <- mapM parseHaskellFile files
+runFunctionUsage (nho,ho) files = orLogDefault (-1,-1) $ do
+    let parse f = do
+        logEvent $ "parsing usage for " ++ f
+        parseHaskellFile f
+    ms <- mapM parse files
     let fs = Map.unions $ map moduNames ms
     let nonhos = Map.filterWithKey (\k _ -> k `elem` nho) fs
     let hos = Map.filterWithKey (\k _ -> k `elem` ho) fs

@@ -23,10 +23,16 @@ import Data.Default
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
+import Data.Maybe
 
 import Control.Monad
+import Control.DeepSeq
+import Control.Exception
+import Control.Monad.IO.Class
 
 import System.FilePath
+
+import Safe
 
 import GHC.Generics (Generic)
 
@@ -42,18 +48,22 @@ data HaddockStats = HaddockStats
     }
   deriving (Show,Generic)
 
+instance NFData HaddockStats where
+
 data Fraction = Fraction
     { numerador :: Int
     , denominador :: Int
     }
   deriving (Show,Generic)
   
+instance NFData Fraction where
+  
 instance DefaultOrdered Fraction where
     headerOrder _ = header ["numerador", "denominador"]
 instance DefaultOrdered HaddockStats where
-    headerOrder (HaddockStats x y) = Vector.concat
-        [addPrefixHeader "haddockComments" (headerOrder x)
-        ,addPrefixHeader "haddockCoverage" (headerOrder y)
+    headerOrder _ = Vector.concat
+        [addPrefixHeader "haddockComments" (headerOrder (undefined::Fraction))
+        ,addPrefixHeader "haddockCoverage" (headerOrder (undefined::Fraction))
         ]
         
 instance Default Fraction where
@@ -85,8 +95,8 @@ runHaddockStats files = do
 
 -- returns (number of special annotations,total size of comments)
 runHaddockComments :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
-runHaddockComments files = do
-    strs <- liftM concat $ mapM (parseFileComments) files
+runHaddockComments files = orLogDefault def $ do
+    strs <- liftM (concat . catMaybes) $ mapM (orLogMaybe . parseFileComments) files
     let docs::[DocH Identifier Identifier] = map (_doc . parseParas) strs
     return $ Fraction (Set.size $ specialDocs docs) (sum $ map length strs)
 
@@ -123,7 +133,7 @@ commentString :: Comment -> String
 commentString (Comment _ _ str) = str
 
 parseFileComments :: HaapMonad m => FilePath -> Haap p args db m [String]
-parseFileComments file = orDefault [] $ runIO' $ do
+parseFileComments file = runIO' $ do
     str <- readFile file
     case parseWithComments defaultParseMode str of
         ParseOk (_::Module SrcSpanInfo,comments) -> return $ map (commentString) comments
@@ -131,25 +141,28 @@ parseFileComments file = orDefault [] $ runIO' $ do
 
 runHaddockCoverage :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
 runHaddockCoverage files = do
-    ccs <- mapM hadCoverage files
-    let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs
-    return $ Fraction cc1 cc2
+    ccs <- mapM (orLogDefault def . hadCoverage) files
+    if List.elem def ccs
+        then return def
+        else do
+            let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs
+            return $ Fraction cc1 cc2
 
 hadCoverage :: HaapMonad m => FilePath -> Haap p args db m (Int,Int)
-hadCoverage file = orDefault (0,0) $ do
-    modname <- orDefault (takeBaseName file) $ parseModuleFileName file
+hadCoverage file = orLogDefault (0,0) $ do
+    modname <- parseModuleFileName file
     res <- runShIOResult $ do
         shCd $ takeDirectory file
         shCommand "haddock" [takeFileName file]
     let coverage = filterHad (lines $ Text.unpack $ resStdout res) modname
-    return coverage
+    liftIO $ evaluate $ force coverage
 
 filterHad :: [String] -> String -> (Int,Int)
 filterHad l s = x
     where
     g :: String -> (Int, Int)
-    g a = (read $ (words a) !! 2, read $ init $ (words a) !! 4)
-    x = head $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
+    g a = (readNote "filterHad" $ atNote "filterHad" (words a) 2, readNote "filterHad" $ initNote "filterHad" $ atNote "filterHad" (words a) 4)
+    x = headNote ("filterHad:"++show l ++"\n"++show s) $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
 
 
 

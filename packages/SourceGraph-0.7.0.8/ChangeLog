@@ -1,0 +1,84 @@
+Changes in 0.6.1.1
+==================
+
+* Update to take into account API changes of libraries.
+
+Changes in 0.6.1.0
+==================
+
+* Only consider buildable executables for Cabal-based analyses.
+
+* Also buildable with haskell-src-exts-1.7.*
+
+Changes in 0.6.0.2
+==================
+
+* Also buildable with haskell-src-exts-1.6.*
+
+Changes in 0.6.0.1
+==================
+
+* Fix up background colours for nested directories in import visualisation.
+
+Changes in 0.6.0.0
+==================
+
+* Now supports "implicitly exported" entities (as requested by Curt
+  Sampson).  This includes instantiated class methods from other
+  modules and functions, etc. that start with an underscore (see
+  http://www.haskell.org/ghc/docs/latest/html/users_guide/options-sanity.html
+  for more information).
+
+* All inaccessible entities are now reported, not just those that were
+  root nodes in the call graph.
+
+* Edges are now colour-coded based upon whether they are part of a
+  clique, cycle or a chain.
+
+* Level-based analyses: visualise how deep an entity is from those
+  exported entities.
+
+* The generated Dot code for the visualisations is also saved.
+
+Changes in 0.5.5.0
+==================
+
+* Class instances now drawn correctly.
+
+* Better colour support.
+
+* Now has a legend.
+
+* Clean up printing of cliques, etc.
+
+Changes in 0.5.2.0
+==================
+
+* Shift overall analysis to the top and per-module analysis to the
+  end, as suggested by Duncan Coutts.
+
+* Graph drawing fixups: instances are now drawn correctly, and the
+  module graph now has modules located in the correct directory.
+
+* Improve some graph drawing aspects (node margins, colours for module
+  graphs, etc.).
+
+Changes in 0.5.1.0
+==================
+
+* Add support for passing a single Haskell source file rather than a
+  Cabal file as the argument, as requested by Curt Sampson.
+
+* Shade backgrounds of modules when clustering Entities.
+
+* RelativeNeighbourhood doesn't provide good alternate modules and
+  takes up too much runtime, and so has been removed.
+
+Changes in 0.5.0.0
+==================
+
+* Re-write of parsing.
+
+* Usage of new graphviz and Graphalyze features.
+
+* More abstraction into common routines into Analyse.Utils
