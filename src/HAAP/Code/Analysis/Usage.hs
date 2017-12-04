@@ -17,6 +17,7 @@ import Data.Map (Map(..))
 import Data.List as List
 import Data.Either
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+import Data.Maybe
 
 import Control.DeepSeq
 import Control.Monad
@@ -98,7 +99,7 @@ runFunctionUsage (nho,ho) files = orLogDefault (-1,-1) $ do
     let parse f = do
         logEvent $ "parsing usage for " ++ f
         parseHaskellFile f
-    ms <- mapM parse files
+    ms <- liftM catMaybes $ mapM (orLogMaybe . parse) files
     let fs = Map.unions $ map moduNames ms
     let nonhos = Map.filterWithKey (\k _ -> k `elem` nho) fs
     let hos = Map.filterWithKey (\k _ -> k `elem` ho) fs

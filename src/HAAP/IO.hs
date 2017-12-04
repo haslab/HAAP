@@ -31,6 +31,7 @@ import System.Exit
 import System.Process
 import System.Directory
 import System.Environment
+import System.FilePath.GlobPattern
 
 import Test.QuickCheck
 
@@ -453,6 +454,15 @@ forAllIO num gen f = do
     xs <- generate $ vectorOf num gen
     mapM f xs
         
+infix ~~~
+(~~~) :: Sh.FilePath -> GlobPattern -> Sh Bool
+f ~~~ p = return $ (shToFilePath f) ~~ p
         
+shFindGlob :: FilePath -> Sh [FilePath]
+shFindGlob path = do
+    xs <- Sh.findWhen (\x -> x ~~~ (dir </> exec)) (shFromFilePath dir)
+    return $ map shToFilePath xs
+  where
+    (dir,exec) = splitFileName path      
         
 

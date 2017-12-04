@@ -140,16 +140,14 @@ parseFileComments file = runIO' $ do
         ParseFailed _ _ -> return []
 
 runHaddockCoverage :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
-runHaddockCoverage files = do
-    ccs <- mapM (orLogDefault def . hadCoverage) files
-    if List.elem def ccs
-        then return def
-        else do
-            let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs
-            return $ Fraction cc1 cc2
+runHaddockCoverage files = orLogDefault def $ do
+    ccs <- mapM (hadCoverage) files
+    let ccs' = catMaybes ccs
+    let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs'
+    return $ Fraction cc1 cc2
 
-hadCoverage :: HaapMonad m => FilePath -> Haap p args db m (Int,Int)
-hadCoverage file = orLogDefault (0,0) $ do
+hadCoverage :: HaapMonad m => FilePath -> Haap p args db m (Maybe (Int,Int))
+hadCoverage file = orLogMaybe $ do
     modname <- parseModuleFileName file
     res <- runShIOResult $ do
         shCd $ takeDirectory file
