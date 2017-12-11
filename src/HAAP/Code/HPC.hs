@@ -40,7 +40,7 @@ data HpcArgs args = HpcArgs
     , hpcGHC :: args -> GHCArgs
     , hpcIO :: args -> IOArgs
     , hpcSandbox :: Maybe FilePath
-    , hpcHtmlPath :: FilePath -- relative path to the project to store hpc results
+    , hpcHtmlPath :: Maybe FilePath -- relative path to the project to store hpc results
     , hpcRTS :: Bool
     }
 
@@ -163,23 +163,26 @@ runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
             
         x <- m ghcres
         
-        let destdir = dirToRoot dir </> tmp </> hpcHtmlPath hpc </> exec
-        orErrorHakyllPage hp outhtml () $ do
-            orErrorWritePage (tmp </> html) mempty $ runSh $ do
-                shCd dir
-                shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
-                
-            hakyllRules $ do
-                -- copy the hpc generated documentation
-                match (fromGlob $ tmp </> hpcHtmlPath hpc </> exec </> "*") $ do
-                    route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-                    compile $ do
-                        file <- getResourceFilePath
-                        getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
-        return (x,outhtml)
+        if (isJust $ hpcHtmlPath hpc)
+            then do
+                let destdir = dirToRoot dir </> tmp </> maybe "" id (hpcHtmlPath hpc) </> exec
+                orErrorHakyllPage hp outhtml () $ do
+                    orErrorWritePage (tmp </> html) mempty $ runSh $ do
+                        shCd dir
+                        shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
+                    
+                    hakyllRules $ do
+                        -- copy the hpc generated documentation
+                        match (fromGlob $ tmp </> fromJust (hpcHtmlPath hpc) </> exec </> "*") $ do
+                            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                            compile $ do
+                                file <- getResourceFilePath
+                                getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
+                return (x,outhtml)
+            else return (x,"")
   where
     (dir,exec) = splitFileName (hpcExecutable hpc)
-    html = hpcHtmlPath hpc </> exec </> "hpc_index.html"
+    html = maybe "" id (hpcHtmlPath hpc) </> exec </> "hpc_index.html"
     outhtml = hakyllRoute hp $ html
 
 addLegend :: FilePath -> TagHtml -> TagHtml
