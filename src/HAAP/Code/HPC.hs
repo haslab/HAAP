@@ -105,6 +105,15 @@ instance FromNamedRecord HpcReport where
         x5 <- parseNamedRecord (remPrefixNamedRecord "hpcTopDeclarations" m)
         return $ HpcReport x1 x2 x3 x4 x5
 
+hpcCleanup :: HaapMonad m => FilePath -> FilePath -> Haap p args db m ()
+hpcCleanup dir exec = do
+    ignoreError $ runSh $ do
+        shCd dir
+        shRm ".hpc"
+        shFindGlob "*.tix" >>= mapM_ shRm
+        shFindGlob "*.o" >>= mapM_ shRm
+        shFindGlob "*.hi" >>= mapM_ shRm
+
 
 runHpcReport :: HpcArgs args -> a -> (IOResult -> Haap p args db IO a) -> Haap p args db IO (a,HpcReport)
 runHpcReport hpc defa m = orLogDefault (defa,def) $ do
@@ -114,9 +123,7 @@ runHpcReport hpc defa m = orLogDefault (defa,def) $ do
     io <- Reader.reader (hpcIO hpc)
     let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
     do
-        ignoreError $ runSh $ do
-            shCd dir
-            shRm $ addExtension exec "tix"
+        hpcCleanup dir exec
             
         ghcres <- runShIOResult $ do
             shCd dir
@@ -152,9 +159,7 @@ runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
     io <- Reader.reader (hpcIO hpc)
     let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
     do
-        ignoreError $ runSh $ do
-            shCd dir
-            shRm $ addExtension exec "tix"
+        hpcCleanup dir exec
             
         ghcres <- runShIOResult $ do
             shCd dir
