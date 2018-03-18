@@ -17,7 +17,7 @@
 .hspec-failure {
     white-space: pre-wrap;
     color: red;
-    width: 60%; /* to shrink error messages */
+    /* width: 60%; /* to shrink error messages */
     font-family: monospace; /* for ascii art */
 }
 .datatext > a {
