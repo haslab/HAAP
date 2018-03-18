@@ -37,12 +37,18 @@ module HAAP
     , module HAAP.Code.Analysis.Modularity
     , module HAAP.Code.Analysis.SourceGraph
     , module HAAP.Code.Analysis.Usage
+    , module HAAP.Shelly
+    , module HAAP.Plugin
+    , module HAAP.Graphics.Gloss.Capture
+    , module HAAP.CmdArgs
     ) where
 
 import HAAP.Core
+import HAAP.CmdArgs
 import HAAP.Code.Analysis.Haddock
 import HAAP.Code.Haskell
 import HAAP.DB
+import HAAP.Shelly
 import HAAP.DB.State
 import HAAP.DB.Acid
 import HAAP.DB.Binary
@@ -77,7 +83,8 @@ import HAAP.Code.Git
 import HAAP.Code.Analysis.Modularity
 import HAAP.Code.Analysis.SourceGraph
 import HAAP.Code.Analysis.Usage
-
+import HAAP.Plugin
+import HAAP.Graphics.Gloss.Capture
 
 
 

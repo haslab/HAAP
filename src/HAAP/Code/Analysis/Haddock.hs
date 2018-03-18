@@ -6,6 +6,7 @@ import HAAP.Core
 import HAAP.Utils
 import HAAP.IO
 import HAAP.Code.Haskell
+import HAAP.Shelly
 
 import Language.Haskell.Exts.Parser
 import Language.Haskell.Exts.Comments
@@ -87,14 +88,14 @@ instance FromNamedRecord HaddockStats where
 instance Default HaddockStats where
     def = HaddockStats def def
 
-runHaddockStats :: HaapMonad m => [FilePath] -> Haap p args db m HaddockStats
+runHaddockStats :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m HaddockStats
 runHaddockStats files = do
     comments <- runHaddockComments files
     coverage <- runHaddockCoverage files
     return $ HaddockStats comments coverage
 
 -- returns (number of special annotations,total size of comments)
-runHaddockComments :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
+runHaddockComments :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
 runHaddockComments files = orLogDefault def $ do
     strs <- liftM (concat . catMaybes) $ mapM (orLogMaybe . parseFileComments) files
     let docs::[DocH Identifier Identifier] = map (_doc . parseParas) strs
@@ -132,24 +133,24 @@ specialDocs = everything Set.union (mkQ Set.empty aux)
 commentString :: Comment -> String
 commentString (Comment _ _ str) = str
 
-parseFileComments :: HaapMonad m => FilePath -> Haap p args db m [String]
-parseFileComments file = runIO' $ do
+parseFileComments :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m [String]
+parseFileComments file = runBaseIO' $ do
     str <- readFile file
     case parseWithComments defaultParseMode str of
         ParseOk (_::Module SrcSpanInfo,comments) -> return $ map (commentString) comments
         ParseFailed _ _ -> return []
 
-runHaddockCoverage :: HaapMonad m => [FilePath] -> Haap p args db m Fraction
+runHaddockCoverage :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
 runHaddockCoverage files = orLogDefault def $ do
     ccs <- mapM (hadCoverage) files
     let ccs' = catMaybes ccs
     let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs'
     return $ Fraction cc1 cc2
 
-hadCoverage :: HaapMonad m => FilePath -> Haap p args db m (Maybe (Int,Int))
+hadCoverage :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Maybe (Int,Int))
 hadCoverage file = orLogMaybe $ do
     modname <- parseModuleFileName file
-    res <- runShIOResult $ do
+    res <- orIOResult $ runBaseSh $ do
         shCd $ takeDirectory file
         shCommand "haddock" [takeFileName file]
     let coverage = filterHad (lines $ Text.unpack $ resStdout res) modname

@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeOperators, DeriveGeneric, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, DeriveFunctor, DeriveAnyClass, TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Test.Rank where
 
@@ -8,20 +8,51 @@ import HAAP.Test.Spec
 import HAAP.Utils
 import HAAP.Web.Hakyll
 import HAAP.IO
+import HAAP.Plugin
 
 import Data.Traversable
 import Data.List
 import Data.Maybe
 import Data.SafeCopy
+import Data.Default
 
-import qualified Control.Monad.Reader as Reader
+import Control.Monad.Trans
+import Control.Monad.Catch
+import Control.Monad.Reader as Reader
+
+data Rank
+
+data RankArgs = RankArgs
+    { 
+    }
+instance Default RankArgs where
+    def = RankArgs {}
+
+useRank :: (HaapStack t m,PluginK Rank t m) => Haap (PluginT Rank :..: t) m a -> Haap t m a
+useRank m = usePlugin_ (return def) m
+
+instance HaapPlugin Rank where
+    type PluginI Rank = RankArgs
+    type PluginO Rank = ()
+    type PluginT Rank = ReaderT RankArgs
+    type PluginK Rank t m = ()
+
+    usePlugin getArgs m = do
+        args <- getArgs
+        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        return (x,())
+
+instance HaapMonad m => HasPlugin Rank (ReaderT RankArgs) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (ReaderT RankArgs) m (t2 m)) => HasPlugin Rank (ComposeT (ReaderT RankArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 class (Eq score,Ord score,Out score) => Score score where
     okScore :: score -> Bool
     appendScores :: [score] -> score
 
 newtype FloatScore = FloatScore { unFloatScore :: Float }
-  deriving (Out,Eq,Ord,Show)
+  deriving (Out,Eq,Ord,Show,Generic)
 $(deriveSafeCopy 0 'base ''FloatScore)
 
 instance Score FloatScore where
@@ -57,19 +88,19 @@ instance Out MaybeFloatScore where
     doc (MaybeFloatScore Nothing) = text "-"
     doc (MaybeFloatScore (Just x)) = doc x
 
-data HaapRank p args db m a score = HaapRank
+data HaapRank t m a score = HaapRank
     { rankPath :: FilePath
     , rankTitle :: String
     , rankIdTag :: String
     , rankHeaders :: Maybe [String]
     , rankTag :: String
     , rankIds :: [a]
-    , rankScore :: a -> Haap p args db m [score]
+    , rankScore :: a -> Haap t m [score]
     }
 
 type HaapRankRes a score = [(a,[score],score)]
 
-runHaapRank :: (HaapMonad m,Out a,Score score) => HaapRank p args db m a score -> Haap p args db m (HaapRankRes a score)
+runHaapRank :: (HasPlugin Rank t m,Out a,Score score) => HaapRank t m a score -> Haap t m (HaapRankRes a score)
 runHaapRank rank = do
     scores <- forM (rankIds rank) $ \x -> do
         scores <- rankScore rank x
@@ -77,24 +108,24 @@ runHaapRank rank = do
     let cmp x y = compare (thr3 y) (thr3 x)
     return $ sortBy cmp scores
 
-data HaapSpecRank p args db m a score = HaapSpecRank
+data HaapSpecRank t m a score = HaapSpecRank
     { sRankPath :: FilePath
     , sRankTitle :: String
     , sRankIdTag :: String
     , sRankTag :: String
     , sRankIds :: [a]
     , sRankSpec :: a -> HaapSpec
-    , sRankScore :: HaapTestRes -> Haap p args db m score
+    , sRankScore :: HaapTestRes -> Haap t m score
     }
 
-runHaapSpecRankWith :: (HaapMonad m,Out a,Score score) => (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> Haap p args db m (HaapRankRes a score)
-runHaapSpecRankWith getIOArgs getArgs r = runHaapRank (haapSpecRank getIOArgs getArgs r)
+runHaapSpecRank :: (MonadIO m,HasPlugin Rank t m,HasPlugin Spec t m,Out a,Score score) => HaapSpecRank t m a score -> Haap t m (HaapRankRes a score)
+runHaapSpecRank r = runHaapRank (haapSpecRank r)
 
-haapSpecRank :: HaapMonad m => (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db m a score -> HaapRank p args db m a score
-haapSpecRank getIOArgs getArgs r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
+haapSpecRank :: (MonadIO m,HasPlugin Spec t m,HasPlugin Rank t m) => HaapSpecRank t m a score -> HaapRank t m a score
+haapSpecRank r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
     where
     rSc a = do
-        table <- runSpecWith getIOArgs getArgs (sRankSpec r a)
+        table <- runSpec (sRankSpec r a)
         mapM (sRankScore r . snd) $ haapTestTableRows table
 
 

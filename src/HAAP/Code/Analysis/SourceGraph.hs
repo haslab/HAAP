@@ -82,7 +82,7 @@ instance Default SGReport where
 
 -- * library
 
-runSourceGraph :: HaapMonad m => [FilePath] -> Haap p args db m SGReport
+runSourceGraph :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m SGReport
 runSourceGraph files = orLogDefault def $ do
     (_,ms) <- liftIO $ parseHaskellFiles files
     let ccs = map cycleCompModule (Map.elems ms)

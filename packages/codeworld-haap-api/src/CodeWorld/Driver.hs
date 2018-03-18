@@ -512,8 +512,8 @@ fontString style font = stylePrefix style <> "25px " <> fontName font
 
 imgElement :: Img -> IO HTMLImageElement
 imgElement (StringImg s) = do
-    doc <- orError "imgElement" currentDocument
-    el <- orError "imgElement" $ getElementById doc (fromString s :: JSString)
+    doc <- orError ("imgElement " ++ show s) currentDocument
+    el <- orError ("imgElement " ++ show s) $ getElementById doc (fromString s :: JSString)
     toHTMLImageElement el
 imgElement (HTMLImg e) = return e
 

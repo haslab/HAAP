@@ -1,15 +1,19 @@
-{-# LANGUAGE FlexibleContexts, RankNTypes, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GeneralizedNewtypeDeriving, TypeFamilyDependencies, DeriveGeneric, TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances, TypeOperators, ConstraintKinds, StandaloneDeriving, FlexibleContexts, RankNTypes, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GeneralizedNewtypeDeriving, TypeFamilyDependencies, DeriveGeneric, TemplateHaskell #-}
 module HAAP.Core where
 
 import HAAP.Utils
 
 import Control.Monad
+import Control.Monad.Trans.Compose
 import Control.Monad.Trans
-import Control.Monad.Reader (MonadReader(..))
+import Control.Monad.Trans.Identity
+import Control.Monad.Morph
+import Control.Monad.Trans.Control
+import Control.Monad.Reader (MonadReader(..),ReaderT(..))
 import qualified Control.Monad.Reader as Reader
-import Control.Monad.Writer (MonadWriter(..))
+import Control.Monad.Writer (MonadWriter(..),WriterT(..))
 import qualified Control.Monad.Writer as Writer
-import Control.Monad.State (MonadState(..))
+import Control.Monad.State (MonadState(..),StateT(..))
 import qualified Control.Monad.State as State
 import Control.Monad.RWS (RWST(..))
 import qualified Control.Monad.RWS as RWS
@@ -23,6 +27,7 @@ import Data.DList as DList
 import Data.Typeable
 import Data.Data
 import Data.SafeCopy
+import Data.Default
 
 import GHC.Stack
 import GHC.Generics
@@ -34,7 +39,7 @@ import Text.PrettyPrint.GenericPretty
 
 -- General static project information
 
-data Project p = Project
+data Project = Project
 	{ projectName :: String
 	, projectPath :: FilePath -- absolute path
     , projectTmpPath :: FilePath -- relative path for the project's temp directory
@@ -42,6 +47,12 @@ data Project p = Project
 	, projectTasks :: [Task]
     }
   deriving (Data,Typeable,Eq,Show,Ord)
+
+instance Default Project where
+    def = defaultProject
+
+defaultProject :: Project
+defaultProject = Project "Project" "." "." [] []
 
 data Group = Group
 	{ groupId :: String
@@ -81,65 +92,73 @@ $(deriveSafeCopy 0 'base ''HaapFile)
 $(deriveSafeCopy 0 'base ''Task)
 $(deriveSafeCopy 0 'base ''Project)
 
-runHaap :: Project p -> args -> Haap p args () IO a -> IO a
-runHaap p args (Haap m) = do
+runHaap :: Project -> Haap IdentityT IO a -> IO (a,HaapLog)
+runHaap p (Haap m) = do
     createDirectoryIfMissing True $ projectTmpPath p
-    e <- Except.runExceptT $ RWS.runRWST m (p,args) ()
+    e <- runIdentityT $ Except.runExceptT $ RWS.runRWST m (p) ()
     case e of
         Left e -> error $ "Haap Error: " ++ pretty e
         Right (a,(),w') -> do
-            printLog w'
-            return a
+--            printLog w'
+            return (a,w')
 
-newtype Haap p args db m x = Haap { unHaap :: RWST (Project p,args) HaapLog db (ExceptT HaapException m) x }
-  deriving (Applicative,Functor,Monad,MonadWriter HaapLog)
+newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: RWST Project HaapLog () (ExceptT HaapException (t m)) x }
+  deriving (Applicative,Functor,Monad,MonadWriter HaapLog,MonadThrow,MonadCatch)
 
-instance MonadTrans (Haap p args db) where
-    lift = Haap . lift . lift
+--instance (MonadTrans t) => MonadTrans (Haap t) where
+--    lift = Haap . lift . lift . lift
 
-instance Monad m => MonadReader args (Haap p args db m) where
-    ask = Haap $ liftM snd ask
-    local f (Haap m) = Haap $ local (mapSnd f) m
-    reader f = Haap $ reader (f . snd)
-    
-haapWithReader :: HaapMonad m => (args -> args') -> Haap p args' db m a -> Haap p args db m a
-haapWithReader f (Haap m) = Haap $ do
-    (p,r) <- Reader.ask
-    s <- State.get
-    (x,s',w') <- lift $ RWS.runRWST m (p,f r) s
-    State.put s'
-    Writer.tell w'
-    return x
+--instance MonadTrans t => MonadTransControl (Haap t) where
 
-mapHaapDB :: HaapMonad m => Haap p args st1 m st2 -> (st2 -> Haap p args st1 m ()) -> Haap p args st2 m a -> Haap p args st1 m a
-mapHaapDB get put (Haap m) = Haap $ do
-    (p,r) <- Reader.ask
-    st2 <- unHaap $ get
-    (x,st2',w') <- lift $ RWS.runRWST m (p,r) st2
-    unHaap $ put st2'
-    Writer.tell w'
-    return x
+--mapHaapDB :: HaapMonad m => Haap p args st1 m st2 -> (st2 -> Haap p args st1 m ()) -> Haap p args st2 m a -> Haap p args st1 m a
+--mapHaapDB get put (Haap m) = Haap $ do
+--    (p,r) <- Reader.ask
+--    st2 <- unHaap $ get
+--    (x,st2',w') <- lift $ RWS.runRWST m (p,r) st2
+--    unHaap $ put st2'
+--    Writer.tell w'
+--    return x
 
-instance HaapMonad m => MonadError HaapException (Haap p args db m) where
+--instance MFunctor (Haap t) where
+--    hoist f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
+
+mapHaapMonad :: (t1 m (Either HaapException (a,(),HaapLog)) -> t2 n (Either HaapException (b,(),HaapLog))) -> Haap t1 m a -> Haap t2 n b
+mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
+--    where
+--    g m3 = do
+--        (e,st) <- runStateT m3
+--        
+--        
+--        (Either HaapException (b,HaapLog),st)
+--        
+--        (Either HaapException ((b,st),HaapLog),st)
+
+--mapHaapMonad' :: Haap m a -> Haap n b
+--mapHaapMonad' m = liftWith () m
+
+--liftWith :: Monad m => (Run t -> m a) -> t m a
+--type Run t = forall n b. Monad n => t n b -> n (StT t b)
+
+--liftBaseWith :: (RunInBase m b -> b a) -> m a
+--type RunInBase m b = forall a. m a -> b (StM m a)
+
+--mapRWST :: (m (a, s, w) -> n (b, s, w')) -> RWST r w s m a -> RWST r w' s n b
+--mapExceptT :: (m (Either e a) -> n (Either e' b)) -> ExceptT e m a -> ExceptT e' n b
+
+instance HaapStack t m => MonadError HaapException (Haap t m) where
     {-# INLINE throwError #-}
     throwError e = Haap $ throwError e
     {-# INLINE catchError #-}
     catchError (Haap m) f = Haap $ do
-        (p,r) <- Reader.ask
+        (p) <- Reader.ask
         s <- State.get
-        e <- lift $ lift $ Except.runExceptT $ RWS.runRWST m (p,r) s
+        e <- lift $ lift $ Except.runExceptT $ RWS.runRWST m (p) s
         case e of
             Left err -> unHaap $ f err
             Right (x,s',w') -> do
                 State.put s'
                 Writer.tell w'
                 return x
-
-getDB :: HaapMonad m => Haap p args db m db
-getDB = Haap State.get
-
-putDB :: HaapMonad m => db -> Haap p args db m ()
-putDB db = Haap $ State.put db
 
 data HaapException = HaapException String
                    | HaapTimeout CallStack Int
@@ -166,34 +185,42 @@ instance Out HaapEvent where
 printLog :: HaapLog -> IO ()
 printLog l = forM_ l $ \e -> putStrLn $ pretty e
 
-getProject :: HaapMonad m => Haap p args db m (Project p)
-getProject = Haap $ liftM fst ask
+getProject :: HaapStack t m => Haap t m (Project)
+getProject = Haap $ ask
 
-getProjectName :: HaapMonad m => Haap p args db m String
+getProjectName :: HaapStack t m => Haap t m String
 getProjectName = liftM projectName getProject
 
-getProjectPath :: HaapMonad m => Haap p args db m String
+getProjectPath :: HaapStack t m => Haap t m String
 getProjectPath = liftM projectPath getProject
 
-getProjectTmpPath :: HaapMonad m => Haap p args db m String
+getProjectTmpPath :: HaapStack t m => Haap t m String
 getProjectTmpPath = liftM projectTmpPath getProject
 
-getProjectGroups :: HaapMonad m => Haap p args db m [Group]
+getProjectGroups :: HaapStack t m => Haap t m [Group]
 getProjectGroups = liftM projectGroups getProject
 
-getProjectTasks :: HaapMonad m => Haap p args db m [Task]
+getProjectTasks :: HaapStack t m => Haap t m [Task]
 getProjectTasks = liftM projectTasks getProject
 
-getProjectTaskFiles :: HaapMonad m => Haap p args db m [HaapFile]
+getProjectTaskFiles :: HaapStack t m => Haap t m [HaapFile]
 getProjectTaskFiles = liftM (concatMap taskFiles) getProjectTasks
 
-class (MonadIO m,Monad m,MonadCatch m,MonadThrow m) => HaapMonad m where
-    type HaapMonadArgs m = r | r -> m
-    runHaapMonadWith :: (args -> HaapMonadArgs m) -> Haap p args db m a -> Haap p args db IO a
+type HaapMonad m = (Monad m,MonadCatch m,MonadThrow m)
 
-instance HaapMonad IO where
-    type HaapMonadArgs IO = ()
-    runHaapMonadWith getArgs m = m
+-- | @MonadTrans@ equivalent
+class (HaapMonad m,HaapMonad (t m)) => HaapStack t m where
+    liftStack :: m a -> t m a
+
+instance (HaapMonad m,HaapStack t m) => HaapStack (Haap t) m where
+    liftStack = liftHaap . liftStack
+
+instance {-# OVERLAPPABLE #-} (MonadTrans t,HaapMonad m,HaapMonad (t m)) => HaapStack t m where
+    liftStack = lift
+
+liftHaap :: Monad (t m) => t m a -> Haap t m a
+liftHaap m = Haap $ lift $ lift m
+
 
 
 

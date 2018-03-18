@@ -1,17 +1,21 @@
-{-# LANGUAGE TypeFamilies, TypeFamilyDependencies #-}
+{-# LANGUAGE ConstraintKinds, TypeFamilies, TypeFamilyDependencies #-}
 
 module HAAP.DB where
 
 import HAAP.Core
+import HAAP.Plugin
 
-class HaapDB db where
-    type DB db = r | r -> db
-    type DBArgs db = r | r -> db
+class HaapPlugin db => HaapDB db where
     type DBQuery db a = r | r -> db a
     type DBUpdate db a = r | r -> db a
     
-    useDB :: HaapMonad m => (args -> DBArgs db) -> Haap p args (DB db) m a -> Haap p args () m a
-    
-    queryDB :: HaapMonad m => DBQuery db a -> Haap p args (DB db) m a
-    updateDB :: HaapMonad m => DBUpdate db a -> Haap p args (DB db) m a
+    queryDB :: (HasPlugin db t m,PluginK db t m) => DBQuery db a -> Haap t m a
+    updateDB :: (HasPlugin db t m,PluginK db t m) => DBUpdate db a -> Haap t m a
+
+type HasDB db t m = (HaapDB db,HasPlugin db t m)
+
+data DBLens db st = DBLens
+    { dbGet :: DBQuery db st
+    , dbPut :: st -> DBUpdate db ()
+    }
     

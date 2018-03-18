@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.Test.Rank where
 
@@ -9,24 +9,27 @@ import HAAP.Test.Rank
 import HAAP.Utils
 import HAAP.Web.Hakyll
 import HAAP.IO
+import HAAP.Plugin
 
 import Data.Traversable
 import Data.List
 
 import qualified Control.Monad.Reader as Reader
+import Control.Monad.IO.Class
 
-renderHaapRank :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
-renderHaapRank hp rank = do
+renderHaapRank :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapRank t m a score -> Haap t m FilePath
+renderHaapRank rank = do
     scores <- runHaapRank rank
-    renderHaapRankScores hp rank scores
+    renderHaapRankScores rank scores
 
-renderHaapSpecRankWith :: (Out a,Score score) => HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpecRank p args db Hakyll a score -> Haap p args db Hakyll FilePath
-renderHaapSpecRankWith hp getIOArgs getArgs rank = do
-    scores <- runHaapSpecRankWith getIOArgs getArgs rank
-    renderHaapRankScores hp (haapSpecRank getIOArgs getArgs rank) scores
+renderHaapSpecRank :: (HasPlugin Spec t m,MonadIO m,HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapSpecRank t m a score -> Haap t m FilePath
+renderHaapSpecRank rank = do
+    scores <- runHaapSpecRank rank
+    renderHaapRankScores (haapSpecRank rank) scores
 
-renderHaapRankScores :: (Out a,Score score) => HakyllP -> HaapRank p args db Hakyll a score -> HaapRankRes a score -> Haap p args db Hakyll FilePath
-renderHaapRankScores hp rank scores = do
+renderHaapRankScores :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapRank t m a score -> HaapRankRes a score -> Haap t m FilePath
+renderHaapRankScores rank scores = do
+    hp <- getHakyllP
     hakyllRules $ create [fromFilePath $ rankPath rank] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do

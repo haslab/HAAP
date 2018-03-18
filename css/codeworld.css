@@ -169,7 +169,7 @@ body {
   text-decoration: none;
   display: inline-block;
   font-weight: bold;
-  color: white;
+  color: white; background-color: #144ba6;
   white-space: nowrap;
   overflow: hidden;
 }

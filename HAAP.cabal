@@ -34,12 +34,15 @@ Library
     HAAP.Test.Rank
     HAAP.Test.Tourney
     HAAP.Pretty
+    HAAP.Shelly
+    HAAP.Plugin
     HAAP.Web.Hakyll
     HAAP.Web.Blaze
     HAAP.Web.Test.Spec
     HAAP.Web.Test.Rank
     HAAP.Web.Test.Tourney
     HAAP.Doc.Haddock
+    HAAP.CmdArgs
     HAAP.Code.HLint
     HAAP.Code.Homplexity
     HAAP.Code.HPC
@@ -57,9 +60,10 @@ Library
     HAAP.Code.Analysis.Usage
     HAAP.Code.Git
     HAAP.Code.Analysis.Modularity
+    HAAP.Graphics.Gloss.Capture
         
   Hs-source-dirs:   src
   Other-Modules:
     Paths_HAAP
-  Build-Depends:    call-stack, cassava, bifunctors, dlist, containers, unordered-containers, vector, transformers, base, mtl, data-default, lens, deepseq, filepath, bytestring, knob, HUnit, hspec, hspec-contrib, hspec-core, QuickCheck, exceptions, safecopy, acid-state, pretty, GenericPretty, hakyll == 4.9.8.0, contravariant, shelly, text, directory, random-shuffle, blaze-html, time, binary, split, safe, template, filemanip, process, pandoc, syb, tagsoup, haskell-src-exts, parsec, haddock-library, system-locale, SourceGraph==0.7.0.8, fgl, Graphalyze
+  Build-Depends:    call-stack, cassava, bifunctors, dlist, containers, unordered-containers, vector, transformers, base, mtl, data-default, lens, deepseq, filepath, bytestring, knob, HUnit, hspec, hspec-contrib, hspec-core, QuickCheck, exceptions, safecopy, acid-state, pretty, GenericPretty, hakyll == 4.9.8.0, contravariant, shelly, text, directory, random-shuffle, blaze-html, time, binary, split, safe, template, filemanip, process, pandoc, syb, tagsoup, haskell-src-exts, parsec, haddock-library, system-locale, SourceGraph==0.7.0.8, fgl, Graphalyze >= 0.15.0.0, monad-control, mmorph, StateVar, gloss, GLFW, OpenGL, OpenGLRaw, JuicyPixels, gloss-rendering, cmdargs, async
 

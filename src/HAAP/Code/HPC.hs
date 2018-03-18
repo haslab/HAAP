@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE TypeOperators, EmptyDataDecls, TypeFamilies, UndecidableInstances, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, ViewPatterns, DeriveGeneric, OverloadedStrings #-}
 
 module HAAP.Code.HPC where
 
@@ -9,6 +9,8 @@ import HAAP.Utils
 import HAAP.Compiler.GHC
 import HAAP.Web.HTML.TagSoup
 import HAAP.Pretty
+import HAAP.Plugin
+import HAAP.Shelly
 
 import Data.Traversable
 import Data.Foldable
@@ -20,6 +22,7 @@ import qualified Data.Text as Text
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
+import Data.Proxy
 
 import Text.HTML.TagSoup
 
@@ -27,7 +30,7 @@ import Control.DeepSeq
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Exception
-import qualified Control.Monad.Reader as Reader
+import Control.Monad.Reader as Reader
 
 import System.FilePath
 
@@ -35,10 +38,28 @@ import Safe
 
 import GHC.Generics (Generic)
 
-data HpcArgs args = HpcArgs
+data HPC
+
+instance HaapPlugin HPC where
+    type PluginI HPC = HpcArgs
+    type PluginO HPC = ()
+    type PluginT HPC = ReaderT HpcArgs
+    type PluginK HPC t m = ()
+    
+    usePlugin getArgs m = do
+        args <- getArgs
+        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        return (x,())
+    
+instance HaapMonad m => HasPlugin HPC (ReaderT HpcArgs) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (ReaderT HpcArgs) m (t2 m)) => HasPlugin HPC (ComposeT (ReaderT HpcArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+    
+data HpcArgs = HpcArgs
     { hpcExecutable :: FilePath -- executables to run with hpc
-    , hpcGHC :: args -> GHCArgs
-    , hpcIO :: args -> IOArgs
+    , hpcGHC :: GHCArgs
+    , hpcIO :: IOArgs
     , hpcSandbox :: Maybe FilePath
     , hpcHtmlPath :: Maybe FilePath -- relative path to the project to store hpc results
     , hpcRTS :: Bool
@@ -105,90 +126,97 @@ instance FromNamedRecord HpcReport where
         x5 <- parseNamedRecord (remPrefixNamedRecord "hpcTopDeclarations" m)
         return $ HpcReport x1 x2 x3 x4 x5
 
-hpcCleanup :: HaapMonad m => FilePath -> FilePath -> Haap p args db m ()
+hpcCleanup :: (MonadIO m,HasPlugin HPC t m) => FilePath -> FilePath -> Haap t m ()
 hpcCleanup dir exec = do
-    ignoreError $ runSh $ do
+    ignoreError $ runBaseSh $ do
         shCd dir
         shRm ".hpc"
         shFindGlob "*.tix" >>= mapM_ shRm
         shFindGlob "*.o" >>= mapM_ shRm
         shFindGlob "*.hi" >>= mapM_ shRm
 
+useAndRunHpcReport :: (MonadIO m,HaapStack t m) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,HpcReport)
+useAndRunHpcReport args x m = usePlugin_ (return args) $ runHpcReport x m
 
-runHpcReport :: HpcArgs args -> a -> (IOResult -> Haap p args db IO a) -> Haap p args db IO (a,HpcReport)
-runHpcReport hpc defa m = orLogDefault (defa,def) $ do
-    tmp <- getProjectTmpPath
-    ghc <- Reader.reader (hpcGHC hpc)
-    let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc }
-    io <- Reader.reader (hpcIO hpc)
-    let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
-    do
-        hpcCleanup dir exec
+runHpcReport :: (MonadIO m,HasPlugin HPC t m) => a -> (IOResult -> Haap t m a) -> Haap t m (a,HpcReport)
+runHpcReport defa m = do
+    hpc <- liftHaap $ liftPluginProxy (Proxy::Proxy HPC) $ Reader.ask
+    let parseHpcItem xs i = case (atNote "parseHpcItem" xs i) of
+                                (percentage:(last -> fraction)) -> case tail (init fraction) of
+                                    (splitOn "/" -> [l,r]) -> HpcItem
+                                        (readNote "read percentage" $ init percentage)
+                                        (readNote "read fraction l" l)
+                                        (readNote "read fraction r" r)
+                                    frac -> error $ "hpc fraction " ++ show frac
+                                line -> error $ "hpc line " ++ show line
+    let (dir,exec) = splitFileName (hpcExecutable hpc)
+    orLogDefault (defa,def) $ do
+        tmp <- getProjectTmpPath
+        let ghc = (hpcGHC hpc)
+        let io = (hpcIO hpc)
+        let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
+        let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
+        do
+            hpcCleanup dir exec
+                
+            ghcres <- orIOResult $ runBaseSh $ do
+                shCd dir
+                res <- shGhcWith ghc' [exec]
+                return res
+                
+            x <- m ghcres
             
-        ghcres <- runShIOResult $ do
-            shCd dir
-            res <- shGhcWith io' ghc' [exec]
-            return res
-            
-        x <- m ghcres
-        
-        hpcres <- runSh $ do
-            shCd dir
-            shCommandWith io' "hpc" ["report",exec]
-        addMessageToError (pretty hpcres) $ do
-            let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
-            report <- orLogDefault def $ liftIO $ evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
-            return (x,report)
-         
-  where
-    parseHpcItem xs i = case (atNote "parseHpcItem" xs i) of
-        (percentage:(last -> fraction)) -> case tail (init fraction) of
-            (splitOn "/" -> [l,r]) -> HpcItem
-                (readNote "read percentage" $ init percentage)
-                (readNote "read fraction l" l)
-                (readNote "read fraction r" r)
-            frac -> error $ "hpc fraction " ++ show frac
-        line -> error $ "hpc line " ++ show line
-    (dir,exec) = splitFileName (hpcExecutable hpc)
+            hpcres <- runBaseSh $ do
+                shCd dir
+                shCommandWith io' "hpc" ["report",exec]
+            addMessageToError (pretty hpcres) $ do
+                let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
+                report <- orLogDefault def $ liftIO $ evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
+                return (x,report)
 
-runHpc :: Out a => HakyllP -> HpcArgs args -> a -> (IOResult -> Haap p args db Hakyll a) -> Haap p args db Hakyll (a,FilePath)
-runHpc hp hpc def m = orErrorHakyllPage hp outhtml (def,outhtml) $ do
-    tmp <- getProjectTmpPath
-    ghc <- Reader.reader (hpcGHC hpc)
-    let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc }
-    io <- Reader.reader (hpcIO hpc)
-    let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
-    do
-        hpcCleanup dir exec
+useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Out a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,FilePath)
+useAndRunHpc args x m = usePlugin_ (return args) $ runHpc x m
+
+runHpc :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin HPC t m,Out a) => a -> (IOResult -> Haap t m a) -> Haap t m (a,FilePath)
+runHpc def m = do
+    hpc <- liftHaap $ liftPluginProxy (Proxy::Proxy HPC) $ Reader.ask
+    hp <- getHakyllP
+    let (dir,exec) = splitFileName (hpcExecutable hpc)
+    let html = maybe "" id (hpcHtmlPath hpc) </> exec </> "hpc_index.html"
+    let outhtml = hakyllRoute hp $ html
+    orErrorHakyllPage outhtml (def,outhtml) $ do
+        tmp <- getProjectTmpPath
+        let ghc = (hpcGHC hpc)
+        let io = (hpcIO hpc)
+        let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
+        let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
+        do
+            hpcCleanup dir exec
+                
+            ghcres <- orIOResult $ runBaseSh $ do
+                shCd dir
+                res <- shGhcWith ghc' [exec]
+                return res
+                
+            x <- m ghcres
             
-        ghcres <- runShIOResult $ do
-            shCd dir
-            res <- shGhcWith io' ghc' [exec]
-            return res
-            
-        x <- m ghcres
-        
-        if (isJust $ hpcHtmlPath hpc)
-            then do
-                let destdir = dirToRoot dir </> tmp </> maybe "" id (hpcHtmlPath hpc) </> exec
-                orErrorHakyllPage hp outhtml () $ do
-                    orErrorWritePage (tmp </> html) mempty $ runSh $ do
-                        shCd dir
-                        shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
-                    
-                    hakyllRules $ do
-                        -- copy the hpc generated documentation
-                        match (fromGlob $ tmp </> fromJust (hpcHtmlPath hpc) </> exec </> "*") $ do
-                            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-                            compile $ do
-                                file <- getResourceFilePath
-                                getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
-                return (x,outhtml)
-            else return (x,"")
-  where
-    (dir,exec) = splitFileName (hpcExecutable hpc)
-    html = maybe "" id (hpcHtmlPath hpc) </> exec </> "hpc_index.html"
-    outhtml = hakyllRoute hp $ html
+            if (isJust $ hpcHtmlPath hpc)
+                then do
+                    let destdir = dirToRoot dir </> tmp </> maybe "" id (hpcHtmlPath hpc) </> exec
+                    orErrorHakyllPage outhtml () $ do
+                        orErrorWritePage (tmp </> html) mempty $ runBaseSh $ do
+                            shCd dir
+                            shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
+                        
+                        hakyllRules $ do
+                            -- copy the hpc generated documentation
+                            match (fromGlob $ tmp </> fromJust (hpcHtmlPath hpc) </> exec </> "*") $ do
+                                route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                                compile $ do
+                                    file <- getResourceFilePath
+                                    getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
+                    return (x,outhtml)
+                else return (x,"")
 
 addLegend :: FilePath -> TagHtml -> TagHtml
 addLegend file html = if isInfixOf ".hs" file

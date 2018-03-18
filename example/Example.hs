@@ -10,38 +10,32 @@ import Data.Char
 import Data.Monoid hiding ((<>))
 import qualified Data.Map as Map
 
+import Control.DeepSeq
+import Control.Monad.IO.Class
+
 import System.Random.Shuffle
 import System.Process
 
 import GHC.Generics (Generic(..))
 
-data Example
-
-example :: Project Example
+example :: Project
 example = Project
     { projectName = "Example"
     , projectPath = "."
+    , projectTmpPath = "tmp"
     , projectGroups = []
     , projectTasks = []
     }
-
-data Example_Args = Example_Args
-    { exDBArgs :: BinaryDBArgs Example_DB
-    }
-
-exampleArgs = Example_Args (BinaryDBArgs "db" emptyLi1DB)
 
 emptyLi1DB = Example_DB (HaapTourneyDB 1 [])
 
 exSpec :: HaapSpec
 exSpec = bounded "x" [97,98,3,4] $ \x ->
           bounded "y" "abcd" $ \y -> 
-          testEqual $ return (x,ord y)
+          testEqual (return x) (return $ ord y)
           
 exRankSpec :: Int -> HaapSpec
-exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual $ return (x,i)
-
-type Ex = Haap Example Example_Args (BinaryDB Example_DB) Hakyll
+exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual (return x) (return i)
 
 data Example_DB = Example_DB
     { exTourneyDB :: HaapTourneyDB ExPlayer
@@ -53,44 +47,40 @@ lnsTourney :: DBLens (BinaryDB Example_DB) (HaapTourneyDB ExPlayer)
 lnsTourney = DBLens
     (BinaryDBQuery exTourneyDB)
     (\st -> BinaryDBUpdate $ \db -> ((),db { exTourneyDB = st }) )
-
-haap :: Ex HaapTestTableRes
-haap = do
-    res <- runSpecWith getSpecArgs exSpec
-    return res
-
-getSpecArgs :: Example_Args -> HaapSpecArgs
-getSpecArgs = const $ HaapSpecArgs HaapSpecQuickCheck Nothing
     
 exRankScore :: HaapTestRes -> FloatScore
-exRankScore Nothing = FloatScore 1
-exRankScore (Just err) = FloatScore 0
+exRankScore HaapTestOk = FloatScore 1
+exRankScore _ = FloatScore 0
 
-exRank :: HaapSpecRank Example Example_Args db Hakyll Int FloatScore
+exRank :: HaapStack t m => HaapSpecRank t m Int FloatScore
 exRank = HaapSpecRank "ranks.html" "Ranks" "Grupo" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
 
 main = do
---    logger <- new Message
-    let cfg = defaultConfiguration
-    runHaap example exampleArgs $ runHaapMonadWith (const cfg) $ useDB exDBArgs $ do
-        spec <- renderHaapSpecsWith getSpecArgs "spec.html" "Spec" [("spec1",exSpec)]
+    let cfg = HakyllArgs defaultConfiguration False False def
+    let exDBArgs = BinaryDBArgs "db" emptyLi1DB def
+    let specArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
+    runHaap example $ useHakyll cfg $ useBinaryDB exDBArgs $ do
+        (spec,rank,tour) <- useSpec specArgs $ do
+            spec <- renderHaapSpecs "spec.html" "Spec" [("spec1",exSpec)]
+            (rank,tour) <- useRank $ do
+                rank <- renderHaapSpecRank exRank
+                tour <- useTourney $ renderHaapTourney exTourney
+                return (rank,tour)
+            return (spec,rank,tour)
         
-        rank <- renderHaapSpecRankWith getSpecArgs exRank
+        hadcks <- useAndRunHaddock exHaddock
         
-        tour <- renderHaapTourney exTourney
+        hlint <- useAndRunHLint exHLint
         
-        hadck <- runHaddock exHaddock
+        homplexity <- useAndRunHomplexity exHomplexity
         
-        hlint <- runHLint exHLint
-        
-        homplexity <- runHomplexity exHomplexity
-        
-        (_,hpcs) <- runHpc exHpc $ do
-            runIO $ system "./HPCTest < ints"
-            runIO $ system "./HPCTest < ints"
+        (_,hpc) <- useAndRunHpc exHpc () $ const $ do
+            runBaseIO $ system "./HPCTest < ints"
+            runBaseIO $ system "./HPCTest < ints"
+            return ()
             
-        cw1 <- runCodeWorld exCodeWorldDraw
-        cw2 <- runCodeWorld exCodeWorldGame
+        cw1 <- useAndRunCodeWorld exCodeWorldDraw
+        cw2 <- useAndRunCodeWorld exCodeWorldGame
         
         hakyllRules $ do
             match (fromGlob ("templates/example.html")) $ do
@@ -103,10 +93,10 @@ main = do
                               `mappend` constField "spec" spec
                               `mappend` constField "rank" rank
                               `mappend` constField "tour" tour
-                              `mappend` constField "haddock" hadck
+                              `mappend` listField "haddocks" (field "haddock" (return . itemBody)) (mapM makeItem hadcks)
                               `mappend` constField "hlint" hlint
                               `mappend` constField "homplexity" homplexity
-                              `mappend` listField "hpcs" (field "hpc" (return . itemBody)) (mapM makeItem hpcs)
+                              `mappend` constField "hpc" hpc
                               `mappend` listField "cws" (field "cw" (return . itemBody)) (mapM makeItem [cw1,cw2])
                     makeItem "" >>= loadAndApplyTemplate "templates/example.html" exCtx
         
@@ -115,6 +105,7 @@ main = do
 data ExPlayer = ExPlayer (String,Bool)
  deriving (Eq,Ord,Show,Generic)
 instance Binary ExPlayer
+instance NFData ExPlayer
 
 instance Out ExPlayer where
     docPrec i x = doc x
@@ -124,40 +115,35 @@ instance TourneyPlayer ExPlayer where
     isDefaultPlayer (ExPlayer (_,b)) = b
     defaultPlayer = ExPlayer ("random",True)
 
-exTourney :: HaapTourney Example Example_Args (BinaryDB Example_DB) Hakyll ExPlayer [Link]
+exTourney :: MonadIO m => HaapTourney t m (BinaryDB Example_DB) ExPlayer [Link]
 exTourney = HaapTourney 10 "Tourney" "Grupo" grupos "torneio" lnsTourney match return (const $ return ())
     where
     grupos = map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
     match tno rno mno players = do
-        players' <- runIO' $ shuffleM players
+        players' <- runBaseIO' $ shuffleM players
         return (zip players' [1..],["link"])
 
 
 
-exHaddock = HaddockArgs True "Ex" [] "." ["Example.hs"] "doc"
-exHLint = HLintArgs True [] "." ["Example.hs"] "hlint.html"
-exHomplexity = HomplexityArgs True [] "." ["../src/"] "homplexity.html"
+exHaddock = HaddockArgs Nothing "Ex" [] "." ["Example.hs"] "doc"
+exHLint = HLintArgs Nothing [] "." ["Example.hs"] "hlint.html"
+exHomplexity = HomplexityArgs Nothing [] "." ["../src/"] "homplexity.html"
 
-exHpc :: HpcArgs Example_Args
-exHpc = HpcArgs ["HPCTest"] getGHC getIO False "hpc"
-    where
-    getIO = const def
-    getGHC = const def
+exHpc :: HpcArgs
+exHpc = HpcArgs "HPCTest" def def Nothing (Just "hpc") False
 
-exCodeWorldDraw :: CodeWorldArgs Example_Args
-exCodeWorldDraw = CodeWorldArgs ("MMDraw.hs") "Draw" (CWDraw "Insira um caminho...") getGHCJS getIO "codeworld" db imgs
+exCodeWorldDraw :: CodeWorldArgs
+exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw True "Insira um caminho...") ghcjs def "codeworld" imgs
     where
-    getIO = const def
-    getGHCJS = const $ def { ghcjsSafe = False }
-    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
+    ghcjs = def { ghcjsSafe = False }
+--    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
     imgs = [("recta","recta.png"),("curva","curva.png"),("lava","lava.jpg"),("carro","carro.png")]
 
-exCodeWorldGame :: CodeWorldArgs Example_Args
-exCodeWorldGame = CodeWorldArgs ("MMGame.hs") "Game" (CWGame) getGHCJS getIO "codeworld" db []
+exCodeWorldGame :: CodeWorldArgs
+exCodeWorldGame = CodeWorldArgs (Left "MMGame.hs") "Game" (CWGame) ghcjs def "codeworld" []
     where
-    getIO = const def
-    getGHCJS = const $ def { ghcjsSafe = False }
-    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
+    ghcjs = def { ghcjsSafe = False }
+--    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
 
 
 

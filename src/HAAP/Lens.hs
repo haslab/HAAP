@@ -29,10 +29,10 @@ constLens'' x = Lens'' $ lens (const x) (\_ _ -> ())
 getStateLens'' :: MonadState st m => Lens'' st s -> m s
 getStateLens'' l = liftM (^. unLens'' l) State.get
 
-haapDBLens'' :: HaapMonad m => Lens'' st1 st2 -> Haap p args st2 m a -> Haap p args st1 m a
-haapDBLens'' l m = mapHaapDB get' put' m
-    where
-    get' = liftM (viewLens'' l) getDB
-    put' st2 = do
-        st1 <- getDB
-        putDB $ setLens'' l st2 st1
+--haapDBLens'' :: HaapMonad m => Lens'' st1 st2 -> Haap st2 m a -> Haap st1 m a
+--haapDBLens'' l m = mapHaapDB get' put' m
+--    where
+--    get' = liftM (viewLens'' l) getDB
+--    put' st2 = do
+--        st1 <- getDB
+--        putDB $ setLens'' l st2 st1

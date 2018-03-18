@@ -4,6 +4,7 @@ module HAAP.Template where
         
 import HAAP.Core
 import HAAP.IO
+import HAAP.Shelly
 
 import qualified Data.Text.Template as T
 import qualified Data.Text as Text

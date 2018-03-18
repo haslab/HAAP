@@ -17,6 +17,7 @@ import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromName
 
 import Control.Monad
 import Control.DeepSeq
+import Control.Monad.IO.Class
 
 import Language.Haskell.Exts
 
@@ -40,7 +41,7 @@ instance FromNamedRecord Modularity where
 instance Default Modularity where
     def = Modularity (-1) (-1)
 
-runModularity :: HaapMonad m => [FilePath] -> Haap p args db m Modularity
+runModularity :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Modularity
 runModularity files = do
     modus <- liftM catMaybes $ forM files $ \file -> orLogMaybe $ do
         logEvent $ "parsing modularity for " ++ file

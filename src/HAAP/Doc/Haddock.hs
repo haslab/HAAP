@@ -1,13 +1,15 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators, EmptyDataDecls, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, OverloadedStrings #-}
 
 module HAAP.Doc.Haddock where
 
 import HAAP.Core
 import HAAP.IO
+import HAAP.Plugin
 import HAAP.Web.Hakyll
 import HAAP.Web.HTML.TagSoup
 import HAAP.Utils
 import HAAP.Code.Haskell
+import HAAP.Shelly
 
 import qualified Language.Haskell.Exts as Hs
 import qualified Language.Haskell.Exts.Pretty as Hs
@@ -17,9 +19,28 @@ import qualified Data.Text as Text
 import Data.Traversable
 import Data.List
 
-import qualified Control.Monad.Reader as Reader
+import Control.Monad.Reader as Reader
+import Control.Monad.State as State
 
 import System.FilePath
+
+import Control.Monad.Catch
+
+import Data.Proxy
+
+
+data Haddock
+
+instance HaapPlugin Haddock where
+    type PluginI Haddock = HaddockArgs
+    type PluginT Haddock = StateT HaddockArgs
+    type PluginO Haddock = ()
+    type PluginK Haddock t m = (MonadIO m)
+
+    usePlugin getArgs m = do
+        args <- getArgs
+        x <- mapHaapMonad (flip State.evalStateT args . unComposeT) m
+        return (x,())
 
 data HaddockArgs = HaddockArgs
     { haddockSandbox :: Maybe FilePath
@@ -30,8 +51,17 @@ data HaddockArgs = HaddockArgs
     , haddockHtmlPath :: FilePath -- relative to the project path
     }
 
-runHaddock :: HakyllP -> HaddockArgs -> Haap p args db Hakyll [FilePath]
-runHaddock hp h = do
+instance HaapMonad m => HasPlugin Haddock (StateT HaddockArgs) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (StateT HaddockArgs) m (t2 m)) => HasPlugin Haddock (ComposeT (StateT HaddockArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+
+useAndRunHaddock :: (MonadIO m,HasPlugin Hakyll t m) => HaddockArgs -> Haap t m [FilePath]
+useAndRunHaddock args = usePlugin_ (return args) $ runHaddock
+
+runHaddock :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => Haap t m [FilePath]
+runHaddock = do
+    h <- liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.get
     let files = haddockFiles h
     files' <- forM files $ \f -> do
         mb <- orEither $ parseModuleFileName $ haddockPath h </> f
@@ -41,21 +71,24 @@ runHaddock hp h = do
         return (f,isMain)
     let (mains,others) = partition (snd) files'
     
-    haddockpath <- runHaddock' (map fst others) hp h
+    haddockpath <- runHaddock' (map fst others)
     mainpaths <- forM (zip [1..] $ nub $ map fst mains) $ \(i,f) -> do
         let h' = h { haddockHtmlPath = haddockHtmlPath h ++ show i }
-        runHaddock' [f] hp h'
+        liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.put h'
+        runHaddock' [f]
     return $ haddockpath : mainpaths
 
-runHaddock' :: [FilePath] -> HakyllP -> HaddockArgs -> Haap p args db Hakyll FilePath
-runHaddock' files hp h = do
+runHaddock' :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => [FilePath] -> Haap t m FilePath
+runHaddock' files = do
+    h <- liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.get
+    hp <- getHakyllP
     tmp <- getProjectTmpPath
     let ioArgs = def { ioSandbox = fmap (dirToRoot (haddockPath h) </>) (haddockSandbox h) }
     let extras = haddockArgs h
     
     let html = dirToRoot (haddockPath h) </> tmp </> haddockHtmlPath h
     let indexhtml = addExtension (haddockHtmlPath h) "html"
-    res <- orErrorWritePage (tmp </> indexhtml) mempty $ runSh $ do
+    res <- orErrorWritePage (tmp </> indexhtml) mempty $ runBaseSh $ do
         shCd $ haddockPath h
         shCommandWith ioArgs "haddock" (extras++["-h","-o",html]++files)
 --    runIO $ putStrLn $ show $ resStderr res

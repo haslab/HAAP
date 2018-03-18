@@ -75,9 +75,9 @@ Library
                         mtl,
                         fgl,
                         haskell-src-exts,
-                        Graphalyze,
+                        Graphalyze >= 0.15.0.0,
                         Cabal,
-                        graphviz
+                        graphviz > 2999.6.0.0
 
 Executable SourceGraph {
 

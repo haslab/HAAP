@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 
 module HAAP.Web.Test.Spec where
 
@@ -8,21 +8,25 @@ import HAAP.Utils
 import HAAP.Test.Spec
 import HAAP.Pretty
 import HAAP.IO
+import HAAP.Plugin
+
+import Control.Monad.IO.Class
 
 import Data.Traversable
 
-renderHaapSpecWith :: HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> FilePath -> String -> String -> HaapSpec -> Haap p args db Hakyll FilePath
-renderHaapSpecWith hp getIOArgs getArgs path title notes spec = do
-    test <- runSpecWith getIOArgs getArgs spec
-    renderHaapTest hp path title notes test
+renderHaapSpec :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> String -> HaapSpec -> Haap t m FilePath
+renderHaapSpec path title notes spec = do
+    test <- runSpec spec
+    renderHaapTest path title notes test
 
-renderHaapSpecsWith :: HakyllP -> (args -> IOArgs) -> (args -> HaapSpecArgs) -> FilePath -> String -> [(String,HaapSpec)] -> Haap p args db Hakyll FilePath
-renderHaapSpecsWith hp getIOArgs getArgs path title specs = do
-    tests <- forM specs $ mapSndM (runSpecWith getIOArgs getArgs)
-    renderHaapTests hp path title tests
+renderHaapSpecs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> [(String,HaapSpec)] -> Haap t m FilePath
+renderHaapSpecs path title specs = do
+    tests <- forM specs $ mapSndM (runSpec)
+    renderHaapTests path title tests
 
-renderHaapTest :: HakyllP -> FilePath ->  String -> String -> HaapTestTableRes -> Haap p args db Hakyll FilePath
-renderHaapTest hp path title notes spec = do
+renderHaapTest :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> String -> HaapTestTableRes -> Haap t m FilePath
+renderHaapTest path title notes spec = do
+    hp <- getHakyllP
     hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
@@ -42,8 +46,9 @@ renderHaapTest hp path title notes spec = do
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx >>= hakyllCompile hp
     return (hakyllRoute hp path)
 
-renderHaapTests :: HakyllP -> FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap p args db Hakyll FilePath
-renderHaapTests hp path title specs = do
+renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap t m FilePath
+renderHaapTests path title specs = do
+    hp <- getHakyllP
     hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do

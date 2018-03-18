@@ -2,6 +2,7 @@ module HAAP.Code.Git where
 
 import HAAP.IO
 import HAAP.Core
+import HAAP.Shelly
 
 import qualified Data.Text as Text
 

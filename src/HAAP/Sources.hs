@@ -8,6 +8,8 @@ import HAAP.IO
 import HAAP.Utils
 import HAAP.Template
 import HAAP.Log
+import HAAP.Plugin
+import HAAP.Shelly
 
 import Data.Traversable
 import Data.Default
@@ -16,6 +18,7 @@ import qualified Data.Map as Map
 
 import Control.Monad
 import qualified Control.Monad.Reader as Reader
+import Control.Monad.IO.Class
 
 import System.FilePath
 import System.Directory
@@ -24,38 +27,24 @@ import System.FilePath.Find as FilePath
 import Shelly (Sh(..))
 import qualified Shelly as Sh
 
-class Ord (SourceInfo s) => HaapSource s where
+class (HaapPlugin s,Ord (SourceInfo s)) => HaapSource s where
     type Source s = r | r -> s
     type SourceInfo s = r | r -> s
-    type SourceArgs s = r | r -> s
-    getSourceWith :: HaapMonad m => (args -> SourceArgs s) -> Source s -> Haap p args db m ()
-    putSourceWith :: HaapMonad m => (args -> SourceArgs s) -> [FilePath] -> Source s -> Haap p args db m ()
-    getSourceInfoWith  :: HaapMonad m => (args -> SourceArgs s) -> Source s -> Haap p args db m (SourceInfo s)
+    getSource :: (HasPlugin s t m,PluginK s t m) => Source s -> Haap t m ()
+    putSource :: (HasPlugin s t m,PluginK s t m) => [FilePath] -> Source s -> Haap t m ()
+    getSourceInfo  :: (HasPlugin s t m,PluginK s t m) => Source s -> Haap t m (SourceInfo s)
     
     sourcePath :: Source s -> FilePath
     sourcePath s = ""
 
--- pulls the latest source (a.k.a. git pull)
-getSource :: (HaapMonad m,HaapSource s) => Source s -> Haap p (SourceArgs s) db m ()
-getSource = getSourceWith id
-
--- adds files to the source and pushes a new source (a.k.a git push)
-putSource :: (HaapMonad m,HaapSource s) => [FilePath] -> Source s -> Haap p (SourceArgs s) db m ()
-putSource = putSourceWith id
-
--- gets detailed source information
-getSourceInfo :: (HaapMonad m,HaapSource s) => Source s -> Haap p (SourceArgs s) db m (SourceInfo s)
-getSourceInfo = getSourceInfoWith id
-
 -- | pushes project files to the group's local copy of the source; returns the files to be commited to version control system
-populateGroupSourceWith :: (HaapMonad m,HaapSource s) => (args -> SourceArgs s) -> HaapContext -> Bool -> Group -> Source s -> Haap p args db m [FilePath]
-populateGroupSourceWith getArgs ctx overwriteStudentFiles g s = do
+populateGroupSource :: (MonadIO m,HasPlugin s t m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
+populateGroupSource ctx overwriteStudentFiles g s = do
     logEvent "populating source"
-    sargs <- Reader.reader getArgs
     ppath <- getProjectPath
     let spath = sourcePath s
     files <- getProjectTaskFiles
-    remotefiles <- runSh $ forM files $ \file -> do
+    remotefiles <- runBaseSh $ forM files $ \file -> do
         --Sh.liftIO $ putStrLn $ "populating file " ++ show file
         let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles
         let localfile = haapLocalFile file
@@ -75,7 +64,7 @@ populateGroupSourceWith getArgs ctx overwriteStudentFiles g s = do
             otherwise -> return [remotefile]
     return $ concat remotefiles
 
-listGroupSourceFiles :: (HaapMonad m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap p (SourceArgs s) db m [FilePath]
+listGroupSourceFiles :: (MonadIO m,HasPlugin s t m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
 listGroupSourceFiles ctx ignoreLibrary g s = do
     let spath = sourcePath s
     hfiles <- getProjectTaskFiles
@@ -84,13 +73,13 @@ listGroupSourceFiles ctx ignoreLibrary g s = do
         isIgnored HaapTemplateFile = False
         isIgnored HaapBinaryFile = False
     let mkIgnore f = applyTemplate (makeTemplate $ haapRemoteFile f) ctx
-    ignorefiles <- runIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnored . haapFileType) hfiles
+    ignorefiles <- runBaseIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnored . haapFileType) hfiles
 --    runIO $ putStrLn $ "listing " ++ show ignorefiles
     let notIgnored :: FindClause Bool
         notIgnored = do
             cp <- canonicalPath
             return $ not $ any (equalFilePath cp) ignorefiles
-    hsfiles <- runIO' $ FilePath.find (return True) (extension ==? ".hs" &&? notIgnored) spath
+    hsfiles <- runBaseIO' $ FilePath.find (return True) (extension ==? ".hs" &&? notIgnored) spath
 --    runIO $ putStrLn $ "hsfiles " ++ show hsfiles
     
     --let listRec :: FilePath -> Sh [FilePath]

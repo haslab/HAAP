@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
+{-# LANGUAGE TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where
 
@@ -7,13 +7,16 @@ import HAAP.Utils
 import HAAP.IO
 import HAAP.Log
 import HAAP.Pretty
+import HAAP.Shelly
+import HAAP.Plugin
 
 import Test.QuickCheck.Property as QuickCheck
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
 import Test.QuickCheck.Random as QuickCheck
 import Test.QuickCheck.Monadic as QuickCheck
-import Test.Hspec hiding (runIO)
+import Test.Hspec hiding (runIO,Spec)
+import qualified Test.Hspec as Hspec
 import Test.Hspec.Core.Runner
 import Test.Hspec.Formatters
 import Test.Hspec.Contrib.HUnit
@@ -41,15 +44,46 @@ import Data.Knob as Knob
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import Data.CallStack
+import Data.Default
+
+import Control.Monad.Reader
 
 import Text.Read
 
 import Safe
 
+data Spec
+
+instance HaapPlugin Spec where
+    type PluginI Spec = HaapSpecArgs
+    type PluginT Spec = ReaderT HaapSpecArgs
+    type PluginO Spec = ()
+    type PluginK Spec t m = ()
+    
+    usePlugin getArgs m = do
+        args <- getArgs
+        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        return (x,())
+
+useSpec :: (HaapStack t m,PluginK Spec t m) => (PluginI Spec) -> Haap (PluginT Spec :..: t) m a -> Haap t m a
+useSpec args m = usePlugin_ (return args) m
+
+instance HaapMonad m => HasPlugin Spec (ReaderT HaapSpecArgs) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (ReaderT HaapSpecArgs) m (t2 m)) => HasPlugin Spec (ComposeT (ReaderT HaapSpecArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+
 data HaapSpecArgs = HaapSpecArgs
     { specMode :: HaapSpecMode
     , specQuickCheckMaxSuccess :: Maybe Int
+    , specIO :: IOArgs
     }
+
+instance Default HaapSpecArgs where
+    def = defaultHaapSpecArgs
+
+defaultHaapSpecArgs :: HaapSpecArgs
+defaultHaapSpecArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
 
 data HaapSpecMode = HaapSpecQuickCheck | HaapSpecHUnit
 
@@ -63,16 +97,12 @@ instance Out FailureReason where
     doc (Reason str) = text "reason" <+> text str
     doc (ExpectedButGot msg x y) = doc msg $+$ nest 4 (text "expected:" <+> text x $+$ text "got:" <+> text y)
 
-runSpec :: HaapMonad m => HaapSpec -> Haap p HaapSpecArgs db m HaapTestTableRes
-runSpec = runSpecWith (const defaultIOArgs) id
-
-runSpecWith :: HaapMonad m => (args -> IOArgs) -> (args -> HaapSpecArgs) -> HaapSpec -> Haap p args db m HaapTestTableRes
-runSpecWith getIOArgs getArgs spec = do
+runSpec :: (MonadIO m,HasPlugin Spec t m) => HaapSpec -> Haap t m HaapTestTableRes
+runSpec spec = do
     logEvent "Running Haap Specification"
-    ioargs <- liftM getIOArgs $ Reader.ask
-    args <- liftM getArgs $ Reader.ask
-    let tests = haapSpec ioargs (specMode args) spec
-    runHaapTestTable ioargs args tests
+    args <- liftHaap $ liftPluginProxy (Proxy::Proxy Spec) $ Reader.ask
+    let tests = haapSpec (specIO args) (specMode args) spec
+    runHaapTestTable args tests
 
 -- generates a list of tests
 bounded :: (Out a,Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
@@ -82,17 +112,29 @@ bounded = HaapSpecBounded
 unbounded :: (Out a,Show a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
 unbounded = HaapSpecUnbounded
 
-testBool :: IO Bool -> HaapSpec
-testBool = HaapSpecTestBool
+testBool :: Bool -> HaapSpec
+testBool x = testBoolIO (return x)
 
-testEqual :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
-testEqual = HaapSpecTestEqual (==)
+testEqual :: (NFData a,Eq a,Out a,Show a) => a -> a -> HaapSpec
+testEqual x y = testEqualIO (return x) (return y)
 
-testEqualWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
-testEqualWith eq iox ioy = HaapSpecTestEqual eq iox ioy
+testEqualWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> a -> a -> HaapSpec
+testEqualWith eq x y = testEqualIOWith eq (return x) (return y)
 
-testMessage :: IO String -> HaapSpec
-testMessage = HaapSpecTestMessage
+testMessage :: String -> HaapSpec
+testMessage x = testMessageIO (return x)
+
+testBoolIO :: IO Bool -> HaapSpec
+testBoolIO = HaapSpecTestBool
+
+testEqualIO :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
+testEqualIO = HaapSpecTestEqual (==)
+
+testEqualIOWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+testEqualIOWith eq iox ioy = HaapSpecTestEqual eq iox ioy
+
+testMessageIO :: IO String -> HaapSpec
+testMessageIO = HaapSpecTestMessage
 
 data HaapSpec where
      HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
@@ -150,14 +192,15 @@ haapTestRes (Left some) = case fromException some of
     Just (HaapSpecMessage msg) -> HaapTestMessage msg
 haapTestRes (Right msg) = HaapTestError $ pretty msg
 
-runHaapTestTable :: HaapMonad m => IOArgs -> HaapSpecArgs -> HaapTestTable (Int,Spec) -> Haap p args db m HaapTestTableRes
-runHaapTestTable ioargs args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ pretty e) tests) $ do
-    forM tests $ \(i,spec) -> runHaapTest ioargs args i spec
+runHaapTestTable :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> HaapTestTable (Int,Hspec.Spec) -> Haap t m HaapTestTableRes
+runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ pretty e) tests) $ do
+    forM tests $ \(i,spec) -> runHaapTest args i spec
     
-runHaapTest :: HaapMonad m => IOArgs -> HaapSpecArgs -> Int -> Spec -> Haap p args db m HaapTestRes
-runHaapTest ioargs args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
-    outknob <- addMessageToError ("initializing test knob" ++ show ex) $ runIOWith (const ioargs) $ newKnob (B.pack [])
-    outhandle <- addMessageToError ("initializing test handle" ++ show ex) $ runIOWith (const ioargs) $ newFileHandle outknob "knob" WriteMode
+runHaapTest :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> Int -> Hspec.Spec -> Haap t m HaapTestRes
+runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
+    let ioargs = specIO args
+    outknob <- addMessageToError ("initializing test knob" ++ show ex) $ runBaseIOWith (ioargs) $ newKnob (B.pack [])
+    outhandle <- addMessageToError ("initializing test handle" ++ show ex) $ runBaseIOWith (ioargs) $ newFileHandle outknob "knob" WriteMode
     let formatter = silent
             { exampleSucceeded = \(parents,name) -> write $ "HaapTestOk"
             , exampleFailed = \(parents,name) err -> write $ show (haapTestRes err)
@@ -168,9 +211,9 @@ runHaapTest ioargs args ex test = orDo (\e -> return $ HaapTestError $ pretty e)
                 , configOutputFile = Left outhandle
                 }
     let spec = describe (show ex) test
-    ignoreError $ runIOWith' (const ioargs) $ withArgs [] $ hspecWith cfg spec
-    ignoreError $ runIOWith' (const ioargs) $ hClose outhandle
-    outbstr <- orLogError $ runIO' $ Knob.getContents outknob
+    ignoreError $ runBaseIOWith' (ioargs) $ withArgs [] $ hspecWith cfg spec
+    ignoreError $ runBaseIOWith' (ioargs) $ hClose outhandle
+    outbstr <- orLogError $ runBaseIO' $ Knob.getContents outknob
 
     let outstr = B8.unpack outbstr
     res <- case readMaybe outstr :: Maybe HaapTestRes of
@@ -178,14 +221,14 @@ runHaapTest ioargs args ex test = orDo (\e -> return $ HaapTestError $ pretty e)
         Just res -> return res
     return res
 
-haapSpec :: IOArgs -> HaapSpecMode -> HaapSpec -> HaapTestTable (Int,Spec)
+haapSpec :: IOArgs -> HaapSpecMode -> HaapSpec -> HaapTestTable (Int,Hspec.Spec)
 haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
     where 
     appendTable (HaapTestTable h1 t1) (HaapTestTable h2 t2) | h1 == h2 = HaapTestTable h1 (t1 ++ t2)
     concatTable [] = HaapTestTable [] []
     concatTable xs = foldr1 appendTable xs
         
-    haapSpec' :: HaapSpecMode -> HaapSpec -> State Int (HaapTestTable (Int,Spec))
+    haapSpec' :: HaapSpecMode -> HaapSpec -> State Int (HaapTestTable (Int,Hspec.Spec))
     haapSpec' mode (HaapSpecBounded n xs f) = do
         let add x = do
             HaapTestTable h t <- haapSpec' mode (f x)

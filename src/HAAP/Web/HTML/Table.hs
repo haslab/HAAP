@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.HTML.Table where
 
@@ -8,6 +8,7 @@ import HAAP.Test.Spec
 import HAAP.Test.Rank
 import HAAP.Utils
 import HAAP.Web.Hakyll
+import HAAP.Plugin
 
 import Data.Traversable
 import Data.List
@@ -31,8 +32,9 @@ data HaapTable = HaapTable
     , haapTablePath :: FilePath
     }
 
-renderHaapTable :: HakyllP -> HaapTable -> Haap p args db Hakyll FilePath
-renderHaapTable hp t = do
+renderHaapTable :: HasPlugin Hakyll t m => HaapTable -> Haap t m FilePath
+renderHaapTable t = do
+    hp <- getHakyllP
     hakyllRules $ create [fromFilePath $ haapTablePath t] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do

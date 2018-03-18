@@ -1,10 +1,11 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
 
 module HAAP.IO where
 
 import HAAP.Core
 import HAAP.Log
 import HAAP.Pretty
+import HAAP.Plugin
 
 import Control.DeepSeq as DeepSeq
 import Control.Monad.IO.Class
@@ -33,6 +34,10 @@ import System.Directory
 import System.Environment
 import System.FilePath.GlobPattern
 
+
+import Control.Concurrent.Async
+import Control.Concurrent (threadDelay)
+
 import Test.QuickCheck
 
 import Text.Read
@@ -43,9 +48,9 @@ import System.IO
 import Shelly (Sh(..),catchany_sh)
 import qualified Shelly as Sh
 
-instance HaapMonad m => MonadIO (Haap p args db m) where
+instance (MonadIO m,HaapStack t m) => MonadIO (Haap t m) where
     {-# INLINE liftIO #-}
-    liftIO io = runIOWith def io
+    liftIO io = haapLiftIO $ runIOCore (def) io
 
 data IOArgs = IOArgs
     { ioTimeout :: Maybe Int -- in seconds
@@ -100,29 +105,42 @@ hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
 instance Default IOArgs where
     def = defaultIOArgs
 
-runIOWithTimeout :: HaapMonad m => Int -> IO a -> Haap p args db m a
-runIOWithTimeout timeout m = runIOWith (const args) m
+runIOWithTimeout :: (HaapPureLiftT (Haap t) m IO,HaapStack t m,MonadIO m) => Int -> Haap t IO a -> Haap t m a
+runIOWithTimeout timeout m = runIOWith (args) m
+    where
+    args = def { ioTimeout = Just timeout }
+    
+runBaseIOWithTimeout :: (HaapStack t m,MonadIO m) => Int -> IO a -> Haap t m a
+runBaseIOWithTimeout timeout m = runBaseIOWith (args) m
     where
     args = def { ioTimeout = Just timeout }
 
-runShWithTimeout :: HaapMonad m => Int -> Sh a -> Haap p args db m a
-runShWithTimeout timeout m = runShWith (const args) m
-    where
-    args = def { ioTimeout = Just timeout }
+runBaseIOWith :: (HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
+runBaseIOWith args io = do
+    haapLiftIO $ runIOCore args io
 
-runIOWith :: HaapMonad m => (args -> IOArgs) -> IO a -> Haap p args db m a
-runIOWith getArgs io = do
-    args <- Reader.reader getArgs
-    runIOCore args io
+runIOWith :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m) => IOArgs -> Haap t IO a -> Haap t m a
+runIOWith args io = do
+    st <- liftWithPluginT $ \run -> do
+        st <- runIOCore args $ run io
+        return st
+    restorePluginT $ return st
 
-runIOWith' :: (HaapMonad m,NFData a) => (args -> IOArgs) -> IO a -> Haap p args db m a
-runIOWith' getArgs io = forceM $ runIOWith getArgs io
+runBaseIOWith' :: (NFData a,HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
+runBaseIOWith' args io = do
+    haapLiftIO $ forceM $ runIOCore args io
 
-runIO :: HaapMonad m => IO a -> Haap p args db m a
-runIO = runIOWith (const defaultIOArgs)
+runIOWith' :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m,NFData a) => IOArgs -> Haap t IO a -> Haap t m a
+runIOWith' args io = forceM $ runIOWith args io
 
-runIOExit :: HaapMonad m => IO () -> Haap p args db m ExitCode
-runIOExit m = runIOWith (const defaultIOArgs) (catch (m >> exitSuccess) catchExit)
+runBaseIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
+runBaseIO = runBaseIOWith (defaultIOArgs)
+
+runIO :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m) => Haap t IO a -> Haap t m a
+runIO = runIOWith (defaultIOArgs)
+
+runIOExit :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,HaapStack t IO,MonadIO m) => Haap t IO () -> Haap t m ExitCode
+runIOExit m = runIOWith (defaultIOArgs) (catch (m >> liftStack exitSuccess) (liftStack . catchExit))
     where
     catchExit :: ExitCode -> IO ExitCode
     catchExit e = return e
@@ -133,110 +151,9 @@ ioExit m = catch (m >> exitSuccess) catchExit
     catchExit :: ExitCode -> IO ExitCode
     catchExit e = return e
 
-runShWith :: HaapMonad m => (args -> IOArgs) -> Sh a -> Haap p args db m a
-runShWith getArgs io = do
-    args <- Reader.reader getArgs
-    runShCore args io
-
-runIOResultWith :: (args -> IOArgs) -> IO IOResult -> IO IOResult
-runIOResultWith args m = orDoIO (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) m
-
-runShIOResultWith :: HaapMonad m => (args -> IOArgs) -> Sh IOResult -> Haap p args db m IOResult
-runShIOResultWith args m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runShWith args m)
-
-runShIOResult :: HaapMonad m => Sh IOResult -> Haap p args db m IOResult
-runShIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) (runSh m)
-
-runSh :: HaapMonad m => Sh a -> Haap p args db m a
-runSh = runShWith (const defaultIOArgs)
-
-shExec :: String -> Sh FilePath
-shExec exec = do
-    mb <- Sh.which (shFromFilePath exec)
-    case mb of
-        Nothing -> shAbsolutePath exec
-        Just exec' -> return $ shToFilePath exec'
-
-shAbsolutePath :: FilePath -> Sh FilePath
-shAbsolutePath = liftM shToFilePath . Sh.absPath . shFromFilePath
-
-shCommand_ :: String -> [String] -> Sh ()
-shCommand_ = shCommandWith_ defaultIOArgs
-
-shCommandWith_ :: IOArgs -> String -> [String] -> Sh ()
-shCommandWith_ ioargs name args  = do
-    forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    Sh.run_ (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
-  where
-    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
-    addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
---    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-    
-shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
-shCommandToFileWith_ ioargs name args file = do
-    forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
-  where
-    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
-    addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
---    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-    handle h = do
-        bs <- liftIO $ BS.hGetContents h
-        liftIO $ BS.writeFile file bs
-
-shCommand :: String -> [String] -> Sh IOResult
-shCommand = shCommandWith defaultIOArgs
-
-haapRetry :: HaapMonad m => Int -> Haap p args db m a -> Haap p args db m a
+haapRetry :: (MonadIO m,HaapStack t m) => Int -> Haap t m a -> Haap t m a
 haapRetry 0 m = m
 haapRetry i m = orDo (\e -> logError e >> haapRetry (pred i) m) m
-
-shCommandWith :: IOArgs -> String -> [String] -> Sh IOResult
-shCommandWith ioargs name args  = do
-    forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
-    stderr <- if ioHidden ioargs then return (Text.pack "hidden") else Sh.lastStderr
-    exit <- Sh.lastExitCode
-    return $ IOResult exit stdout stderr
-  where
-    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
-    addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-
-shPipeBinaryWith :: Binary a => IOArgs -> String -> [String] -> Sh a
-shPipeBinaryWith ioargs name args = shCommandHandleWith ioargs name args handle
-    where
-    handle h = do
-        bs <- liftIO $ BS.hGetContents h
-        return $ decode bs
-
-shCommandHandleWith :: IOArgs -> String -> [String] -> (Handle -> Sh a) -> Sh a
-shCommandHandleWith ioargs name args handle = do
-    forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
-    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    a <- Sh.errExit False $ Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
-    return a
-  where
-    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
-    addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
 ioCommandWith_ :: IOArgs -> String -> [String] -> IO ()
 ioCommandWith_ ioargs name args = ioCommandWith ioargs name args >> return ()
@@ -261,125 +178,67 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
     addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
 
-hiddenSh :: Sh a -> Sh a
-hiddenSh m = Sh.catchany_sh (hide m) (const $ return $ error "result is hidden!")
-    where
-    hide = Sh.print_commands False . Sh.log_stderr_with (const $ return ()) . Sh.silently . Sh.tracing False
+haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
+haapLiftIO io = catch (liftStack $ liftIO io) (\(e::SomeException) -> throwError $ HaapIOException e)
 
-shPipeWith :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Sh b
-shPipeWith io n args x = shPipeWithType io n args x Proxy
-    where
-    shPipeWithType :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Proxy b -> Sh b
-    shPipeWithType io n args x (_::Proxy b) = do
-        let typeb = typeOf (error "shPipeWith"::b)
-        let io' = io { ioStdin = Just $ Text.pack $ show x }
-        res <- orEitherSh $ shCommandWith io' n args
-        case res of
-            Left err -> error $ "error...\n" ++ pretty err ++ "\n...on parsing result as type...\n" ++ show typeb
-            Right res -> do
-                let out = (Text.unpack . resStdout) res
-                case readMaybe out of
-                    Nothing -> error $ "failed to parse result...\n" ++ show out ++ "\n...as type...\n" ++ show typeb ++ "\n" ++ pretty res
-                    Just y -> return y
-
-orErrorWritePage :: (HaapMonad m,Out a) => FilePath -> a -> Haap p args db m a -> Haap p args db m a
-orErrorWritePage path def m = orDo go $ do
-    x <- m
-    ok <- orLogDefault False $ runIO $ doesFileExist path
-    unless ok $ orLogDefault () $ runSh $ shWriteFile path $ pretty x
-    return x
-  where
-    go e = do
-        runIO $ writeFile path $ pretty e
-        return def
-
-haapLiftIO :: HaapMonad m => IO a -> Haap p args db m a
-haapLiftIO io = Haap $ catch (liftIO io) (\(e::SomeException) -> throwError $ HaapIOException e)
-
-runShCore :: HaapMonad m => IOArgs -> Sh a -> Haap p args db m a
-runShCore args sh = case ioTimeout args of
-    Nothing -> haapLiftIO io
+runIOCore :: MonadIO m => IOArgs -> IO a -> m a
+runIOCore args io = case ioTimeout args of
+    Nothing -> liftIO $ io
     Just secs -> do
-        mb <- haapLiftIO $ timeout (secs * 10^6) io
-        case mb of
-            Nothing -> throwError $ HaapTimeout callStack secs
-            Just a -> return a
-  where
-    io = Sh.shelly $ silent $ Sh.escaping (ioEscaping args) sh
-    silent = if ioHidden args
-        then hiddenSh
-        else if ioSilent args then Sh.silently else Sh.verbosely
-
-runShCoreIO :: IOArgs -> Sh a -> IO a
-runShCoreIO args sh = case ioTimeout args of
-    Nothing -> io
-    Just secs -> do
-        mb <- timeout (secs * 10^6) io
+        mb <- liftIO $ timeoutIO (secs * 10^6) io
         case mb of
             Nothing -> error $ pretty $ HaapTimeout callStack secs
             Just a -> return a
-  where
-    io = Sh.shelly $ silent $ Sh.escaping (ioEscaping args) sh
-    silent = if ioSilent args then Sh.silently else Sh.verbosely
 
-runIOCore :: HaapMonad m => IOArgs -> IO a -> Haap p args db m a
-runIOCore args io = case ioTimeout args of
-    Nothing -> haapLiftIO io
-    Just secs -> do
-        mb <- haapLiftIO $ timeout (secs * 10^6) io
-        case mb of
-            Nothing -> throwError $ HaapTimeout callStack secs
-            Just a -> return a
+runBaseIO' :: (HaapStack t m,MonadIO m,NFData a) => IO a -> Haap t m a
+runBaseIO' = runBaseIOWith' (defaultIOArgs)
 
-runIO' :: (HaapMonad m,NFData a) => IO a -> Haap p args db m a
-runIO' = runIOWith' (const defaultIOArgs)
+runIO' :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
+runIO' = runIOWith' (defaultIOArgs)
 
-orEither :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either HaapException a)
+orEither :: HaapStack t m => Haap t m a -> Haap t m (Either HaapException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
-orLogEither :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either HaapException a)
+orLogEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either HaapException a)
 orLogEither m = orDo (\e -> logEvent (pretty e) >> return (Left e)) (liftM Right m)
 
-orMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
+orMaybe :: HaapStack t m => Haap t m a -> Haap t m (Maybe a)
 orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
 
-orLogMaybe :: HaapMonad m => Haap p args db m a -> Haap p args db m (Maybe a)
+orLogMaybe :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Maybe a)
 orLogMaybe m = orDo (\e -> logEvent (pretty e) >> return Nothing) (liftM Just m)
 
-orDo :: HaapMonad m => (HaapException -> Haap p args db m a) -> Haap p args db m a -> Haap p args db m a
+orDo :: HaapStack t m => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
 orDo ex m = catchError m ex
 
 orDoIO :: (SomeException -> IO a) -> IO a -> IO a
 orDoIO ex m = catch m ex
 
-orLogDefault :: HaapMonad m => a -> Haap p args db m a -> Haap p args db m a
+orLogDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
 
-orDefault :: HaapMonad m => a -> Haap p args db m a -> Haap p args db m a
+orDefault :: HaapStack t m => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
 orMaybeIO :: IO a -> IO (Maybe a)
 orMaybeIO m = catch (liftM Just m) (\(err::SomeException) -> return Nothing)
 
-orEitherSh :: Sh a -> Sh (Either SomeException a)
-orEitherSh m = catchany_sh (liftM Right m) (\err -> return $ Left err)
-
-orError :: HaapMonad m => Haap p args db m a -> Haap p args db m (Either a HaapException)
+orError :: HaapStack t m => Haap t m a -> Haap t m (Either a HaapException)
 orError m = orDo (return . Right) (liftM Left m)
 
-orDo' :: (HaapMonad m,NFData a) => (HaapException -> Haap p args db m a) -> Haap p args db m a -> Haap p args db m a
+orDo' :: (HaapStack t m,NFData a) => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
 orDo' ex m = catchError (forceM m) ex
 
-ignoreError :: HaapMonad m => Haap p args db m () -> Haap p args db m ()
+ignoreError :: (MonadIO m,HaapStack t m) => Haap t m () -> Haap t m ()
 ignoreError m = orDo (\e -> logEvent (pretty e)) m
 
-addMessageToError :: HaapMonad m => String -> Haap p args db m a -> Haap p args db m a
+addMessageToError :: HaapStack t m => String -> Haap t m a -> Haap t m a
 addMessageToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ pretty e) m
 
-orLogError :: (IsString str,HaapMonad m) => Haap p args db m str -> Haap p args db m str
+orLogError :: (MonadIO m,IsString str,HaapStack t m) => Haap t m str -> Haap t m str
 orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
 
-forceHaap :: (NFData a,HaapMonad m) => a -> Haap p args db m a
+forceHaap :: (NFData a,HaapStack t m,MonadIO m) => a -> Haap t m a
 forceHaap x = liftIO $ evaluate $ force x
 
 forceM :: (Monad m,NFData a) => m a -> m a
@@ -387,82 +246,30 @@ forceM m = do
     x <- m
     return $! DeepSeq.force x
 
-shWriteFile :: FilePath -> String -> Sh ()
-shWriteFile path ct = do
-    Sh.mkdir_p $ shFromFilePath $ takeDirectory path
-    Sh.writefile (shFromFilePath path) (Text.pack ct)
-
-shFromFilePath :: FilePath -> Sh.FilePath
-shFromFilePath = Sh.fromText . Text.pack
-
-shToFilePath :: Sh.FilePath -> FilePath
-shToFilePath = Text.unpack . Sh.toTextIgnore
-
-shCd :: FilePath -> Sh ()
-shCd = Sh.cd . shFromFilePath
-
-shMkDir :: FilePath -> Sh ()
-shMkDir = Sh.mkdir_p . shFromFilePath
-
-shCp :: FilePath -> FilePath -> Sh ()
-shCp from to = Sh.cp_r (shFromFilePath from) (shFromFilePath to)
-
-shRm :: FilePath -> Sh ()
-shRm from = Sh.rm_rf (shFromFilePath from)
-
-shLs :: FilePath -> Sh [FilePath]
-shLs = liftM (map shToFilePath) . Sh.ls . shFromFilePath
-
-shCanonalize :: FilePath -> Sh FilePath
-shCanonalize = liftM shToFilePath . Sh.canonicalize . shFromFilePath
-
-shDoesDirectoryExist :: FilePath -> Sh Bool
-shDoesDirectoryExist = Sh.test_d . shFromFilePath
-
-shDoesFileExist :: FilePath -> Sh Bool
-shDoesFileExist = Sh.test_f . shFromFilePath
-
-shCpRecursive :: FilePath -> FilePath -> Sh ()
-shCpRecursive = shRecursive shCp
-
-shRecursive :: (FilePath -> FilePath -> Sh ()) -> FilePath -> FilePath -> Sh ()
-shRecursive op from to = do
-    isfromdir <- shDoesDirectoryExist from
-    shMkDir $ takeDirectory to
-    if isfromdir
-        then do
-            istodir <- shDoesDirectoryExist to
-            unless (istodir) $ shMkDir to
-            froms <- shLs from
-            forM_ froms $ \x -> shRecursive op (from </> x) to       
-        else op from to
-
 equalPathIO :: FilePath -> FilePath -> IO Bool
 equalPathIO x y = do
     x' <- canonicalizePath x
     y' <- canonicalizePath y
     return $ x' `equalFilePath` y'
 
-equalPathSh :: FilePath -> FilePath -> Sh Bool
-equalPathSh x y = do
-    x' <- shCanonalize x
-    y' <- shCanonalize y
-    return $ equalFilePath x y
-
 forAllIO :: Int -> Gen a -> (a -> IO b) -> IO [b]
 forAllIO num gen f = do
     xs <- generate $ vectorOf num gen
     mapM f xs
-        
-infix ~~~
-(~~~) :: Sh.FilePath -> GlobPattern -> Sh Bool
-f ~~~ p = return $ (shToFilePath f) ~~ p
-        
-shFindGlob :: FilePath -> Sh [FilePath]
-shFindGlob path = do
-    xs <- Sh.findWhen (\x -> x ~~~ (dir </> exec)) (shFromFilePath dir)
-    return $ map shToFilePath xs
-  where
-    (dir,exec) = splitFileName path      
-        
+
+orIOResult :: HaapStack t m => Haap t m IOResult -> Haap t m IOResult
+orIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) m
+
+-- timeout from System.Timeout sometimes fails to halt the computation, so we wrap it as an async computation
+timeoutIO :: Int -> IO a -> IO (Maybe a)
+timeoutIO i f = liftM join $ asyncTimeout i $ timeout i f
+
+asyncTimeout :: Int -> IO a -> IO (Maybe a)
+asyncTimeout i f =
+  withAsync f $ \a1 ->
+  withAsync (threadDelay i) $ \a2 ->
+  liftM (either Just (const Nothing)) $ race (wait a1) (wait a2)
+
+
+
 

@@ -6,6 +6,8 @@ import HAAP.IO
 import HAAP.Core
 import HAAP.Code.Haskell
 import HAAP.Log
+import HAAP.Plugin
+import HAAP.Shelly
 
 import qualified Data.Foldable as Foldable
 import Data.Default
@@ -60,28 +62,28 @@ instance FromNamedRecord Usage where
 instance Default Usage where
     def = Usage (-1) (-1) (-1) (-1) (-1)
 
-runUsage :: HaapMonad m => [FilePath] -> BaseDefs -> Haap p args db m Usage
+runUsage :: (MonadIO m,HaapStack t m) => [FilePath] -> BaseDefs -> Haap t m Usage
 runUsage files basedefs = do
     (ts,ds,ps) <- runDatatypes files
     (nho,ho) <- runFunctionUsage basedefs files
     return $ Usage ts ds ps nho ho
 
-runDatatypes :: HaapMonad m => [FilePath] -> Haap p args db m (Int,Int,Int)
+runDatatypes :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (Int,Int,Int)
 runDatatypes files = do
     ccs <- mapM datatypes files
     let cc = Foldable.foldr (\(a,b,c) (x,y,z) -> (a+x,b+y,c+z)) (0,0,0) ccs
     return cc
 
-datatypes :: HaapMonad m => FilePath -> Haap p args db m (Int,Int,Int)
+datatypes :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Int,Int,Int)
 datatypes m = do
     let ioargs = def
-    orLogDefault (-1,-1,-1) $ runShWith (const ioargs) $ do
+    orLogDefault (-1,-1,-1) $ runBaseShWith (ioargs) $ do
         x <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","type",m]
         y <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","data|newtype",m]
         z <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R"," Maybe| Either",m]
         return (length $ lines x,length $ lines y,length $ lines z)
     
-getBaseDefs :: HaapMonad m => FilePath -> Haap p args db m BaseDefs
+getBaseDefs :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m BaseDefs
 getBaseDefs basepath = orLogDefault (Set.empty,Set.empty) $ do
     hs <- hsFiles basepath
     let parse f = do
@@ -94,7 +96,7 @@ getBaseDefs basepath = orLogDefault (Set.empty,Set.empty) $ do
     
 type BaseDefs = (Set (Name ()),Set (Name ()))
     
-runFunctionUsage :: HaapMonad m => BaseDefs -> [FilePath] -> Haap p args db m (Int,Int)
+runFunctionUsage :: (MonadIO m,HaapStack t m) => BaseDefs -> [FilePath] -> Haap t m (Int,Int)
 runFunctionUsage (nho,ho) files = orLogDefault (-1,-1) $ do
     let parse f = do
         logEvent $ "parsing usage for " ++ f

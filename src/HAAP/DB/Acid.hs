@@ -1,20 +1,23 @@
-{-# LANGUAGE EmptyDataDecls, GeneralizedNewtypeDeriving, UndecidableInstances, FlexibleContexts, RankNTypes, GADTs, TypeFamilies, InstanceSigs, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE TypeOperators, FlexibleInstances, MultiParamTypeClasses, EmptyDataDecls, GeneralizedNewtypeDeriving, UndecidableInstances, FlexibleContexts, RankNTypes, GADTs, TypeFamilies, InstanceSigs, ScopedTypeVariables, TemplateHaskell #-}
 
 module HAAP.DB.Acid where
 
 import HAAP.Core
 import HAAP.DB
-import HAAP.DB.State
-import HAAP.Lens
+--import HAAP.DB.State
+--import HAAP.Lens
 import HAAP.IO
+import HAAP.Plugin
 
 import Control.Monad
+import Control.Monad.Identity
+import Control.Monad.Morph
 import Control.Monad.Trans
 import Control.Monad.Reader (MonadReader(..))
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Writer (MonadWriter(..))
 import qualified Control.Monad.Writer as Writer
-import Control.Monad.State (MonadState(..))
+import Control.Monad.State (MonadState(..),StateT(..))
 import qualified Control.Monad.State as State
 
 import Data.Acid
@@ -38,65 +41,41 @@ data AcidDBQuery st a where
 data AcidDBUpdate st a where
     AcidDBUpdate :: (UpdateEvent ev,EventState ev ~ st,EventResult ev ~ a) => ev -> AcidDBUpdate st a
 
+instance IsAcidic st => HaapPlugin (AcidDB st) where
+    type PluginI (AcidDB st) = AcidDBArgs st
+    type PluginO (AcidDB st) = ()
+    type PluginT (AcidDB st) = StateT (IOArgs,AcidState st)
+    type PluginK (AcidDB st) t m = (MonadIO m)
+    
+    usePlugin getArgs m = do
+        args <- getArgs
+        path <- getProjectPath
+        let ioargs = acidDBIOArgs args
+        acid <- runBaseIOWith (ioargs) $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
+        x <- mapHaapMonad (flip State.evalStateT (ioargs,acid) . unComposeT) m
+        ignoreError $ runBaseIOWith (ioargs) $ createArchive acid
+        ignoreError $ runBaseIOWith (ioargs) $ closeAcidState acid
+        return (x,())
+
+useAcidDB :: (IsAcidic st,HaapStack t m,PluginK (AcidDB st) t m) => (PluginI (AcidDB st)) -> Haap (PluginT (AcidDB st) :..: t) m a -> Haap t m a
+useAcidDB args = usePlugin_ (return args)
+
 instance IsAcidic st => HaapDB (AcidDB st) where
-    type DB (AcidDB st) = (IOArgs,AcidState st)
-    type DBArgs (AcidDB st) = AcidDBArgs st
     type DBQuery (AcidDB st) a = AcidDBQuery st a
     type DBUpdate (AcidDB st) a = AcidDBUpdate st a
-    
-    useDB getArgs m = do
-        path <- getProjectPath
-        args <- liftM getArgs Reader.ask
-        let ioargs = acidDBIOArgs args
-        acid <- runIOWith (const ioargs) $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
-        x <- haapDBLens'' (constLens'' (ioargs,acid)) m
-        ignoreError $ runIOWith (const ioargs) $ createArchive acid
-        ignoreError $ runIOWith (const ioargs) $ closeAcidState acid
-        return x
         
     queryDB (AcidDBQuery q) = do
-        (ioargs,acid) <- getDB
-        runIOWith (const ioargs) $ query acid q
+        (ioargs,acid) <- liftPluginProxy (Proxy::Proxy (AcidDB st)) $ State.get
+        runBaseIOWith (ioargs) $ query acid q
         
-    updateDB (AcidDBUpdate u) = do
-        (ioargs,acid) <- getDB
-        runIOWith (const ioargs) $ update acid u
+    updateDB (AcidDBUpdate u :: AcidDBUpdate st a) = do
+        (ioargs,acid) <- liftPluginProxy (Proxy::Proxy (AcidDB st)) $ State.get
+        runBaseIOWith (ioargs) $ update acid u
 
-
+instance HaapMonad m => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (StateT (IOArgs, AcidState st)) m (t2 m)) => HasPlugin (AcidDB st) (ComposeT (StateT (IOArgs,AcidState st)) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
     
     
-
---    acidEvents = [QueryEvent $ \(AcidDBQuery q) -> q]
-
---class AcidTrans db st where
---    acidGet :: DBQuery db st
---    acidPut :: st -> DBUpdate db ()
---
---data AcidT db st
---
---type AcidTQuery db st a = Either (AcidDBQuery db a) (AcidDBQuery st a)
---data AcidTUpdate db st a where
---    AcidTUpdateDb :: AcidDBUpdate db a -> 
---    AcidTUpdateSt :: ev -> 
---    
---acidTUpdateSt :: Update db ()
---acidTUpdateSt 
---
---instance HaapDB (AcidT db st) where
---    
---    type DB (AcidT db st) = AcidState db
---    
---    queryDB :: AcidTQuery db st a -> Haap p args (AcidT db st) a
---    queryDB (Left q) = queryDB q
---    queryDB (Right q) = queryDB q
---
---instance (IsAcidic db,IsAcidib st) => IsAcidic (AcidT db st) where
-----    acidEvents = acidEvents ++ acidEvents
-
-
-
-
-
-
-
-
+    

@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
+{-# LANGUAGE TupleSections, TypeOperators, DeriveFunctor, DeriveAnyClass, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, TypeFamilies, EmptyDataDecls, TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
 module HAAP.Test.Tourney where
 
 import HAAP.Core
@@ -10,6 +10,8 @@ import HAAP.Utils
 import HAAP.Web.Hakyll
 import HAAP.Web.Blaze
 import HAAP.Log
+import HAAP.Plugin
+import HAAP.Lens
 
 import Data.Maybe
 import Data.List
@@ -20,11 +22,14 @@ import Data.Binary
 import Data.Typeable
 import Data.Acid
 import Data.SafeCopy
+import Data.Default
 
 import Control.Monad.Except
 import Control.Monad.State (StateT(..))
 import qualified Control.Monad.State as State
+import Control.Monad.Reader as Reader
 import Control.DeepSeq
+import Control.Monad.Catch
 
 import System.Random.Shuffle
 import System.Directory
@@ -34,27 +39,55 @@ import GHC.Generics (Generic(..))
 
 import qualified Text.Blaze.Html5 as H
 
+data Tourney
+data TourneyArgs = TourneyArgs
+    { 
+    }
+
+instance Default TourneyArgs where
+    def = TourneyArgs {}
+
+instance HaapPlugin Tourney where
+    type PluginI Tourney = TourneyArgs
+    type PluginT Tourney = ReaderT TourneyArgs
+    type PluginO Tourney = ()
+    type PluginK Tourney t m = ()
+    
+    usePlugin getArgs m = do
+        args <- getArgs
+        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        return (x,())
+
+useTourney :: (HaapStack t m,PluginK Tourney t m) => Haap (PluginT Tourney :..: t) m a -> Haap t m a
+useTourney m = usePlugin_ (return def) m
+
+instance HaapMonad m => HasPlugin Tourney (ReaderT TourneyArgs) m where
+    liftPlugin = id
+instance (HaapStack t2 m,HaapPluginT (ReaderT TourneyArgs) m (t2 m)) => HasPlugin Tourney (ComposeT (ReaderT TourneyArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+
 class (Ord a,Out a) => TourneyPlayer a where
     defaultPlayer :: a
     isDefaultPlayer :: a -> Bool
     renderPlayer :: a -> Html
     renderPlayer p = H.preEscapedToMarkup (pretty p)
 
-data HaapTourney p args db m a r = HaapTourney
+data HaapTourney t m db a r = HaapTourney
     { tourneyMax :: Int -- maximum number of table entries for the tournament
     , tourneyTitle :: String
+    , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
     , tourneyPlayerTag :: String
     , tourneyPlayers :: [a]
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
-    , tourneyMatch :: Int -- tourneyno
+    , tourneyMatch :: HasDB db t m => Int -- tourneyno
                    -> Int -- roundno
                    -> Int -- matchno
                    -> [a] -- players
-                   -> Haap p args (DB db) m ([(a,Int)],r) -- returning a match result
-    , renderMatch :: r -> Rules [Link] -- renders a match result as a series of links
-    , deleteTourney :: Int -- tourneyno
-                    -> Haap p args (DB db) m () -- cleanup procedure
+                   -> Haap t m ([(a,Int)],r) -- returning a match result
+    , renderMatch :: r -> Rules Link -- renders a match result as a series of links
+    , deleteTourney :: HasDB db t m => Int -- tourneyno
+                    -> Haap t m () -- cleanup procedure
     }
 
 type Link = FilePath
@@ -68,7 +101,7 @@ data HaapTourneyDB a = HaapTourneyDB
   deriving (Generic,Typeable)
 instance Binary a => Binary (HaapTourneyDB a)
 
-insertHaapTourneySt :: HaapMonad m => HaapTourney p args db m a r -> Int -> HaapTourneySt a -> HaapTourneyDB a -> Haap p args (DB db) m (HaapTourneyDB a)
+insertHaapTourneySt :: HasDB db t m => HaapTourney t m db a r -> Int -> HaapTourneySt a -> HaapTourneyDB a -> Haap t m (HaapTourneyDB a)
 insertHaapTourneySt t i tour st = do
     let tours = tourneyDB st
     tours' <- if length tours >= tourneyMax t
@@ -86,11 +119,11 @@ type PlayerPos = [Int] -- sequence of positions
 
 type TourneyTree a r = [Round a r]
 type Round a r = [Match a r]
-type Match a r = ([a],r)
+type Match a r = ([a],[r])
 
 -- TODO: Tourney matches are currently fixed to multiples of 4 players
-getTourneySize :: HaapMonad m => [a] -> Haap p args db m Int
-getTourneySize (length -> n)
+getTourneySize :: HasDB db t m => Proxy db -> [a] -> Haap t m Int
+getTourneySize _ (length -> n)
     | n <= 128 = return 128
     | n <= 256 = return 256
     | otherwise = throwError $ HaapException $ "unsupported tourney size " ++ show n
@@ -137,26 +170,31 @@ playerPos 1 xs = error $ "playerPos1 " ++ show xs
 playerPos roundno [x] = nextRound roundno + 1
 playerPos roundno (x:xs) = playerPos (nextRound roundno) xs
 
-runHaapTourney :: (NFData a,HaapMonad m,HaapDB db,TourneyPlayer a) => HaapTourney p args db m a r -> Haap p args (DB db) m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
-runHaapTourney tourney = do
+runHaapTourney :: (HasPlugin Tourney t m,PluginK db t m,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => HaapTourney t m db a r -> Haap t m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
+runHaapTourney (tourney::HaapTourney t m db a r) = do
+    --logEvent "haaptourney"
     let players = tourneyPlayers tourney
-    tourneySize <- getTourneySize players
-    matches <- pairPlayers players tourneySize
+    --logEvent "haaptourneysize"
+    tourneySize <- getTourneySize (Proxy::Proxy db) players
+    --logEvent "haaptourneypair"
+    matches <- pairPlayers (Proxy::Proxy db) players tourneySize
+    --logEvent "haaptourneyquery"
     db <- queryDB $ dbGet $ lensTourneyDB tourney
     let tourneyno = tourneyNo db
+    --logEvent "playtourney"
     (tourneyst,tree) <- playTourney tourney matches tourneyno tourneySize
 --    runIO $ putStrLn $ pretty $ sort $ Map.toAscList tourneyst
     let tourneyst' = Map.map (averagePlayerPos tourneySize) tourneyst
 --    runIO $ putStrLn $ pretty $ sort $ Map.toAscList tourneyst'
     db' <- insertHaapTourneySt tourney tourneyno tourneyst' db
     updateDB $ dbPut (lensTourneyDB tourney) db'
-    tourneytime <- runIO' getZonedTime
+    tourneytime <- runBaseIO' getZonedTime
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: (NFData a,HaapMonad m,TourneyPlayer a) => [a] -> Int -> Haap p args db m [[a]]
-pairPlayers players tourneySize = do
-    players' <- runIO' $ shuffleM players
+pairPlayers :: (MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> [a] -> Int -> Haap t m [[a]]
+pairPlayers _ players tourneySize = do
+    players' <- runBaseIO' $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
     let bots = replicate (tourneySize-length players') defaultPlayer
     let by = fromIntegral (length bots + length randoms) / fromIntegral (tourneyDiv tourneySize)
@@ -175,18 +213,18 @@ pairPlayers players tourneySize = do
         (x,xs') = splitAt (4-n) xs
 
 -- (tourney no, round no,match no,partial rankings)
-type PlaySt p args db m a r = (HaapTourney p args db m a r,Int,Int,Int,HaapTourneySt' a)
+type PlaySt t m db a r = (HaapTourney t m db a r,Int,Int,Int,HaapTourneySt' a)
 
-type HaapPlay p args db m a r = StateT (PlaySt p args db m a r) (Haap p args (DB db) m)
+type HaapPlay t m db a r = StateT (PlaySt t m db a r) (Haap t m)
 
-playTourney :: (HaapMonad m,TourneyPlayer a) => HaapTourney p args db m a r -> [[a]] -> Int -> Int -> Haap p args (DB db) m (HaapTourneySt' a,TourneyTree a r)
+playTourney :: (MonadIO m,HasDB db t m,TourneyPlayer a) => HaapTourney t m db a r -> [[a]] -> Int -> Int -> Haap t m (HaapTourneySt' a,TourneyTree a r)
 playTourney tourney matches tourneyno tourneySize = do
     (tree,(_,_,_,_,rank)) <- State.runStateT
         (playRounds matches tourneySize tourneySize)
         (tourney,tourneyno,tourneySize,1,Map.empty)
     return (rank,tree)
 
-playRounds :: (HaapMonad m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay p args db m a r [Round a r]
+playRounds :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay t m db a r [Round a r]
 playRounds matches tourneySize round = do
     (winners,roundRes) <- playRound matches tourneySize round
     case winners of
@@ -196,9 +234,9 @@ playRounds matches tourneySize round = do
             return (roundRes:roundRess)
 
 -- returns (standings for players that lost this round, winner players for next round)
-playRound :: (HaapMonad m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay p args db m a r ([(a,Int)],Round a r)
+playRound :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay t m db a r ([(a,Int)],Round a r)
 playRound matches tourneySize round = do
---    lift $ runIO $ putStrLn $ "playing round " ++ show round
+    lift $ logEvent $ "playing round " ++ show round
     State.modify $ \(o,x,y,z,w) -> (o,x,round,1,w)
     (matches',roundRes) <- playMatches matches
     let uniquematches' = Map.toList $ foldr (\(a,x) m -> Map.insertWith (++) a [x] m) Map.empty (concat matches')    
@@ -220,14 +258,37 @@ addPlayerSts :: TourneyPlayer a => [(a,[Int])] -> HaapTourneySt' a -> HaapTourne
 addPlayerSts [] m = m
 addPlayerSts (x:xs) m = addPlayerSt x (addPlayerSts xs m)
 
-playMatches :: HaapMonad m => TourneyPlayer a => [[a]] -> HaapPlay p args db m a r ([[(a,Int)]],[Match a r])
+playMatches :: (MonadIO m,HasDB db t m) => TourneyPlayer a => [[a]] -> HaapPlay t m db a r ([[(a,Int)]],[Match a r])
 playMatches xs = do
-    scores <- forM xs playMatch
+    lift $ logEvent $ "playing matches "
+    (tourney,tourneyno,roundno,matchno,_) <- State.get
+    let bestof = tourneyBestOf tourney roundno
+    scores <- forM xs (playMatchBest bestof)
     return (map fst scores,map (mapFst (map fst)) scores)
 
-playMatch :: (HaapMonad m,TourneyPlayer a) => [a] -> HaapPlay p args db m a r ([(a,Int)],r)
+playMatchBest :: (MonadIO m,HasDB db t m,TourneyPlayer a) => Int -> [a] -> HaapPlay t m db a r ([(a,Int)],[r])
+playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (,[]) xs)
+    where
+    intToFloat :: Int -> Float
+    intToFloat = realToFrac
+    isWinner xs = length (filter (==1) xs) >= bestof
+    playMatchBest' :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [r] -> Map a [Int] -> HaapPlay t m db a r ([(a,Int)],[r])
+    playMatchBest' replays players = do
+        lift $ logEvent $ "playMatchBest " ++ show bestof ++ pretty (players)
+        let winners = Map.filter isWinner players
+        if Map.null winners
+            then do
+                (res,replay) <- playMatch (Map.keys players)
+                let replays' = replays++[replay]
+                let players' = Map.unionWith (++) players (Map.map (\x -> [x]) $ Map.fromList res)
+                playMatchBest' replays' players'
+            else do
+                return (Map.toAscList $ Map.map (round . averageList . map intToFloat) players,replays)
+
+playMatch :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [a] -> HaapPlay t m db a r ([(a,Int)],r)
 playMatch xs = do
     (tourney,tourneyno,roundno,matchno,_) <- State.get
+    lift $ logEvent $ "playing match " ++ show roundno ++ " " ++ show matchno
     r <- lift $ tourneyMatch tourney tourneyno roundno matchno xs
     State.modify $ \(tourney,tourneyno,roundno,matchno,w) -> (tourney,tourneyno,roundno,matchno+1,w)
     return $ mapFst (sortBy cmpsnd) r

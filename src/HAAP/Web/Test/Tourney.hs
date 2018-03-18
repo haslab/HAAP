@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, TemplateHaskell, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.Test.Tourney where
 
@@ -12,6 +12,7 @@ import HAAP.Web.Test.Rank
 import HAAP.Utils
 import HAAP.Pretty
 import HAAP.IO
+import HAAP.Plugin
 
 import Data.Maybe
 import Data.Map (Map(..))
@@ -22,9 +23,11 @@ import Data.Time.LocalTime
 import Data.Traversable
 import Data.Foldable
 import Data.SafeCopy
+import Data.Proxy
 
 import Control.Monad
 import Control.DeepSeq
+import Control.Monad.IO.Class
 
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -38,62 +41,63 @@ instance Out a => Out (ScoredTourneyPlayer a r) where
     docPrec i x = doc x
     doc (ScoredTourneyPlayer x) = doc $ fst x
 
-renderHaapTourney :: (NFData a,HaapDB db,TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Haap p args (DB db) Hakyll FilePath
-renderHaapTourney hp tourney = do
+renderHaapTourney :: (PluginK db t m,MonadIO m,HasPlugin Rank t m,HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,NFData a,HaapDB db,TourneyPlayer a) => HaapTourney t m db a r -> Haap t m FilePath
+renderHaapTourney tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb
-    index <- renderHaapTourneyDB hp tourney db
-    renderHaapTourneyTree hp tourney tourneyno tourneyTree tourneyTime
+    index <- renderHaapTourneyDB tourney db
+    renderHaapTourneyTree tourney tourneyno tourneyTree tourneyTime
     return index
 
-renderHaapTourneyDB :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> [(Int,HaapTourneySt a)] -> Haap p args (DB db) Hakyll FilePath
-renderHaapTourneyDB hp t db = do
+renderHaapTourneyDB :: (HasPlugin Rank t m,HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,TourneyPlayer a) => HaapTourney t m db a r -> [(Int,HaapTourneySt a)] -> Haap t m FilePath
+renderHaapTourneyDB t db = do
+    hp <- getHakyllP
     --runIO $ putStrLn $ "render " ++ show (toRoot $ tourneysPath)
-    renderHaapRank hp rank
-  where
-    tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
-    makeTourneyPath tourneyno = hakyllRoute hp $ addExtension ("tourney" ++ pretty tourneyno) "html"
-    makeHeader i = pretty $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
-    headers = map (makeHeader) (map fst db)
-    rank = HaapRank
-        tourneysPath
-        (tourneyTitle t)
-        (tourneyPlayerTag t)
-        (Just headers)
-        "Classificação Média"
-        ranks
-        score
-    score (ScoredTourneyPlayer (player,scores)) = return scores
+    let tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
+        makeTourneyPath tourneyno = hakyllRoute hp $ addExtension ("tourney" ++ pretty tourneyno) "html"
+        makeHeader i = pretty $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
+        headers = map (makeHeader) (map fst db)
+        rank = HaapRank
+                    tourneysPath
+                    (tourneyTitle t)
+                    (tourneyPlayerTag t)
+                    (Just headers)
+                    "Classificação Média"
+                    ranks
+                    score
+        score (ScoredTourneyPlayer (player,scores)) = return scores
+        
+        --nkByGroup :: Map a Int -> Map a [Maybe Float]
+        rankByGroup = Map.map (\f -> ([Just $ realToFrac f]))
+        joinRanks k (fs1) (fs2) = Just (fs1++fs2)
+        leftRanks = Map.map (\(fs) -> (fs++[Nothing]))
+        rightRanks = Map.map (\(fs) -> (Nothing:fs))
+        --nksByGroup :: Map a [Maybe Float]
+        ranksByGroup = foldr0 (Map.mergeWithKey joinRanks leftRanks rightRanks) (map (rankByGroup . snd) db) Map.empty
+        getRank = averageList . catMaybes
+        cmp (_,s1) (_,s2) = compare (getRank s2) (getRank s1)
+--      t getRank :: [Maybe Float] -> Float
+        --nks :: [(a,[MaybeFloatScore])]
+        ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatRank)) $ sortBy cmp $ Map.toList ranksByGroup
+    renderHaapRank rank
     
---    rankByGroup :: Map a Int -> Map a [Maybe Float]
-    rankByGroup = Map.map (\f -> ([Just $ realToFrac f]))
-    joinRanks k (fs1) (fs2) = Just (fs1++fs2)
-    leftRanks = Map.map (\(fs) -> (fs++[Nothing]))
-    rightRanks = Map.map (\(fs) -> (Nothing:fs))
---    ranksByGroup :: Map a [Maybe Float]
-    ranksByGroup = foldr0 (Map.mergeWithKey joinRanks leftRanks rightRanks) (map (rankByGroup . snd) db) Map.empty
-    cmp (_,s1) (_,s2) = compare (getRank s2) (getRank s1)
-    getRank :: [Maybe Float] -> Float
-    getRank = averageList . catMaybes
---    ranks :: [(a,[MaybeFloatScore])]
-    ranks = map (ScoredTourneyPlayer . mapSnd (map MaybeFloatRank)) $ sortBy cmp $ Map.toList ranksByGroup
-    
-renderHaapTourneyTree :: (TourneyPlayer a) => HakyllP -> HaapTourney p args db Hakyll a r -> Int -> TourneyTree a r -> ZonedTime -> Haap p args (DB db) Hakyll FilePath
-renderHaapTourneyTree hp t no tree time = do
+renderHaapTourneyTree :: (HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,TourneyPlayer a) => HaapTourney t m db a r -> Int -> TourneyTree a r -> ZonedTime -> Haap t m FilePath
+renderHaapTourneyTree (t::HaapTourney t m db a r) no tree time = do
+    hp <- getHakyllP
     let tPath =  tourneyPath t </> addExtension ("tourney" ++ pretty no) "html"
-    size <- getTourneySize $ tourneyPlayers t
+    size <- getTourneySize (Proxy::Proxy db) $ tourneyPlayers t
     let title = "Tourney " ++ pretty no ++ " " ++ show time
     let header = H.h1 $ fromString title
-    let csspath = dirToRoot tPath </> "css"
+    let csspath = fileToRoot tPath </> "css"
     
     hakyllRules $ create [fromFilePath tPath] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
-        tree' <- mapM (mapM (mapSndM $ renderMatch t)) tree
+        tree' <- mapM (mapM (mapSndM (mapM (renderMatch t)))) tree
         compile $ do
             makeItem (pretty $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
     return $ hakyllRoute hp tPath
 
-tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a [Link] -> Int -> String -> Html -> Html
+tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a Link -> Int -> String -> Html -> Html
 tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do
     H.head $ do
         H.meta ! A.charset "UTF-8"
@@ -103,7 +107,7 @@ tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do
         header
         roundsHTML tsize Nothing (r:rs)
 
-roundsHTML :: TourneyPlayer a => Int -> Maybe Int -> [Round a [Link]] -> Html
+roundsHTML :: TourneyPlayer a => Int -> Maybe Int -> [Round a Link] -> Html
 roundsHTML fstround _ [] = return ()
 roundsHTML fstround prevround (r:rs) = do
     roundHTML prevround r
@@ -118,7 +122,7 @@ roundPat :: Int -> [Bool]
 roundPat 128 = concat $ repeat [True,False]
 roundPat n = True : repeat False
 
-roundHTML :: TourneyPlayer a => Maybe Int -> Round a [Link] -> Html
+roundHTML :: TourneyPlayer a => Maybe Int -> Round a Link -> Html
 roundHTML prevround (m:ms) = do
     let round = length (m:ms) * 4
     connectorsHTML prevround round
@@ -155,13 +159,13 @@ connectorHTML prevround round = do
     H.div ! A.class_ "next-line"    $ return ()
     H.div ! A.class_ "clear"        $ return ()
 
-matchHTML :: TourneyPlayer a => Int -> Bool -> Match a [Link] -> Html
+matchHTML :: TourneyPlayer a => Int -> Bool -> Match a Link -> Html
 matchHTML round isFst (players,links) = do
     let winplayers = zip players $ replicate (roundWinners round) True ++ repeat False
     let first = if isFst then "-first" else ""
     H.div ! A.class_ (fromString $ "bracket-game-"++show round++first) $ do
         mapM_ (\(i,(p,w)) -> playerHMTL i p w) $ zip [1..] winplayers 
-    H.div ! A.id "battle" $ forM_ links $ \link -> do
+    H.div ! A.id "battle" $ forM_ (links) $ \link -> do
         H.preEscapedToHtml $ ("&nbsp;"::String)
         H.a ! A.href (fromString link) $ "vs"
  

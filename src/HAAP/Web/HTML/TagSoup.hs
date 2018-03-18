@@ -1,7 +1,11 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module HAAP.Web.HTML.TagSoup where
 
 import HAAP.Core
 import HAAP.IO
+import HAAP.Plugin
+import HAAP.Core
 
 import Text.HTML.TagSoup
 
@@ -10,11 +14,13 @@ import Data.Generics
 
 import Debug.Trace
 
+import Control.Monad.IO.Class
+
 type TagHtml = [Tag String]
 
-parseTagSoupHTML :: HaapMonad m => FilePath -> Haap p args db m TagHtml
+parseTagSoupHTML :: (HaapStack t m,MonadIO m) => FilePath -> Haap t m TagHtml
 parseTagSoupHTML file = do
-    str <- runIO' $ readFile file
+    str <- runBaseIO' $ readFile file
     return $ parseTags str
 
 asTagSoupHTML :: (TagHtml -> TagHtml) -> String -> String

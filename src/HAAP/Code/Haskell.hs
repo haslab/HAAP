@@ -1,8 +1,11 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module HAAP.Code.Haskell where
 
 import HAAP.Core
 import HAAP.IO
 import HAAP.Pretty
+import HAAP.Plugin
 
 import Data.Generics
 import Data.List as List
@@ -22,9 +25,9 @@ instance Show a => Out (ParseResult a) where
     doc (ParseOk x) = text "parsing ok:" <+> text (show x)
     doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) <> char ':' <+> text s
 
-parseHaskellFile :: HaapMonad m => FilePath -> Haap p args db m (Module SrcSpanInfo)
+parseHaskellFile :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Module SrcSpanInfo)
 parseHaskellFile file = do
-    str <- runIO' $ readFile file
+    str <- runBaseIO' $ readFile file
     let mb = readExtensions str
     let mblang = join $ fmap fst mb
     let exts = maybe [] snd mb
@@ -35,7 +38,7 @@ parseHaskellFile file = do
         ParseOk m -> return m
         err -> throwError $ HaapException $ pretty err
 
-parseModuleFileName :: HaapMonad m => FilePath -> Haap p args db m String
+parseModuleFileName :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m String
 parseModuleFileName file = do
     m <- parseHaskellFile file
     return $ moduleName m
@@ -79,7 +82,8 @@ functions = everything (++) (mkQ [] decls)
     decls (FunBind l xs) = List.map match xs
     decls _ = []
     match :: Match SrcSpanInfo -> Decl SrcSpanInfo
-    match  (Match l n ps r _) = FunBind l [Match l n ps r $ Just $ BDecls l []]
+    match (Match l n ps r _) = FunBind l [Match l n ps r $ Just $ BDecls l []]
+    match (InfixMatch l p n ps rhs bs) = match $ Match l n (p:ps) rhs bs
 
 removeLets :: Data a => a -> a
 removeLets = everywhere (mkT unlet)
@@ -111,7 +115,7 @@ moduNames m = everything (Map.unionWith (+)) (mkQ Map.empty aux) m
 
 -- * Find Haskell files
 
-hsFiles :: HaapMonad m => FilePath -> Haap p args db m [FilePath]
+hsFiles :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m [FilePath]
 hsFiles path = orDefault [] $ liftIO $ FilePath.fold (depth >=? 0) addHsFile [] path
     where
     addHsFile :: [FilePath] -> FileInfo -> [FilePath]

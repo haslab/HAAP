@@ -1,10 +1,13 @@
-{-# LANGUAGE TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
+{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.SVN where
 
 import HAAP.Core
 import HAAP.IO
 import HAAP.Sources
+import HAAP.Plugin
+import HAAP.Shelly
+import HAAP.Log
 
 import Data.Default
 import Data.List.Split
@@ -15,15 +18,18 @@ import Data.Time.Format
 import Data.Time.LocalTime
 import Data.Time.Calendar
 import Data.Maybe
+import Data.Proxy
 
-import qualified Control.Monad.Reader as Reader
+import Shelly (Sh)
+
+import Control.Monad.Reader as Reader
 import Control.Monad.Except
 
-import Text.Read
+import Text.Read hiding (lift)
 
 import System.FilePath
 import System.Directory
-import System.Locale.Read
+import System.Locale.Read 
 
 import qualified Shelly as Sh
 
@@ -36,7 +42,9 @@ parseSVNDateDefault str = parseSVNDateWith defaultTimeLocale str
 
 parseSVNDateCurrent :: MonadIO m => String -> m ZonedTime
 parseSVNDateCurrent str = do
+--    liftIO $ putStrLn "getlocale"
     locale <- liftIO $ getCurrentLocale
+--    liftIO $ putStrLn $ "parseSVNDateWith " ++ show locale ++ " " ++ show str
     parseSVNDateWith locale str
 
 parseSVNDateWith :: Monad m => TimeLocale -> String -> m ZonedTime
@@ -77,13 +85,28 @@ data SVNSourceArgs = SVNSourceArgs
     }
   deriving Show
 
+instance HaapPlugin SVN where
+    type PluginI SVN = SVNSourceArgs
+    type PluginT SVN = ReaderT SVNSourceArgs
+    type PluginO SVN = ()
+    type PluginK SVN t m = (MonadIO m)
+    
+    usePlugin getArgs m = do
+        args <- getArgs
+        let go (ComposeT m) = do
+            Reader.runReaderT m args
+        x <- mapHaapMonad go m
+        return (x,())
+
+useSVN :: (HaapStack t m,PluginK SVN t m) => PluginI SVN -> Haap (PluginT SVN :..: t) m a -> Haap t m a
+useSVN svnargs m = usePlugin_ (return svnargs) m
+
 instance HaapSource SVN where
     type Source SVN = SVNSource
     type SourceInfo SVN = SVNSourceInfo
-    type SourceArgs SVN = SVNSourceArgs
-    getSourceWith = getSVNSourceWith
-    putSourceWith = putSVNSourceWith
-    getSourceInfoWith = getSVNSourceInfoWith
+    getSource = getSVNSource
+    putSource = putSVNSource
+    getSourceInfo = getSVNSourceInfo
     
     sourcePath = svnPath
 
@@ -92,12 +115,20 @@ defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing True
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
-svnIOArgs :: SVNSourceArgs -> IOArgs
-svnIOArgs args = if svnHidden args then hiddenIOArgs else defaultIOArgs
+instance HaapMonad m => HaapStack (ReaderT SVNSourceArgs) m where
+    liftStack = lift
+
+instance (MonadIO m,HaapMonad m) => HasPlugin SVN (ReaderT SVNSourceArgs) m where
+    liftPlugin = id
+instance (MonadIO m,HaapStack t2 m,HaapPluginT (ReaderT SVNSourceArgs) m (t2 m)) => HasPlugin SVN (ComposeT (ReaderT SVNSourceArgs) t2) m where
+    liftPlugin m = ComposeT $ hoistPluginT liftStack m
     
-getSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m ()
-getSVNSourceWith getArgs s = do
-    args <- Reader.reader getArgs
+svnIOArgs :: SVNSourceArgs -> IOArgs
+svnIOArgs args = (if svnHidden args then hiddenIOArgs else defaultIOArgs) { ioTimeout = Nothing }
+    
+getSVNSource :: (MonadIO m,HasPlugin SVN t m) => SVNSource -> Haap t m ()
+getSVNSource s = do
+    args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
     let user = svnUser s
     let pass = svnPass s
     let path = svnPath s
@@ -106,12 +137,12 @@ getSVNSourceWith getArgs s = do
     let date = case svnDay args of
                     Nothing -> []
                     Just day -> ["-r","{" ++ showGregorian day ++ "}"]
-    exists <- orLogDefault False $ runIO $ doesDirectoryExist path
-    let checkout = runShWith (const $ svnIOArgs args) $ do
+    exists <- orLogDefault False $ runBaseIO $ doesDirectoryExist path
+    let checkout = runBaseShWith (svnIOArgs args) $ do
         shCd dir
         shRm name
         shCommandWith (svnIOArgs args) "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
-    let update = runShWith (const $ svnIOArgs args) $ do
+    let update = runBaseShWith (svnIOArgs args) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["cleanup"]
@@ -128,21 +159,28 @@ getSVNSourceWith getArgs s = do
         else (checkout >> return ())
     return ()
 
-getSVNSourceInfoWith :: HaapMonad m => (args -> SVNSourceArgs) -> SVNSource -> Haap p args db m SVNSourceInfo
-getSVNSourceInfoWith getArgs s = do
+getSVNSourceInfo :: (MonadIO m,HasPlugin SVN t m) => SVNSource -> Haap t m SVNSourceInfo
+getSVNSourceInfo s = do
     let path = svnPath s
     let user = svnUser s
     let pass = svnPass s
-    args <- Reader.reader getArgs
-    info <- runShIOResultWith (const $ svnIOArgs args) $ do
+    --logEvent "svn plugin"
+    args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
+    --logEvent "svn info"
+    info <- orIOResult $ runBaseShWith (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["info","--non-interactive","--username",user,"--password",pass]
+    --logEvent "svn parseInfo"
     rev <- parseInfo (resStdout info) (resStderr info)
-    logRev <- runShIOResultWith (const $ svnIOArgs args) $ do
+    --logEvent "svn log"
+    logRev <- orIOResult $ runBaseShWith (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
+    --logEvent "svn parseLogRev"
     (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
-    date <- parseSVNDateCurrent datestr
+--    logEvent $ "svn parseSVNDateCurrent " ++ show datestr
+    date <- liftHaap $ liftStack $ parseSVNDateCurrent datestr
+--    logEvent "svn svnsourceinfo"
     return $ SVNSourceInfo rev author date
   where
     parseInfo txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
@@ -158,14 +196,14 @@ getSVNSourceInfoWith getArgs s = do
                 [_,author,date,_] -> return (author,date)
                 otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
 
-putSVNSourceWith :: HaapMonad m => (args -> SVNSourceArgs) -> [FilePath] -> SVNSource -> Haap p args db m ()
-putSVNSourceWith getArgs files s = do
-    args <- Reader.reader getArgs
+putSVNSource :: (MonadIO m,HasPlugin SVN t m) => [FilePath] -> SVNSource -> Haap t m ()
+putSVNSource files s = do
+    args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
     let user = svnUser s
     let pass = svnPass s
     let path = svnPath s
     let msg = svnCommitMessage args
-    runShIOResultWith (const $ svnIOArgs args) $ do
+    orIOResult $ runBaseShWith (svnIOArgs args) $ do
         shCd path
         forM_ files $ \file -> shCommandWith_ (svnIOArgs args) "svn" ["add","--force","--parents",file]
         shCommandWith (svnIOArgs args) "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]
