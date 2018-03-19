@@ -44,7 +44,12 @@ instance HaapPlugin CodeWorld where
 
 data CWTemplate
     = CWGame
-    | CWDraw Bool String -- False=fixed-template/True=button-template name
+    | CWDraw CWDrawType String
+    
+data CWDrawType 
+    = CWFixed
+    | CWButton
+    | CWFullscreen
 
 data CodeWorldArgs = CodeWorldArgs
     { cwExecutable :: Either FilePath FilePath -- graphical web applications to compile with ghjs and codeworld libraries, or a link to an existing runmain.js file
@@ -68,8 +73,9 @@ runCodeWorld = do
         tmp <- getProjectTmpPath
         let (tpltfile,textmessage) = case cwTemplate cw of
                                         CWGame -> ("templates/cw-game.html","")
-                                        CWDraw False msg -> ("templates/cw-draw-fixed.html",msg)
-                                        CWDraw True msg -> ("templates/cw-draw-button.html",msg)
+                                        CWDraw CWFixed msg -> ("templates/cw-draw-fixed.html",msg)
+                                        CWDraw CWButton msg -> ("templates/cw-draw-button.html",msg)
+                                        CWDraw CWFullscreen msg -> ("templates/cw-fullscreen.html",msg)
         -- compile files with ghcjs
         let ghcjs = cwGHCJS cw
         let io = cwIO cw

@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, TypeOperators, DeriveFunctor, DeriveAnyClass, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, TypeFamilies, EmptyDataDecls, TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
+{-# LANGUAGE DeriveDataTypeable, TupleSections, TypeOperators, DeriveFunctor, DeriveAnyClass, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, TypeFamilies, EmptyDataDecls, TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
 module HAAP.Test.Tourney where
 
 import HAAP.Core
@@ -20,6 +20,7 @@ import qualified Data.Map as Map
 import Data.Time.LocalTime
 import Data.Binary
 import Data.Typeable
+import Data.Data
 import Data.Acid
 import Data.SafeCopy
 import Data.Default
@@ -67,7 +68,7 @@ instance (HaapStack t2 m,HaapPluginT (ReaderT TourneyArgs) m (t2 m)) => HasPlugi
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 class (Ord a,Out a) => TourneyPlayer a where
-    defaultPlayer :: a
+    defaultPlayer :: IO a -- players should be unique
     isDefaultPlayer :: a -> Bool
     renderPlayer :: a -> Html
     renderPlayer p = H.preEscapedToMarkup (pretty p)
@@ -77,7 +78,7 @@ data HaapTourney t m db a r = HaapTourney
     , tourneyTitle :: String
     , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
     , tourneyPlayerTag :: String
-    , tourneyPlayers :: [a]
+    , tourneyPlayers :: [a] -- must be unique
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
     , tourneyMatch :: HasDB db t m => Int -- tourneyno
@@ -196,7 +197,7 @@ pairPlayers :: (MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> 
 pairPlayers _ players tourneySize = do
     players' <- runBaseIO' $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
-    let bots = replicate (tourneySize-length players') defaultPlayer
+    bots <- runBaseIO' $ replicateM (tourneySize-length players') defaultPlayer
     let by = fromIntegral (length bots + length randoms) / fromIntegral (tourneyDiv tourneySize)
     let xxs = pair by 0 nonrandoms (randoms++bots)
     if validaMatches xxs
@@ -267,12 +268,13 @@ playMatches xs = do
     return (map fst scores,map (mapFst (map fst)) scores)
 
 playMatchBest :: (MonadIO m,HasDB db t m,TourneyPlayer a) => Int -> [a] -> HaapPlay t m db a r ([(a,Int)],[r])
-playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (,[]) xs)
+playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) xs)
     where
+    cmpsnd x y = compare (snd x) (snd y)
     intToFloat :: Int -> Float
     intToFloat = realToFrac
     isWinner xs = length (filter (==1) xs) >= bestof
-    playMatchBest' :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [r] -> Map a [Int] -> HaapPlay t m db a r ([(a,Int)],[r])
+    playMatchBest' :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [r] -> Map (a) [Int] -> HaapPlay t m db a r ([(a,Int)],[r])
     playMatchBest' replays players = do
         lift $ logEvent $ "playMatchBest " ++ show bestof ++ pretty (players)
         let winners = Map.filter isWinner players
@@ -283,7 +285,8 @@ playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (,[]) xs)
                 let players' = Map.unionWith (++) players (Map.map (\x -> [x]) $ Map.fromList res)
                 playMatchBest' replays' players'
             else do
-                return (Map.toAscList $ Map.map (round . averageList . map intToFloat) players,replays)
+                return ((sortBy cmpsnd) $ Map.toAscList $ Map.map (round . averageList . map intToFloat) players,replays)
+    
 
 playMatch :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [a] -> HaapPlay t m db a r ([(a,Int)],r)
 playMatch xs = do
