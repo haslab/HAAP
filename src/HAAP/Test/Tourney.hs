@@ -270,7 +270,6 @@ playMatches xs = do
 playMatchBest :: (MonadIO m,HasDB db t m,TourneyPlayer a) => Int -> [a] -> HaapPlay t m db a r ([(a,Int)],[r])
 playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) xs)
     where
-    cmpsnd x y = compare (snd x) (snd y)
     intToFloat :: Int -> Float
     intToFloat = realToFrac
     isWinner xs = length (filter (==1) xs) >= bestof
@@ -285,8 +284,20 @@ playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) x
                 let players' = Map.unionWith (++) players (Map.map (\x -> [x]) $ Map.fromList res)
                 playMatchBest' replays' players'
             else do
-                return ((sortBy cmpsnd) $ Map.toAscList $ Map.map (round . averageList . map intToFloat) players,replays)
-    
+                let rank = rankGroups players
+                lift $ logEvent $ "match rank" ++ pretty rank
+                return (rank,replays)
+
+rankGroups :: Ord a => Map.Map a [Int] -> [(a,Int)]
+rankGroups xs = rank 0 Nothing $ sortBy cmpsnd $ Map.toList (Map.map (map (neg . length) . mygroup . sort) xs)
+    where
+    neg x = (-x)
+    cmpsnd x y = compare (snd x) (snd y)
+    rank p _ [] = []
+    rank p (Just j) ((pl,i):xs) | i == j = (pl,p) : rank (p) (Just j) xs
+                                | otherwise = (pl,succ p) : rank (succ p) (Just i) xs
+    rank p Nothing ((pl,i):xs) = (pl,succ p) : rank (succ p) (Just i) xs
+    mygroup xs = [filter (==1) xs,filter (==2) xs,filter (==3) xs,filter (==4) xs]
 
 playMatch :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [a] -> HaapPlay t m db a r ([(a,Int)],r)
 playMatch xs = do

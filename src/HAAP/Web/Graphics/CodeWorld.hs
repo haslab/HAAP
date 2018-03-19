@@ -75,7 +75,7 @@ runCodeWorld = do
                                         CWGame -> ("templates/cw-game.html","")
                                         CWDraw CWFixed msg -> ("templates/cw-draw-fixed.html",msg)
                                         CWDraw CWButton msg -> ("templates/cw-draw-button.html",msg)
-                                        CWDraw CWFullscreen msg -> ("templates/cw-fullscreen.html",msg)
+                                        CWDraw CWFullscreen msg -> ("templates/cw-draw-fullscreen.html",msg)
         -- compile files with ghcjs
         let ghcjs = cwGHCJS cw
         let io = cwIO cw
