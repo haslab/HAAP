@@ -24,7 +24,8 @@ module CodeWorld (
     interactionOf,
     getSizeOf,
     getTextContent,
-    loadImage, loadImage', makeImage,
+    loadImage, loadImageById, loadSizedImageById,
+    say, playAudioById,
 
     -- * Pictures
     Picture,

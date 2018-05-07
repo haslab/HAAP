@@ -22,6 +22,7 @@ import Control.Monad
 simulateIO :: forall model
         .  Display               -- ^ Display mode.
         -> Color                 -- ^ Background color.
+        -> Int                   -- ^ Framerate
         -> model                 -- ^ The initial model.
         -> (model -> IO Picture) -- ^ A function to convert the model to a picture.
         -> (Float -> model -> IO model) 
@@ -30,7 +31,7 @@ simulateIO :: forall model
                                  --     step (in seconds).
         -> IO ()
 
-simulateIO display back state draw go = CW.simulationOf state goCW drawCW
+simulateIO display back framerate state draw go = CW.simulationOf state (realToFrac framerate) goCW drawCW
     where
     goCW t w = go (realToFrac t) w
     drawCW = liftM (displayCWPicture display back) . draw

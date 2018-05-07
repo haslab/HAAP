@@ -5,37 +5,50 @@ module Graphics.Gloss.Data.Event where
 import qualified CodeWorld as CW
 
 import qualified Data.Text as Text
+import Data.Char
 
 import Graphics.Gloss.Data.Point
+import Graphics.Gloss.Data.Display
 
 data Event
-    = EventKey Key KeyState (Float, Float)	 
+    = EventKey Key KeyState Modifiers (Float, Float)	 
     | EventMotion (Float, Float)	 
   deriving (Eq,Ord,Show)
 
-eventToCW :: Event -> CW.Event
-eventToCW (EventKey (Char c) toggle pos) = stringKeyToCW [c] toggle
-eventToCW (EventKey (SpecialKey k) toggle pos) = specialKeyToCW k toggle
-eventToCW (EventKey (MouseButton b) Down pos) = CW.MousePress (mouseButtonToCW b) (pointToCW pos)
-eventToCW (EventKey (MouseButton b) Up pos) = CW.MouseRelease (mouseButtonToCW b) (pointToCW pos)
-eventToCW (EventMotion p) = CW.MouseMovement (pointToCW p)
+-- TODO: support modifiers
+data Modifiers
+        = Modifiers
+        { shift :: KeyState
+        , ctrl  :: KeyState
+        , alt   :: KeyState }
+        deriving (Show, Eq, Ord)
 
-eventFromCW :: CW.Event -> Event
-eventFromCW (CW.KeyPress k) = stringKeyFromCW (Text.unpack k) Down
-eventFromCW (CW.KeyRelease k) = stringKeyFromCW (Text.unpack k) Up
-eventFromCW (CW.MousePress b p) = EventKey (MouseButton $ mouseButtonFromCW b) Down (pointFromCW p)
-eventFromCW (CW.MouseRelease b p) = EventKey (MouseButton $ mouseButtonFromCW b) Up (pointFromCW p)
-eventFromCW (CW.MouseMovement p) = EventMotion (pointFromCW p)
-eventFromCW e = error $ "eventFromCW: " ++ show e
+noModifiers = Modifiers Up Up Up
+
+eventToCW :: Display -> Event -> CW.Event
+eventToCW display (EventKey (Char c) toggle _ pos) = stringKeyToCW [toUpper c] toggle
+eventToCW display (EventKey (SpecialKey k) toggle _ pos) = specialKeyToCW k toggle
+eventToCW display (EventKey (MouseButton b) Down _ pos) = CW.MousePress (mouseButtonToCW b) (pointToCWWithDisplay display pos)
+eventToCW display (EventKey (MouseButton b) Up _ pos) = CW.MouseRelease (mouseButtonToCW b) (pointToCWWithDisplay display pos)
+eventToCW display (EventMotion p) = CW.MouseMovement (pointToCWWithDisplay display p)
+
+eventFromCW :: Display -> CW.Event -> Event
+eventFromCW display (CW.KeyPress k) = stringKeyFromCW (Text.unpack k) Down
+eventFromCW display (CW.KeyRelease k) = stringKeyFromCW (Text.unpack k) Up
+eventFromCW display (CW.MousePress b p) = EventKey (MouseButton $ mouseButtonFromCW b) Down noModifiers (pointFromCWWithDisplay display p)
+eventFromCW display (CW.MouseRelease b p) = EventKey (MouseButton $ mouseButtonFromCW b) Up noModifiers (pointFromCWWithDisplay display p)
+eventFromCW display (CW.MouseMovement p) = EventMotion (pointFromCWWithDisplay display p)
+eventFromCW display e = error $ "eventFromCW: " ++ show e
 
 stringKeyToCW :: String -> KeyState -> CW.Event
 stringKeyToCW k Down = CW.KeyPress $ Text.pack k
 stringKeyToCW k Up = CW.KeyRelease $ Text.pack k
 
 stringKeyFromCW :: String -> KeyState -> Event
-stringKeyFromCW [c] toggle = EventKey (Char c) toggle (0,0)
+stringKeyFromCW " " toggle = EventKey (SpecialKey KeySpace) toggle noModifiers (0,0)
+stringKeyFromCW [c] toggle = EventKey (Char $ toLower c) toggle noModifiers (0,0)
 stringKeyFromCW str toggle = case specialKeyFromCWString str of
-    Just k -> EventKey (SpecialKey k) toggle (0,0)
+    Just k -> EventKey (SpecialKey k) toggle noModifiers (0,0)
     Nothing -> error $ "stringKeyFromCW " ++ show str
 
 data Key
@@ -111,6 +124,7 @@ data SpecialKey
     | KeyPadDecimal	 
     | KeyPadEqual	 
     | KeyPadEnter
+    | KeyCodeWorld String
   deriving (Eq,Ord,Show)
 
 specialKeyToCW :: SpecialKey -> KeyState -> CW.Event
@@ -119,7 +133,7 @@ specialKeyToCW k Up = CW.KeyRelease (Text.pack $ specialKeyToCWString k)
 
 specialKeyToCWString :: SpecialKey -> String
 specialKeyToCWString KeyUnknown	      = "Unknown"
-specialKeyToCWString KeySpace         = "Space"
+specialKeyToCWString KeySpace         = " "
 specialKeyToCWString KeyEsc	          = "Esc"
 specialKeyToCWString KeyF1	          = "F1"
 specialKeyToCWString KeyF2	          = "F2"
@@ -184,10 +198,11 @@ specialKeyToCWString KeyPadAdd	      = "PadAdd"
 specialKeyToCWString KeyPadDecimal	  = "PadDecimal"
 specialKeyToCWString KeyPadEqual	  = "PadEqual"
 specialKeyToCWString KeyPadEnter      = "PadEnter"
+specialKeyToCWString (KeyCodeWorld s) = s
 
 specialKeyFromCWString :: String -> Maybe SpecialKey
 specialKeyFromCWString "Unknown"       = Just KeyUnknown	
-specialKeyFromCWString "Space"         = Just KeySpace      
+specialKeyFromCWString " "         = Just KeySpace      
 specialKeyFromCWString "Esc"           = Just KeyEsc	        
 specialKeyFromCWString "F1"            = Just KeyF1	        
 specialKeyFromCWString "F2"            = Just KeyF2	        
@@ -252,7 +267,7 @@ specialKeyFromCWString "PadAdd"        = Just KeyPadAdd
 specialKeyFromCWString "PadDecimal"    = Just KeyPadDecimal  
 specialKeyFromCWString "PadEqual"      = Just KeyPadEqual	  
 specialKeyFromCWString "PadEnter"      = Just KeyPadEnter      
-specialKeyFromCWString str = Nothing
+specialKeyFromCWString str             = Just $ KeyCodeWorld str
 
 data MouseButton
     = LeftButton	 
@@ -274,3 +289,39 @@ data KeyState
     = Down	 
     | Up
   deriving (Eq,Ord,Show)
+ 
+pointToCWWithDisplay :: Display -> Point -> CW.Point
+pointToCWWithDisplay (Display screenx screeny) (glossx,glossy) = (realToFrac cwx,realToFrac cwy)
+    where
+    screenx2 = realToFrac screenx / 2
+    screeny2 = realToFrac screeny / 2
+    cwx = 10 * glossx / screenx2
+    cwy = 10 * glossy / screeny2
+
+pointFromCWWithDisplay :: Display -> CW.Point -> Point
+pointFromCWWithDisplay (Display screenx screeny) (cwx,cwy) = (realToFrac glossx,realToFrac glossy)
+    where
+    screenx2 = realToFrac screenx / 2
+    screeny2 = realToFrac screeny / 2
+    glossx = cwx * screenx2 / 10
+    glossy = cwy * screeny2 / 10
+
+
+fitScreenPoint :: Display -> Display -> Point -> Maybe Point
+fitScreenPoint (Display sx sy) (Display cx cy) (ix,iy) = if inDisplay then Just (cix,ciy) else Nothing
+    where
+    inDisplay = ix >= -cx2*scalexy && iy <= cx2*scalexy && iy >= -cy2*scalexy && iy <= cy2*scalexy
+    cix = ix / scalexy
+    ciy = iy / scalexy
+    scalex = realToFrac sx / realToFrac cx
+    scaley = realToFrac sy / realToFrac cy
+    scalexy = min scalex scaley
+    cx2 = realToFrac cx / 2
+    cy2 = realToFrac cy / 2
+
+fitScreenEvent :: Display -> Display -> Event -> Maybe Event
+fitScreenEvent screen display (EventKey key toggle mods pos) = fmap (EventKey key toggle mods) $ fitScreenPoint screen display pos
+fitScreenEvent screen display (EventMotion pos) = fmap (EventMotion) $ fitScreenPoint screen display pos
+
+
+

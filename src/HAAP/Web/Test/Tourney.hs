@@ -85,7 +85,9 @@ renderHaapTourneyTree :: (HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t 
 renderHaapTourneyTree (t::HaapTourney t m db a r) no tree time = do
     hp <- getHakyllP
     let tPath =  tourneyPath t </> addExtension ("tourney" ++ pretty no) "html"
-    size <- getTourneySize (Proxy::Proxy db) $ tourneyPlayers t
+    size <- case tourneyPlayers t of
+        Left ps -> getTourneySize (Proxy::Proxy db) ps
+        Right ps -> return $ length $ concat ps
     let title = "Tourney " ++ pretty no ++ " " ++ show time
     let header = H.h1 $ fromString title
     let csspath = fileToRoot tPath </> "css"

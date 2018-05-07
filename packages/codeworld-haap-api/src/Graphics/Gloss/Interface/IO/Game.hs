@@ -6,7 +6,7 @@ module Graphics.Gloss.Interface.IO.Game
         ( module Graphics.Gloss.Data.Display
         , module Graphics.Gloss.Data.Picture
         , module Graphics.Gloss.Data.Color
-        , playIO
+        , playIO, playFitScreenIO
         , Event(..), Key(..), SpecialKey(..), MouseButton(..), KeyState(..))
 where
 import Graphics.Gloss.Data.Display
@@ -20,6 +20,7 @@ import Control.Monad
 playIO  :: forall world
         .  Display                      -- ^ Display mode.
         -> Color                        -- ^ Background color.
+        -> Int                          -- ^ Framerate
         -> world                        -- ^ The initial world.
         -> (world -> IO Picture)        -- ^ An action to convert the world a picture.
         -> (Event -> world -> IO world) -- ^ A function to handle input events.
@@ -27,8 +28,17 @@ playIO  :: forall world
                                         --   It is passed the period of time (in seconds) needing to be advanced.
         -> IO ()
 
-playIO display back start draw react step = CW.interactionOf start stepCW reactCW drawCW
+playIO display back framerate start draw react step = CW.interactionOf start (realToFrac framerate) stepCW reactCW drawCW
     where
     stepCW f w = step (realToFrac f) w
-    reactCW e w = react (eventFromCW e) w
+    reactCW e w = react (eventFromCW display e) w
     drawCW w = liftM (displayCWPicture display back) (draw w)
+
+playFitScreenIO :: Display -> Display -> Color -> Int -> world -> (world -> IO Picture) -> (Event -> world -> IO world) -> (Float -> world -> IO world) -> IO ()
+playFitScreenIO screen display back framerate start draw react step = CW.interactionOf start (realToFrac framerate) stepCW reactCW drawCW
+    where
+    stepCW f w = step (realToFrac f) w
+    reactCW e w = case fitScreenEvent screen display (eventFromCW screen e) of
+        Nothing -> return w
+        Just e' -> react e' w
+    drawCW w = liftM (displayCWPicture screen back . fitScreenPicture screen display) (draw w)

@@ -61,7 +61,7 @@ data Picture = Polygon CallStack [Point] !Bool
              | Scale CallStack !Double !Double !Picture
              | Rotate CallStack !Double !Picture
              | Pictures CallStack [Picture]
-             | Image CallStack Double Double Img -- width, height and the identifier of the html element holding the image
+             | Image CallStack Int Int Img -- width, height and the identifier of the html element holding the image
 
 data Img = StringImg String
          | HTMLImg HTMLImageElement
@@ -80,8 +80,10 @@ pictureImages (Image _ _ _ n) = [n]
 pictureImages _ = []
 
 data TextStyle = Plain | Bold | Italic
+  deriving Show
 
 data Font = SansSerif | Serif | Monospace | Handwriting | Fancy | NamedFont !Text
+  deriving Show
 
 -- | A blank picture
 blank :: HasCallStack => Picture
@@ -180,7 +182,7 @@ sector = Sector callStack
 
 -- | A piece of text
 text :: HasCallStack => Text -> Picture
-text = Text callStack Plain Serif
+text = Text callStack Plain Monospace
 
 styledText :: HasCallStack => TextStyle -> Font -> Text -> Picture
 styledText = Text callStack
@@ -202,7 +204,7 @@ scaled :: HasCallStack => Double -> Double -> Picture -> Picture
 scaled = Scale callStack
 
 -- | An external image
-image :: HasCallStack => Double -> Double -> Img -> Picture
+image :: HasCallStack => Int -> Int -> Img -> Picture
 image = Image callStack
 
 -- | A picture scaled by these factors.

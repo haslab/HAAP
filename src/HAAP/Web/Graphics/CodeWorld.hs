@@ -29,6 +29,9 @@ import System.Process
 
 import qualified Shelly as Sh
 
+--import Codec.Picture.Metadata
+--import Codec.Picture
+
 data CodeWorld
 
 instance HaapPlugin CodeWorld where
@@ -43,13 +46,17 @@ instance HaapPlugin CodeWorld where
         return (x,())
 
 data CWTemplate
-    = CWGame
+    = CWGame CWGameType
     | CWDraw CWDrawType String
     
+data CWGameType 
+    = CWGameFullscreen
+    | CWGameConsole
+    
 data CWDrawType 
-    = CWFixed
-    | CWButton
-    | CWFullscreen
+    = CWDrawFixed
+    | CWDrawButton
+    | CWDrawFullscreen
 
 data CodeWorldArgs = CodeWorldArgs
     { cwExecutable :: Either FilePath FilePath -- graphical web applications to compile with ghjs and codeworld libraries, or a link to an existing runmain.js file
@@ -59,6 +66,7 @@ data CodeWorldArgs = CodeWorldArgs
     , cwIO :: IOArgs
     , cwHtmlPath :: FilePath -- relative path to the project to store codeworld results
     , cwImages :: [(String,FilePath)] -- a list of html identifiers and respective local files for loading images
+    , cwAudios :: [(String,FilePath)]
     }
 
 useAndRunCodeWorld :: (MonadIO m,HasPlugin Hakyll t m) => CodeWorldArgs -> Haap t m FilePath
@@ -72,10 +80,11 @@ runCodeWorld = do
     orErrorHakyllPage cwerrorpath cwerrorpath $ do
         tmp <- getProjectTmpPath
         let (tpltfile,textmessage) = case cwTemplate cw of
-                                        CWGame -> ("templates/cw-game.html","")
-                                        CWDraw CWFixed msg -> ("templates/cw-draw-fixed.html",msg)
-                                        CWDraw CWButton msg -> ("templates/cw-draw-button.html",msg)
-                                        CWDraw CWFullscreen msg -> ("templates/cw-draw-fullscreen.html",msg)
+                                        CWGame CWGameConsole -> ("templates/cw-game-console.html","")
+                                        CWGame CWGameFullscreen -> ("templates/cw-game-fullscreen.html","")
+                                        CWDraw CWDrawFixed msg -> ("templates/cw-draw-fixed.html",msg)
+                                        CWDraw CWDrawButton msg -> ("templates/cw-draw-button.html",msg)
+                                        CWDraw CWDrawFullscreen msg -> ("templates/cw-draw-fullscreen.html",msg)
         -- compile files with ghcjs
         let ghcjs = cwGHCJS cw
         let io = cwIO cw
@@ -100,6 +109,7 @@ runCodeWorld = do
                 let precompiled = Text.pack $ "Pre-compiled at " ++ show (cwExecutable cw)
                 return $ IOResult 0 precompiled precompiled
         let images = (cwImages cw)
+        let audios = (cwAudios cw)
         
         if resOk res
             then addMessageToError (pretty res) $ do
@@ -126,12 +136,18 @@ runCodeWorld = do
                                        `mappend` constField "projectpath" (dirToRoot destfolder)
                                        `mappend` field "imgfile" (return . mkImg . snd . itemBody)
                                        `mappend` constField "runpath" (runpath)
+                            let audioCtx = field "audioid" (return . fst . itemBody)
+                                       `mappend` constField "projectpath" (dirToRoot destfolder)
+                                       `mappend` field "audiofile" (return . mkImg . snd . itemBody)
+                                       `mappend` field "audiotype" (return . filter (/='.') . takeExtension . snd . itemBody)
+                                       `mappend` constField "runpath" (runpath)
                             let cwCtx = constField "title" (cwTitle cw)
                                       `mappend` constField "projectpath" (dirToRoot destfolder)
                                       `mappend` constField "runpath" runpath
                                       `mappend` constField "message" message
                                       `mappend` constField "textmessage" textmessage
                                       `mappend` listField "images" imgCtx (mapM makeItem images)
+                                      `mappend` listField "audios" audioCtx (mapM makeItem audios)
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
                     
                 return (hakyllRoute hp $ destfolder </> "run.html")
@@ -141,3 +157,24 @@ instance HaapMonad m => HasPlugin CodeWorld (ReaderT CodeWorldArgs) m where
     liftPlugin = id
 instance (HaapStack t2 m,HaapPluginT (ReaderT CodeWorldArgs) m (t2 m)) => HasPlugin CodeWorld (ComposeT (ReaderT CodeWorldArgs) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
+
+--loadCodeWorldImages :: (MonadIO m,HaapStack t m) => [(String,FilePath)] -> Haap t m [(String,FilePath),(Int,Int)]
+--loadCodeWorldImages xs = forM xs $ \(n,fp) -> do
+--    e <- runBaseIO $ readImageWithMetadata fp
+--    case e of
+--        Left err -> throwError $ HaapException $ "failed loading codeworld image" ++ show fp ++ "\n" ++ pretty err
+--        Right (_,md) ->
+--            mbw <- Juicy.lookup Width md
+--            w <- case mbw of
+--                Nothing -> throwError $ HaapException $ "failed loading codeworld image width" ++ show fp ++ "\n" ++ pretty err
+--                Just w -> return w
+--            mbh <- Juicy.lookup Height md
+--            h <- case mbh of
+--                Nothing -> throwError $ HaapException $ "failed loading codeworld image height" ++ show fp ++ "\n" ++ pretty err
+--                Just h -> return h
+--            return (w,h)
+--    return ((n,fp),(w,h))
+
+
+
+

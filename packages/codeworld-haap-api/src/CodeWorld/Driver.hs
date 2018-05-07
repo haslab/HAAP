@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP                      #-}
+{-# LANGUAGE ViewPatterns, CPP                      #-}
 {-# LANGUAGE DeriveGeneric            #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GADTs                    #-}
@@ -38,7 +38,9 @@ module CodeWorld.Driver (
     trace,
     getSizeOf,
     getTextContent,
-    loadImage, loadImage', makeImage
+    loadImageById, loadImage, loadSizedImageById,
+    say, playAudioById
+--    loadImage, loadImage', makeImage
     ) where
 
 import           CodeWorld.Color
@@ -82,6 +84,7 @@ import qualified Data.JSString
 import           Data.Word
 import           GHCJS.DOM
 import           GHCJS.DOM.HTMLTextAreaElement
+import           GHCJS.DOM.HTMLMediaElement as HTML
 import           GHCJS.DOM.HTMLImageElement
 import           GHCJS.DOM.NonElementParentNode
 import           GHCJS.DOM.GlobalEventHandlers as Global
@@ -110,6 +113,9 @@ import qualified JavaScript.Web.WebSocket as WS
 import           System.IO.Unsafe
 import           Unsafe.Coerce
 
+import GHCJS.DOM.SpeechSynthesis
+import GHCJS.DOM.SpeechSynthesisUtterance
+
 #else
 
 import           Data.Time.Clock
@@ -121,6 +127,7 @@ import           Text.Printf
 
 #endif
 
+defaultFrameRate = 20
 
 --------------------------------------------------------------------------------
 -- The common interface, provided by both implementations below.
@@ -133,13 +140,13 @@ animationOf :: (Double -> IO Picture) -> IO ()
 
 -- | Shows a simulation, which is essentially a continuous-time dynamical
 -- system described by an initial value and step function.
-simulationOf :: world -> (Double -> world -> IO world) -> (world -> IO Picture) -> IO ()
+simulationOf :: world -> Double -> (Double -> world -> IO world) -> (world -> IO Picture) -> IO ()
 
 -- | Runs an interactive event-driven CodeWorld program.  This is a
 -- generalization of simulations that can respond to events like key presses
 -- and mouse movement.
 interactionOf :: world
-              -> (Double -> world -> IO world)
+              -> Double -> (Double -> world -> IO world)
               -> (Event -> world -> IO world)
               -> (world -> IO Picture)
               -> IO ()
@@ -176,45 +183,61 @@ toHTMLImageElement e = do
     Just x <- toJSVal e >>= fromJSVal
     return x
 
-loadImage :: Double -> Double -> FilePath -> IO Picture
-loadImage w h path = do
+toHTMLMediaElement :: Element -> IO HTML.HTMLMediaElement
+toHTMLMediaElement e = do
+    Just x <- toJSVal e >>= fromJSVal
+    return x
+
+loadImage :: FilePath -> IO Picture
+loadImage path = do
     i <- newUnique
     let name = dropExtension (takeFileName path)++show (hashUnique i)
     doc <- orError "loadImage doc" currentDocument
     !elem <- createElement doc (fromString "img" :: JSString)
-    setAttribute elem ("style" :: JSString) ("display: none;" :: String)
-    setAttribute elem ("id" :: JSString) name
-    setAttribute elem ("src" :: JSString) path
-    setAttribute elem ("width" :: JSString) (show w)
-    setAttribute elem ("height" :: JSString) (show h)
-    body <- orError "loadImage body" $ getBody doc
-    Node.appendChild body elem
-    img <- toHTMLImageElement elem
-    return $! image w h (HTMLImg img)
-
-makeImage :: Double -> Double -> String -> Picture
-makeImage w h n = image w h (StringImg n)
-
-loadImage' :: FilePath -> IO Picture
-loadImage' path = do
-    i <- newUnique
-    let name = dropExtension (takeFileName path)++show (hashUnique i)
-    doc <- orError "loadImage doc" currentDocument
-    !elem <- createElement doc (fromString "img" :: JSString)
-    setAttribute elem ("style" :: JSString) ("display: none;" :: String)
+    setAttribute elem ("style" :: JSString) ("visibility: hidden;" :: String)
     setAttribute elem ("id" :: JSString) name
     setAttribute elem ("src" :: JSString) path
     body <- orError "loadImage body" $ getBody doc
     Node.appendChild body elem
-    img <- toHTMLImageElement elem
-    (w,h) <- getImgSize elem
-    putStrLn $ "loadImage' " ++ show (w,h)
-    return $! image w h (HTMLImg img)
-  where
-    getImgSize :: Element -> IO (Double,Double)
-    getImgSize elem = do
-        (w,h) <- getSizeOfElem elem
-        if (w==0 && h==0) then getImgSize elem else return (w,h)
+    --img <- toHTMLImageElement elem
+    let stringimg = StringImg name
+    --let htmlimg = (HTMLImg img)
+    (w,h) <- getImgSize stringimg
+    --setAttribute elem ("width" :: JSString) (show w)
+    --setAttribute elem ("height" :: JSString) (show h)
+    return $! image (round w) (round h) stringimg
+
+loadImageById :: String -> IO Picture
+loadImageById n = do
+    let img = (StringImg n)
+    (w,h) <- getImgSize img
+    return $ image (round w) (round h) img
+
+loadSizedImageById :: Int -> Int -> String -> IO Picture
+loadSizedImageById w h n = do
+    let img = (StringImg n)
+    return $ image w h img
+
+--loadImage' :: FilePath -> IO Picture
+--loadImage' path = do
+--    i <- newUnique
+--    let name = dropExtension (takeFileName path)++show (hashUnique i)
+--    doc <- orError "loadImage doc" currentDocument
+--    !elem <- createElement doc (fromString "img" :: JSString)
+--    setAttribute elem ("style" :: JSString) ("display: none;" :: String)
+--    setAttribute elem ("id" :: JSString) name
+--    setAttribute elem ("src" :: JSString) path
+--    body <- orError "loadImage body" $ getBody doc
+--    Node.appendChild body elem
+--    img <- toHTMLImageElement elem
+--    (w,h) <- getImgSize elem
+--    putStrLn $ "loadImage' " ++ show (w,h)
+--    return $! image (HTMLImg img)
+--  where
+--    getImgSize :: Element -> IO (Double,Double)
+--    getImgSize elem = do
+--        (w,h) <- getSizeOfElem elem
+--        if (w==0 && h==0) then getImgSize elem else return (w,h)
     
 
 --------------------------------------------------------------------------------
@@ -372,7 +395,7 @@ getPictureCS (Translate cs _ _ _) = cs
 getPictureCS (Scale cs _ _ _)     = cs
 getPictureCS (Rotate cs _ _)      = cs
 getPictureCS (Pictures cs _)      = cs
-getPictureCS (Image cs _ _ _)            = cs
+getPictureCS (Image cs w h _)            = cs
 
 getPictureSrc :: Picture -> Maybe (String,SrcLoc)
 getPictureSrc = findCSMain . getPictureCS
@@ -398,15 +421,20 @@ findTopPicture ctx ds pic = case pic of
             Just x  -> return (Just x)
             Nothing -> findTopPicture ctx ds (Pictures undefined ps)
     Text _ sty fnt txt -> do
+        (screenx,screeny) <- getSizeOf "screen"
+        let screenx2 = screenx / 2
+        let screeny2 = screeny / 2
+        let textds = scaleDS (screenx2 / 10) (screenx2 / 10) ds
         Canvas.font (fontString sty fnt) ctx
         width <- Canvas.measureText (textToJSString txt) ctx
-        let height = 25 -- height is constant, defined in fontString
-        withDS ctx ds $ Canvas.rect ((-0.5)*width) (0.5*height) width height ctx
+        let height = realToFrac fontHeight
+        withDS ctx textds $ Canvas.rect ((-0.5)*width) (0.5*height) width height ctx
         contained <- js_isPointInPath 0 0 ctx
         if contained
             then return (Just [pic])
             else return Nothing
-    Image _ w h _            -> do
+    Image _ w h img            -> do
+--        (w,h) <- getImgSize img
         let w2 = realToFrac w / 2
         let h2 = realToFrac h / 2
         withDS ctx ds $ Canvas.rect (-w2) (-h2) (w2) (h2) ctx
@@ -498,8 +526,12 @@ drawFigure ctx ds w figure = do
         applyColor ctx ds
         Canvas.stroke ctx
 
+fontHeight :: Int
+fontHeight = 50
+
+-- TODO: original hardcoded value was 25px; should this be resized depending on the screen size?
 fontString :: TextStyle -> Font -> JSString
-fontString style font = stylePrefix style <> "25px " <> fontName font
+fontString style font = stylePrefix style <> textToJSString (T.pack $ show fontHeight) <> "px " <> fontName font
   where stylePrefix Plain        = ""
         stylePrefix Bold         = "bold "
         stylePrefix Italic       = "italic "
@@ -552,24 +584,47 @@ drawPicture' ctx ds (Sector _ b e r) = withDS ctx ds $ do
 drawPicture' ctx ds (Arc _ b e r w) = do
     drawFigure ctx ds w $ do
         Canvas.arc 0 0 (25 * abs r) b e (b > e) ctx
-drawPicture' ctx ds (Text _ sty fnt txt) = withDS ctx ds $ do
-    Canvas.scale 1 (-1) ctx
-    applyColor ctx ds
-    Canvas.font (fontString sty fnt) ctx
-    Canvas.fillText (textToJSString txt) 0 0 ctx
+drawPicture' ctx ds (Text _ sty fnt txt) = do
+    (screenx,screeny) <- getSizeOf "screen"
+    let screenx2 = screenx / 2
+    let screeny2 = screeny / 2
+    let textds = scaleDS (screenx2 / 10) (screenx2 / 10) ds
+    withDS ctx textds $ do
+        Canvas.scale 1 (-1) ctx
+        applyColor ctx textds
+        Canvas.font (fontString sty fnt) ctx
+        Canvas.textAlign Canvas.Start ctx
+        Canvas.textBaseline Canvas.Bottom ctx
+        Canvas.fillText (textToJSString txt) 0 (realToFrac fontHeight / 4) ctx
+        
 drawPicture' ctx ds (Image _ w h img) = withDS ctx ds $ do
     Canvas.scale 1 (-1) ctx
     doc <- orError "drawPicture doc" currentDocument
+--    (w,h) <- getImgSize img
 --    element <- orError ("drawPicture img " ++ show imgid) $ getElementById doc (fromString imgid :: JSString)
     cimg <- liftM Canvas.Image $ toJSVal =<< imgElement img
-    let w2 = 25 * w / 2
-    let h2 = 25 * h / 2
-    Canvas.drawImage cimg (round (-w2)) (round (-h2)) (round $ 25 * w) (round $ 25 * h) ctx
+    let w2 = 25 * (realToFrac w) / 2
+    let h2 = 25 * (realToFrac h) / 2
+    Canvas.drawImage cimg (round (-w2)) (round (-h2)) (25 * w) (25 * h) ctx
 drawPicture' ctx ds (Color _ col p)     = drawPicture' ctx (setColorDS col ds) p
 drawPicture' ctx ds (Translate _ x y p) = drawPicture' ctx (translateDS x y ds) p
 drawPicture' ctx ds (Scale _ x y p)     = drawPicture' ctx (scaleDS x y ds) p
 drawPicture' ctx ds (Rotate _ r p)      = drawPicture' ctx (rotateDS r ds) p
 drawPicture' ctx ds (Pictures _ ps)     = mapM_ (drawPicture' ctx ds) (reverse ps)
+
+getImgSize :: Img -> IO (Double,Double)
+getImgSize img = do
+    (w,h) <- getImgSize' img --catch (getImgSize' img) $ \(e::SomeException) -> trace (T.pack $ displayException e) $ do
+--        threadDelay (10^4)
+--        getImgSize img
+    if (w==0 && h==0)
+        then do
+            threadDelay (10^4)
+            getImgSize img
+        else return (w,h)
+  where
+    getImgSize' (StringImg img) = getSizeOf img
+    getImgSize' (HTMLImg img) = getSizeOfElem (toElement img)
 
 drawFrame :: Canvas.Context -> Picture -> IO ()
 drawFrame ctx pic = do
@@ -579,14 +634,14 @@ drawFrame ctx pic = do
 
 getDocElement :: String -> IO Element
 getDocElement iden = do
-    doc <- orError "getDocElement doc" currentDocument
-    el <- orError "getDocElement iden" $ getElementById doc (fromString iden :: JSString)
+    doc <- orError ("getDocElement doc " ++ show iden) currentDocument
+    el <- orError ("getDocElement iden " ++ show iden) $ getElementById doc (fromString iden :: JSString)
     return el
 
 getSizeOf :: String -> IO (Double,Double)
 getSizeOf iden = do
-    doc <- orError "getSizeOf doc" currentDocument
-    canvas <- orError "getSizeOf iden" $ getElementById doc (fromString iden :: JSString)
+    doc <- orError ("getSizeOf doc " ++ show iden) currentDocument
+    canvas <- orError ("getSizeOf iden " ++ show iden) $ getElementById doc (fromString iden :: JSString)
     rect <- getBoundingClientRect canvas
     cx <- DOMRect.getWidth rect
     cy <- DOMRect.getHeight rect
@@ -646,6 +701,19 @@ drawingOf pic = do
     display pic `catch` reportError
     inspect pic
 
+say :: Text -> IO ()
+say str = do
+    utt <- newSpeechSynthesisUtterance (Just str)
+    window <- orError "display window" currentWindow
+    speech <- getSpeechSynthesis window
+    speak speech utt
+
+playAudioById :: String -> IO ()
+playAudioById elid = do
+    doc <- orError ("playAudioById " ++ show elid) currentDocument
+    el <- orError ("playAudioById " ++ show elid) $ getElementById doc (fromString elid :: JSString)
+    hel <- CodeWorld.Driver.toHTMLMediaElement el
+    HTML.play hel
 
 --------------------------------------------------------------------------------
 -- Stand-alone implementation of drawing
@@ -739,8 +807,8 @@ followPath ps@(_:(sx,sy):_) True True = do
     Canvas.closePath ()
 
 
-fontString :: TextStyle -> Font -> Text
-fontString style font = stylePrefix style <> "25px " <> fontName font
+fontString : TextStyle -> Font -> Text
+fontString style font = stylePrefix style <> "50px " <> fontName font
   where stylePrefix Plain        = ""
         stylePrefix Bold         = "bold "
         stylePrefix Italic       = "italic "
@@ -931,17 +999,26 @@ instance Serialize GameToken
 
 #ifdef ghcjs_HOST_OS
 
-getMousePos :: IsMouseEvent e => Element -> EventM w e Point
+-- Nothinbg if outside of canvas
+getMousePos :: IsMouseEvent e => Element -> EventM w e (Maybe Point)
 getMousePos canvas = do
-    (ix, iy) <- mouseClientXY
+    (realToFrac -> ix, realToFrac -> iy) <- mouseClientXY
     liftIO $ do
         rect <- getBoundingClientRect canvas
-        cx <- DOMRectRO.getLeft rect
-        cy <- DOMRectRO.getTop rect
-        cw <- DOMRect.getWidth rect
-        ch <- DOMRect.getHeight rect
-        return (20 * fromIntegral (ix - round cx) / realToFrac cw - 10,
-                20 * fromIntegral (round cy - iy) / realToFrac cw + 10)
+        left <- liftM realToFrac $ DOMRectRO.getLeft rect
+        top <- liftM realToFrac $ DOMRectRO.getTop rect
+        width <- liftM realToFrac $ DOMRect.getWidth rect
+        height <- liftM realToFrac $ DOMRect.getHeight rect
+        let insideCanvas = ix >= left && ix <= left+width && iy >= top && iy <= top+height
+        if insideCanvas
+            then do
+                let cix = ix - left
+                let ciy = - (iy - top)
+                let px = 20 * cix / width - 10
+                let py = 20 * ciy / height + 10
+                {-trace (T.pack $ "getMousePos " ++ show ix++" "++show iy++" "++show px ++" "++ show py ++" "++ show cix ++" "++ show ciy) $ -}
+                return $ Just (px,py)
+            else return Nothing
 
 fromButtonNum :: Word -> Maybe MouseButton
 fromButtonNum 0 = Just LeftButton
@@ -971,18 +1048,24 @@ onEvents canvas handler = do
         case fromButtonNum button of
             Nothing  -> return ()
             Just btn -> do
-                pos <- getMousePos canvas
-                liftIO $ handler (MousePress btn pos)
+                mbpos <- getMousePos canvas
+                case mbpos of
+                    Nothing -> return ()
+                    Just pos -> liftIO $ handler (MousePress btn pos)
     on window mouseUp $ do
         button <- mouseButton
         case fromButtonNum button of
             Nothing  -> return ()
             Just btn -> do
-                pos <- getMousePos canvas
-                liftIO $ handler (MouseRelease btn pos)
+                mbpos <- getMousePos canvas
+                case mbpos of
+                    Nothing -> return ()
+                    Just pos -> liftIO $ handler (MouseRelease btn pos)
     on window mouseMove $ do
-        pos <- getMousePos canvas
-        liftIO $ handler (MouseMovement pos)
+        mbpos <- getMousePos canvas
+        case mbpos of
+            Nothing -> return ()
+            Just pos -> liftIO $ handler (MouseMovement pos)
     return ()
 
 -- It's worth trying to keep the canonical animation rate exactly representable
@@ -1002,8 +1085,8 @@ getWebSocketURL = do
 
     return url
 
-run :: s -> (Double -> s -> IO s) -> (Event -> s -> IO s) -> (s -> IO Picture) -> IO ()
-run initial stepHandler eventHandler drawHandler = do
+run :: s -> Double -> (Double -> s -> IO s) -> (Event -> s -> IO s) -> (s -> IO Picture) -> IO ()
+run initial framerate stepHandler eventHandler drawHandler = do
     window <- orError "run window" currentWindow
     doc <- orError "run doc" currentDocument
     canvas <- orError "run screen" $ getElementById doc ("screen" :: JSString)
@@ -1043,7 +1126,10 @@ run initial stepHandler eventHandler drawHandler = do
             t1 <- if
               | needsTime -> do
                   t1 <- nextFrame
-                  let dt = min (t1 - t0) 0.25
+                  let d10 = realToFrac (t1 - t0)
+                  threadDelay $ round $ ((1 / framerate) - d10) * 1000000
+                  let dt = max d10 (1 / framerate)
+                  --let dt = min (t1 - t0) 0.25
                   modifyMVar_ currentState (stepHandler dt)
                   return t1
               | otherwise -> do
@@ -1107,8 +1193,9 @@ onEvents context rect handler = void $ forkIO $ forever $ do
     maybeEvent <- toEvent rect <$> Canvas.wait context
     forM_ maybeEvent handler
 
-run :: s -> (Double -> s -> s) -> (Event -> s -> s) -> (s -> Picture) -> IO ()
-run initial stepHandler eventHandler drawHandler = runBlankCanvas $ \context -> do
+-- default CodeWorld framerate=20
+run :: s -> Double -> (Double -> s -> s) -> (Event -> s -> s) -> (s -> Picture) -> IO ()
+run initial framerate stepHandler eventHandler drawHandler = runBlankCanvas $ \context -> do
     let rect = (Canvas.width context, Canvas.height context)
     offscreenCanvas <- Canvas.send context $ Canvas.newCanvas rect
 
@@ -1133,7 +1220,7 @@ run initial stepHandler eventHandler drawHandler = runBlankCanvas $ \context -> 
             t1 <- if
               | needsTime -> do
                   tn <- getCurrentTime
-                  threadDelay $ max 0 (50000 - round ((tn `diffUTCTime` t0) * 1000000))
+                  threadDelay $ max 0 ((1000000 / framerate) - round ((tn `diffUTCTime` t0) * 1000000))
                   t1 <- getCurrentTime
                   let dt = realToFrac (t1 `diffUTCTime` t0)
                   modifyMVar_ currentState (return . stepHandler dt)
@@ -1167,8 +1254,8 @@ getDeployHash = error "game API unimplemented in stand-alone interface mode"
 --------------------------------------------------------------------------------
 -- Common code for interaction, animation and simulation interfaces
 
-interactionOf initial step event draw =
-    run initial step event draw `catch` reportError
+interactionOf initial framerate step event draw =
+    run initial framerate step event draw `catch` reportError
 
 data Wrapped a = Wrapped {
     state          :: a,
@@ -1292,7 +1379,7 @@ animationControls w
   | otherwise               = [ RestartButton, PauseButton, TimeLabel ]
 
 animationOf f =
-    interactionOf initial
+    interactionOf initial defaultFrameRate
                   (wrappedStep (\x y -> return $ x + y))
                   (wrappedEvent animationControls (\x y -> return $ x + y))
                   (wrappedDraw animationControls f)
@@ -1308,8 +1395,8 @@ simulationControls w
   | paused w             = [ PlayButton, StepButton ]
   | otherwise            = [ PauseButton ]
 
-simulationOf simInitial simStep simDraw =
-    interactionOf initial
+simulationOf simInitial framerate simStep simDraw =
+    interactionOf initial framerate
                   (wrappedStep simStep)
                   (wrappedEvent simulationControls simStep)
                   (wrappedDraw simulationControls simDraw)

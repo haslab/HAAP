@@ -1,11 +1,19 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell, ScopedTypeVariables #-}
 
 --import "codeworld-haap-base" Prelude
+import qualified CodeWorld as CW
 import Graphics.Gloss hiding ((.*.))
 import Graphics.Gloss.Data.Picture          
 import Graphics.Gloss.Interface.Pure.Game   
 --import Graphics.Gloss.Juicy
 import Graphics.Gloss.Geometry.Line
+
+import Control.Exception
+
+import Text.Read
+import qualified Data.Text as Text
+import Data.List as List
+--import Data.FileEmbed
 
 
 -- input da T1
@@ -13,6 +21,7 @@ type Caminho = [Passo]
 
 data Passo = Segue | Direita  | Esquerda
            | Sobe  | Desce   
+  deriving (Read,Show)
 
 -- output da T1
 
@@ -129,6 +138,7 @@ data EstadoJogo = J { ecra      :: Display
                     , mapa      :: Mapa
                     , terreno   :: Terreno
                     , jogadores :: [EstadoCarro]
+                    , imagens   :: [(String,Picture)]
                     }
 
 data EstadoCarro = C { posicao    :: (Float,Float)
@@ -149,10 +159,11 @@ data Terreno = T { delta_roda    :: Float
                  , delta_gravity :: Float
                  }
 
-estadoInicial :: Display -> Int -> Mapa -> EstadoJogo
-estadoInicial screen tam m = J { ecra = screen, tamanhoBloco = tam, mapa = m 
+estadoInicial :: Display -> Int -> Mapa -> [(String,Picture)] -> EstadoJogo
+estadoInicial screen tam m imgs = J { ecra = screen, tamanhoBloco = tam, mapa = m 
                     , terreno = standard
                     , jogadores = map carroInicial [0..3]
+                    , imagens = imgs
                     }
 
 carroInicial :: Int -> EstadoCarro
@@ -249,19 +260,24 @@ componentsToArrow (x,y) = (hyp,dir angle)
 
 -- gloss
 
-glossBloco :: Float -> Bloco -> Picture
-glossBloco tam b = case b of
-    (PlanoVertical p i)        -> Color (corAltura p) $ Polygon [(-sd,sd),(-sd,-sd),(sd,-sd),(sd,sd)]
-    (PlanoHorizontal p i)      -> Color (corAltura p) $ Polygon [(-sd,sd),(-sd,-sd),(sd,-sd),(sd,sd)]
-    (AltoBaixoVertical p i)    -> transitaBloco tam (corAltura (p+1),corAltura p) False
-    (AltoBaixoHorizontal p i)  -> transitaBloco tam (corAltura (p+1),corAltura p) True
-    (BaixoAltoVertical p i)    -> transitaBloco tam (corAltura p,corAltura (p+1)) False
-    (BaixoAltoHorizontal p i)  -> transitaBloco tam (corAltura p,corAltura (p+1)) True
-    (CurvaDireitaBaixo p i)    -> Color (corAltura p) $ Polygon [(-sd,-sd),(sd,-sd),(sd,sd)]
-    (CurvaEsquerdaBaixo p i)   -> Color (corAltura p) $ Polygon [(-sd,sd),(-sd,-sd),(sd,-sd)]
-    (CurvaDireitaCima p i)     -> Color (corAltura p) $ Polygon [(-sd,sd),(sd,-sd),(sd,sd)]
-    (CurvaEsquerdaCima p i)    -> Color (corAltura p) $ Polygon [(-sd,sd),(-sd,-sd),(sd,sd)]
-    Lava -> Blank
+getImage :: String -> EstadoJogo -> Picture
+getImage n e = case List.lookup n (imagens e) of
+    Nothing -> error $ "imagem não encontrada" ++ show n
+    Just p -> p
+
+glossBloco :: EstadoJogo -> Float -> Bloco -> Picture
+glossBloco e tam b = case b of
+    (PlanoVertical p i)        -> getImage "recta" e
+    (PlanoHorizontal p i)      -> Rotate 90 $ getImage "recta" e
+    (AltoBaixoVertical p i)    -> Pictures[getImage "recta" e,transitaBloco tam (corAltura (p+1),corAltura p) False]
+    (AltoBaixoHorizontal p i)  -> Pictures[Rotate 90 $ getImage "recta" e,transitaBloco tam (corAltura (p+1),corAltura p) True]
+    (BaixoAltoVertical p i)    -> Pictures[getImage "recta" e,transitaBloco tam (corAltura p,corAltura (p+1)) False]
+    (BaixoAltoHorizontal p i)  -> Pictures[Rotate 90 $ getImage "recta" e,transitaBloco tam (corAltura p,corAltura (p+1)) True]
+    (CurvaDireitaBaixo p i)    -> getImage "curva" e
+    (CurvaEsquerdaBaixo p i)   -> Rotate (-270) $ getImage "curva" e
+    (CurvaDireitaCima p i)     -> Rotate (-90) $ getImage "curva" e
+    (CurvaEsquerdaCima p i)    -> Rotate (-180) $ getImage "curva" e
+    Lava -> getImage "lava" e
   where sd = tam / 2
 
 transitaBloco :: Float -> (Color,Color) -> Bool -> Picture
@@ -275,10 +291,10 @@ transitaBloco tam (c1,c2) i = Rotate g $ Pictures [a,b,c]
 corAltura :: Altura -> Color
 corAltura a = makeColor (0.2*toEnum a) (0.2*toEnum a) (0.15*toEnum a) 1
 
-glossMapa :: Float -> (Float,Float) -> Mapa -> [Picture]
-glossMapa tam (x,y) [] = []
-glossMapa tam (x,y) ([]:ls) = glossMapa tam (0,y-tam) ls
-glossMapa tam (x,y) ((c:cs):ls) = (Translate x y $ glossBloco tam c) : meta : glossMapa tam (x+tam,y) (cs:ls)
+glossMapa :: EstadoJogo -> Float -> (Float,Float) -> Mapa -> [Picture]
+glossMapa e tam (x,y) [] = []
+glossMapa e tam (x,y) ([]:ls) = glossMapa e tam (0,y-tam) ls
+glossMapa e tam (x,y) ((c:cs):ls) = (Translate x y $ glossBloco e tam c) : meta : glossMapa e tam (x+tam,y) (cs:ls)
     where meta = if (c == PlanoHorizontal altInit 0) then Color green $ Translate x y (Line [(-sd,-sd),(-sd,sd)]) else Blank
           sd = tam / 2
 
@@ -286,7 +302,7 @@ glossCarro :: EstadoJogo -> Int -> Picture
 glossCarro s i = Translate (x*tamBloco) (-y*tamBloco) $ Rotate (-a) pic
     where (x,y) = posicao (jogadores s!!i)
           a = direcao (jogadores s!!i)
-          pic = Polygon [(-6,5),(6,0),(-6,-5)]
+          pic = Scale 0.1 0.1 $ getImage "carro" s --Polygon [(-6,5),(6,0),(-6,-5)]
           tamBloco = realToFrac $ tamanhoBloco s
 
 glossEvento :: Event -> EstadoJogo -> EstadoJogo
@@ -294,16 +310,16 @@ glossEvento e s = s { jogadores = c':tail (jogadores s) }
   where c' = glossEventoCarro e (jogadores s!!0)
 
 glossEventoCarro :: Event -> EstadoCarro -> EstadoCarro
-glossEventoCarro (EventKey (SpecialKey KeyDown ) kst _) e = e { trava   = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyUp   ) kst _) e = e { acelera = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyLeft ) kst _) e = e { viraE   = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyRight) kst _) e = e { viraD   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyDown ) kst _ _) e = e { trava   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyUp   ) kst _ _) e = e { acelera = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyLeft ) kst _ _) e = e { viraE   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyRight) kst _ _) e = e { viraD   = kst == Down }
 glossEventoCarro _ st = st
 
 glossDesenha :: EstadoJogo -> Picture
-glossDesenha e = Translate (-(toEnum dimensao-1)*tamBloco/2) ((toEnum dimensao-1)*tamBloco/2) $ Pictures (m++p)
+glossDesenha e = Pictures[Translate (-(toEnum dimensao-1)*tamBloco/2) ((toEnum dimensao-1)*tamBloco/2) $ Pictures (m++p)]
     where
-    m = glossMapa tamBloco (0,0) (mapa e)
+    m = glossMapa e tamBloco (0,0) (mapa e)
     p = map (glossCarro e) [0..3]
     tamBloco = realToFrac $ tamanhoBloco e
 
@@ -315,21 +331,39 @@ glossTempo t m = move t 0 m
 sd :: EstadoJogo -> Float
 sd e = realToFrac (tamanhoBloco e) /2
 
+--readTextFile :: FilePath -> IO String
+--readTextFile file = $(embedStringFile "file")
+
 joga :: IO ()
 joga = do
-    screen@(Display cx cy) <- getDisplay
-    let tamanhoX::Float = (realToFrac cx) / (realToFrac dimensao)
-    let tamanhoY::Float = (realToFrac cy) / (realToFrac dimensao)
+    
+    screen <- getDisplay
+    let dm = Display 800 800
+--    content <- CW.getTextContent
+    --caminho <- case readMaybe content :: Maybe Caminho of
+    --    Just caminho -> return caminho
+    --    Nothing -> error $ "failed to parse caminho " ++ show content
+    let tamanhoX::Float = (realToFrac 800) / (realToFrac dimensao)
+    let tamanhoY::Float = (realToFrac 800) / (realToFrac dimensao)
     let tamanho = min tamanhoX tamanhoY
     let back = red
-    let ini = estadoInicial screen (round tamanho) (escava ex1)
-    play screen back ini glossDesenha glossEvento glossTempo
+    recta <- loadImageById "recta"
+    carro <- loadImageById "carro"
+    curva <- loadImageById "curva"
+    lava <-  loadImageById "lava"
+    let imgs = [("recta",recta),("carro",carro),("curva",curva),("lava",lava)]
+    let ini = estadoInicial dm (round tamanho) (escava ex1) imgs
+    display screen back (fitScreenPicture screen dm $ glossDesenha ini)
+    --play screen back ini glossDesenha glossEvento glossTempo
     where
 --    screen = Display ((dimensao+1)*round tamBloco) ((dimensao+1)*round tamBloco)
 --    screen = (InWindow "Novo Jogo" ((dimensao+1)*round tamBloco,(dimensao+1)*round tamBloco) (0, 0))
     
-    
-main = joga
+-- javascript image size
+-- javascript image rendering order
+-- javascript load file background no dialog
+
+main = catch joga (\(e::SomeException) -> CW.trace (Text.pack $ show e) $ return ())
 
 -- exemplos
 -- bom
@@ -358,3 +392,4 @@ exOP = [Segue,Segue,Direita,Segue,Segue,Esquerda,Segue,Direita,Direita
 exHM :: Caminho
 exHM = [Segue,Segue,Direita,Segue,Segue,Esquerda,Segue,Direita,Direita
        ,Segue,Sobe,Segue,Direita,Esquerda,Segue,Direita,Segue,Segue,Direita]
+

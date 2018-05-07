@@ -30,3 +30,12 @@ displayCWPicture screen@(Display cx cy) back p = fitCWPictureToScreen screen (pi
     cy2 = realToFrac cy / 2
     background = Color back $ Polygon [(-cx2,-cy2),(-cx2,cy2),(cx2,cy2),(cx2,-cy2)]
 
+-- fits a picture drawn for a display into a screen
+fitScreenPicture :: Display -> Display -> Picture -> Picture
+fitScreenPicture screen@(Display sx sy) display@(Display cx cy) pic = Scale scalexy scalexy pic
+    where
+    scalex = realToFrac sx / realToFrac cx
+    scaley = realToFrac sy / realToFrac cy
+    scalexy = min scalex scaley
+
+

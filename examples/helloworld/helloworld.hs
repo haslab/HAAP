@@ -24,11 +24,11 @@ main = do
     runHaap defaultProject $ useHakyll defaultHakyllArgs $ do
         let ordSpec = bounded "Int" [97,98,3,4] $ \x ->
               bounded "Char" "abcd" $ \y -> 
-              testEqual (return x) (return $ ord y)
+              testEqual x (ord y)
         spec <- useSpec defaultHaapSpecArgs $ renderHaapSpec "spec.html" "" "ordtest" ordSpec
         
         hakyllRules $ do
-            create ["hello.md"] $ do
+            create ["helloworld.md"] $ do
                 route (setExtension "html")
                 compile $ do
                     makeItem ("#Hello\n[ordtest](spec.html)"::String) >>= renderPandoc

@@ -25,7 +25,7 @@ coordToCW :: Float -> Double
 coordToCW = realToFrac
 
 pointFromCW :: CW.Point -> Point
-pointFromCW (x,y) = (realToFrac x,realToFrac y)
+pointFromCW (cwx,cwy) = (realToFrac cwx,realToFrac cwy)
 
 pathToCW :: Path -> [CW.Point]
 pathToCW = map pointToCW

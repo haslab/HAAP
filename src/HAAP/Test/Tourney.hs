@@ -78,7 +78,7 @@ data HaapTourney t m db a r = HaapTourney
     , tourneyTitle :: String
     , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
     , tourneyPlayerTag :: String
-    , tourneyPlayers :: [a] -- must be unique
+    , tourneyPlayers :: Either [a] [[a]] -- must be unique
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
     , tourneyMatch :: HasDB db t m => Int -- tourneyno
@@ -86,7 +86,7 @@ data HaapTourney t m db a r = HaapTourney
                    -> Int -- matchno
                    -> [a] -- players
                    -> Haap t m ([(a,Int)],r) -- returning a match result
-    , renderMatch :: r -> Rules Link -- renders a match result as a series of links
+    , renderMatch :: r -> Rules Link -- renders a match result as a link
     , deleteTourney :: HasDB db t m => Int -- tourneyno
                     -> Haap t m () -- cleanup procedure
     }
@@ -125,6 +125,9 @@ type Match a r = ([a],[r])
 -- TODO: Tourney matches are currently fixed to multiples of 4 players
 getTourneySize :: HasDB db t m => Proxy db -> [a] -> Haap t m Int
 getTourneySize _ (length -> n)
+    | n <= 4 = return 4
+    | n <= 16 = return 16
+    | n <= 32 = return 32
     | n <= 128 = return 128
     | n <= 256 = return 256
     | otherwise = throwError $ HaapException $ "unsupported tourney size " ++ show n
@@ -176,7 +179,9 @@ runHaapTourney (tourney::HaapTourney t m db a r) = do
     --logEvent "haaptourney"
     let players = tourneyPlayers tourney
     --logEvent "haaptourneysize"
-    tourneySize <- getTourneySize (Proxy::Proxy db) players
+    tourneySize <- case players of
+        Left ps -> getTourneySize (Proxy::Proxy db) ps
+        Right ps -> return $ length $ concat ps
     --logEvent "haaptourneypair"
     matches <- pairPlayers (Proxy::Proxy db) players tourneySize
     --logEvent "haaptourneyquery"
@@ -193,8 +198,9 @@ runHaapTourney (tourney::HaapTourney t m db a r) = do
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: (MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> [a] -> Int -> Haap t m [[a]]
-pairPlayers _ players tourneySize = do
+pairPlayers :: (MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
+pairPlayers _ (Right players) tourneySize = return players
+pairPlayers _ (Left players) tourneySize = do
     players' <- runBaseIO' $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
     bots <- runBaseIO' $ replicateM (tourneySize-length players') defaultPlayer

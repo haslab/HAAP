@@ -12,23 +12,28 @@
   </head>
   <body style="text-align: center">
       
-    $for(images)$
-    <img style="display: none;" id="$imgid$" src="$projectpath$/$imgfile$">
-    $endfor$
-      
     <canvas id="screen" class="widescreen"></canvas>
     <textarea style="display: none;" id="text">$textmessage$</textarea>
     <pre id="message" class="dropbox game">$message$</pre>
+    
+    $for(images)$
+    <img style="visibility: hidden;" id="$imgid$" src="$projectpath$/$imgfile$">
+    $endfor$
+    $for(audios)$
+    <audio id="$audioid$"> <source src="$projectpath$/$audiofile$" type="audio/$audiotype$"> </audio>
+    $endfor$
+    
   </body>
   
   <script type="text/javascript">
     function reportRuntimeError(err, str) {
       if (window.parent.addToMessage) {
         var message = window.parent.addToMessage('\n' + str);
+        var msgelem = window.parent.document.getElementById('message');
+        msgelem.scrollTop = msgelem.scrollHeight;
 
         if (err) {
-          var message = window.parent.document.getElementById('message');
-          message.classList.add('error');
+          msgelem.classList.add('error');
         }
       } else {
         console.log(str);

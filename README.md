@@ -16,16 +16,18 @@ cabal install --ghcjs codeworld-haap-api
 cabal install --ghcjs codeworld-haap-base
 ```
 
-# Example
+# Examples
 
-You can experiment with a minimalistic example.
+You can experiment with an example.
 
 ```
-cd example
-cabal exec -- ghc Example.hs
+cabal exec -- ghci examples/<example>/<example>.hs
+> main
 ```
 
-You can find a pre-compiled example [here](https://hpacheco.github.io/HAAP/example/_site/example.html).
+You can find pre-compiled examples at:
+* [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/helloworld.html).
+* [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/minimalistic.html).
 
 
 

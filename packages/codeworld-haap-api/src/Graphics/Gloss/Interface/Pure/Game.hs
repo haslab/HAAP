@@ -9,13 +9,21 @@ import Graphics.Gloss.Data.Color
 import Graphics.Gloss.Data.Display
 import Graphics.Gloss.Data.Event
 
--- TODO: missing screen and background
-play :: Display -> Color -> world -> (world -> Picture) -> (Event -> world -> world) -> (Float -> world -> world) -> IO ()
-play display back start draw react step = CW.interactionOf start stepCW reactCW drawCW
+play :: Display -> Color -> Int -> world -> (world -> Picture) -> (Event -> world -> world) -> (Float -> world -> world) -> IO ()
+play display back framerate start draw react step = CW.interactionOf start (realToFrac framerate) stepCW reactCW drawCW
     where
     stepCW f w = return $ step (realToFrac f) w
-    reactCW e w = return $ react (eventFromCW e) w
+    reactCW e w = return $ react (eventFromCW display e) w
     drawCW w = return $ displayCWPicture display back (draw w)
+
+playFitScreen :: Display -> Display -> Color -> Int -> world -> (world -> Picture) -> (Event -> world -> world) -> (Float -> world -> world) -> IO ()
+playFitScreen screen display back framerate start draw react step = CW.interactionOf start (realToFrac framerate) stepCW reactCW drawCW
+    where
+    stepCW f w = return $ step (realToFrac f) w
+    reactCW e w = case fitScreenEvent screen display (eventFromCW screen e) of
+        Nothing -> return w
+        Just e' -> return $ react e' w
+    drawCW w = return $ displayCWPicture screen back (fitScreenPicture screen display $ draw w)
 
 
 

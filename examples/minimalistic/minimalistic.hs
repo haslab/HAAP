@@ -20,7 +20,7 @@ import GHC.Generics (Generic(..))
 
 example :: Project
 example = Project
-    { projectName = "Example"
+    { projectName = "minimalistic"
     , projectPath = "."
     , projectTmpPath = "tmp"
     , projectGroups = []
@@ -32,10 +32,10 @@ emptyLi1DB = Example_DB (HaapTourneyDB 1 [])
 exSpec :: HaapSpec
 exSpec = bounded "x" [97,98,3,4] $ \x ->
           bounded "y" "abcd" $ \y -> 
-          testEqual (return x) (return $ ord y)
+          testEqual x (ord y)
           
 exRankSpec :: Int -> HaapSpec
-exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual (return x) (return i)
+exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual x i
 
 data Example_DB = Example_DB
     { exTourneyDB :: HaapTourneyDB ExPlayer
@@ -53,10 +53,10 @@ exRankScore HaapTestOk = FloatScore 1
 exRankScore _ = FloatScore 0
 
 exRank :: HaapStack t m => HaapSpecRank t m Int FloatScore
-exRank = HaapSpecRank "ranks.html" "Ranks" "Grupo" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
+exRank = HaapSpecRank "ranks.html" "Ranks" "Group" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
 
 main = do
-    let cfg = HakyllArgs defaultConfiguration False False def
+    let cfg = HakyllArgs defaultConfiguration True True def
     let exDBArgs = BinaryDBArgs "db" emptyLi1DB def
     let specArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
     runHaap example $ useHakyll cfg $ useBinaryDB exDBArgs $ do
@@ -83,10 +83,16 @@ main = do
         cw2 <- useAndRunCodeWorld exCodeWorldGame
         
         hakyllRules $ do
-            match (fromGlob ("templates/example.html")) $ do
+            match (fromGlob ("*.png")) $ do
+                route idRoute
+                compile copyFileCompiler
+            match (fromGlob ("*.jpg")) $ do
+                route idRoute
+                compile copyFileCompiler
+            match (fromGlob ("templates/minimalistic.html")) $ do
                 route idRoute
                 compile templateBodyCompiler
-            create ["example.html"] $ do
+            create ["minimalistic.html"] $ do
                 route idRoute
                 compile $ do
                     let exCtx = constField "projectpath" "."
@@ -98,7 +104,7 @@ main = do
                               `mappend` constField "homplexity" homplexity
                               `mappend` constField "hpc" hpc
                               `mappend` listField "cws" (field "cw" (return . itemBody)) (mapM makeItem [cw1,cw2])
-                    makeItem "" >>= loadAndApplyTemplate "templates/example.html" exCtx
+                    makeItem "" >>= loadAndApplyTemplate "templates/minimalistic.html" exCtx
         
         return ()
 
@@ -113,34 +119,35 @@ instance Out ExPlayer where
 
 instance TourneyPlayer ExPlayer where
     isDefaultPlayer (ExPlayer (_,b)) = b
-    defaultPlayer = ExPlayer ("random",True)
+    defaultPlayer = return $ ExPlayer ("random",True)
 
-exTourney :: MonadIO m => HaapTourney t m (BinaryDB Example_DB) ExPlayer [Link]
-exTourney = HaapTourney 10 "Tourney" "Grupo" grupos "torneio" lnsTourney match return (const $ return ())
+exTourney :: MonadIO m => HaapTourney t m (BinaryDB Example_DB) ExPlayer Link
+exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney match (return) (const $ return ())
     where
-    grupos = map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
+    bestof = const 1
+    grupos = Left $ map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
     match tno rno mno players = do
         players' <- runBaseIO' $ shuffleM players
-        return (zip players' [1..],["link"])
+        return (zip players' [1..],"link")
 
 
 
-exHaddock = HaddockArgs Nothing "Ex" [] "." ["Example.hs"] "doc"
-exHLint = HLintArgs Nothing [] "." ["Example.hs"] "hlint.html"
-exHomplexity = HomplexityArgs Nothing [] "." ["../src/"] "homplexity.html"
+exHaddock = HaddockArgs Nothing "mininalistic" [] "." ["minimalistic.hs"] "doc"
+exHLint = HLintArgs Nothing [] "." ["minimalistic.hs"] "hlint.html"
+exHomplexity = HomplexityArgs Nothing [] "." ["../../src/"] "homplexity.html"
 
 exHpc :: HpcArgs
 exHpc = HpcArgs "HPCTest" def def Nothing (Just "hpc") False
 
 exCodeWorldDraw :: CodeWorldArgs
-exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw True "Insira um caminho...") ghcjs def "codeworld" imgs
+exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw CWDrawButton "[Avanca,Avanca]") ghcjs def "codeworld" imgs []
     where
     ghcjs = def { ghcjsSafe = False }
 --    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
     imgs = [("recta","recta.png"),("curva","curva.png"),("lava","lava.jpg"),("carro","carro.png")]
 
 exCodeWorldGame :: CodeWorldArgs
-exCodeWorldGame = CodeWorldArgs (Left "MMGame.hs") "Game" (CWGame) ghcjs def "codeworld" []
+exCodeWorldGame = CodeWorldArgs (Left "MMGame.hs") "Game" (CWGame CWGameConsole) ghcjs def "codeworld" [] []
     where
     ghcjs = def { ghcjsSafe = False }
 --    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
