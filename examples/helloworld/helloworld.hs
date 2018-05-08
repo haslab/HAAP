@@ -28,7 +28,7 @@ main = do
         spec <- useSpec defaultHaapSpecArgs $ renderHaapSpec "spec.html" "" "ordtest" ordSpec
         
         hakyllRules $ do
-            create ["helloworld.md"] $ do
+            create ["index.md"] $ do
                 route (setExtension "html")
                 compile $ do
                     makeItem ("#Hello\n[ordtest](spec.html)"::String) >>= renderPandoc

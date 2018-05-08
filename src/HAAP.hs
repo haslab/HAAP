@@ -7,8 +7,9 @@ module HAAP
     , module HAAP.IO
     , module HAAP.Lens
     , module HAAP.Log
-    , module   HAAP.Sources
-    , module   HAAP.Sources.SVN
+    , module HAAP.Sources
+    , module HAAP.Sources.SVN
+    , module HAAP.Sources.FilePath
     , module HAAP.Utils
     , module HAAP.Test.Spec
     , module HAAP.Test.Rank
@@ -57,6 +58,7 @@ import HAAP.Lens hiding (Context(..))
 import HAAP.Log
 import HAAP.Sources
 import HAAP.Sources.SVN
+import HAAP.Sources.FilePath
 import HAAP.Utils
 import HAAP.Test.Spec
 import HAAP.Test.Rank

@@ -56,7 +56,7 @@ exRank :: HaapStack t m => HaapSpecRank t m Int FloatScore
 exRank = HaapSpecRank "ranks.html" "Ranks" "Group" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
 
 main = do
-    let cfg = HakyllArgs defaultConfiguration True True def
+    let cfg = HakyllArgs defaultConfiguration False True def
     let exDBArgs = BinaryDBArgs "db" emptyLi1DB def
     let specArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
     runHaap example $ useHakyll cfg $ useBinaryDB exDBArgs $ do
@@ -92,7 +92,7 @@ main = do
             match (fromGlob ("templates/minimalistic.html")) $ do
                 route idRoute
                 compile templateBodyCompiler
-            create ["minimalistic.html"] $ do
+            create ["index.html"] $ do
                 route idRoute
                 compile $ do
                     let exCtx = constField "projectpath" "."

@@ -13,7 +13,6 @@ For CodeWorld animations you need to have `ghcjs` installed:
 3. install the codeworld packages
 ```
 cabal install --ghcjs codeworld-haap-api
-cabal install --ghcjs codeworld-haap-base
 ```
 
 # Examples
@@ -26,8 +25,9 @@ cabal exec -- ghci examples/<example>/<example>.hs
 ```
 
 You can find pre-compiled examples at:
-* [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/helloworld.html).
-* [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/minimalistic.html).
+* [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/index.html).
+* [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/index.html).
+* [plab](https://hpacheco.github.io/HAAP/examples/plab/_site/index.html).
 
 
 

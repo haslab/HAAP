@@ -202,8 +202,8 @@ runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
     outknob <- addMessageToError ("initializing test knob" ++ show ex) $ runBaseIOWith (ioargs) $ newKnob (B.pack [])
     outhandle <- addMessageToError ("initializing test handle" ++ show ex) $ runBaseIOWith (ioargs) $ newFileHandle outknob "knob" WriteMode
     let formatter = silent
-            { exampleSucceeded = \(parents,name) -> write $ "HaapTestOk"
-            , exampleFailed = \(parents,name) err -> write $ show (haapTestRes err)
+            { exampleSucceeded = \parents name -> write $ "HaapTestOk"
+            , exampleFailed = \parents name err -> write $ show (haapTestRes $ Right err)
             }
     let cfg = defaultConfig
                 { configQuickCheckMaxSuccess = specQuickCheckMaxSuccess args
