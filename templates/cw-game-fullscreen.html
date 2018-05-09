@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
+      <title>CodeWorld - $title$</title>
+      <link rel="stylesheet" href="$projectpath$/css/codeworld.css">
+    
+    <script language="javascript" src="rts.js"></script>
+    <script language="javascript" src="lib.js"></script>
+    <script language="javascript" src="out.js"></script>
+  </head>
+  <body style="text-align: center">
+      
+    <canvas id="screen" class="fullscreen"></canvas>
+    
+    $for(images)$
+    <img style="visibility: hidden;" id="$imgid$" src="$projectpath$/$imgfile$">
+    $endfor$
+    
+    $for(audios)$
+    <audio id="$audioid$"> <source src="$projectpath$/$audiofile$" type="audio/$audiotype$"> </audio>
+    $endfor$
+    
+  </body>
+  
+  <script type="text/javascript">
+    function reportRuntimeError(err, str) {
+      console.log(str);
+
+    }
+  </script>
+  
+  <script language="javascript" src="runmain.js" defer></script>
+  <script type="text/javascript" src="$projectpath$/js/ghcjs-debugmode.js"></script>
+  <script type="text/javascript" src="$projectpath$/js/cw-demo.js"></script>
+</html>

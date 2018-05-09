@@ -1,7 +1,9 @@
 
 # Installation
 
-To install HAAP in a new sandbox simply run:
+## Manual
+
+To install HAAP in a new sandbox, simply run:
 ```
 cabal sandbox init
 cabal install HAAP.cabal
@@ -15,11 +17,20 @@ For CodeWorld animations you need to have `ghcjs` installed:
 cabal install --ghcjs codeworld-haap-api
 ```
 
+## Docker
+
+To try HAAP in a new Docker container, simply run:
+```
+docker run -i -t hugopacheco/haap:latest /bin/bash
+```
+
 # Examples
 
 You can experiment with an example.
 
 ```
+cd examples/<example>
+cabal --sandbox-config-file=../../cabal.sandbox.config exec -- ghc helloworld.hs
 cabal exec -- ghci examples/<example>/<example>.hs
 > main
 ```
