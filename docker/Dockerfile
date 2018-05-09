@@ -1,0 +1,38 @@
+FROM ubuntu:16.04
+MAINTAINER Hugo Pacheco <hpacheco@gmail.com>
+
+RUN apt-get update
+RUN apt-get -qqy install locales build-essential autoconf git nodejs nodejs-legacy zlib1g-dev libgmp-dev freeglut3-dev libtinfo-dev wget vim unzip
+
+ENV HOME /home
+ENV PATH /home/.cabal/bin:/home/.cabal-sandbox/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+RUN echo "export PATH=/home/.cabal/bin/:/home/.cabal-sandbox/bin:$PATH" >> /root/.profile
+RUN . /root/.profile
+
+WORKDIR $HOME
+RUN wget https://www.haskell.org/platform/download/8.0.1/haskell-platform-8.0.1-unknown-posix--minimal-x86_64.tar.gz
+RUN tar -xvf haskell-platform-8.0.1-unknown-posix--minimal-x86_64.tar.gz
+RUN ./install-haskell-platform.sh
+RUN rm -rf $HOME/haskell-platform-8.0.1-unknown-posix--minimal-x86_64.tar.gz
+RUN rm -rf $HOME/hp-usr-local.tar.gz
+RUN rm -rf $HOME/install-haskell-platform.sh
+
+RUN cabal update
+
+WORKDIR $HOME
+RUN wget http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
+RUN tar -xvf ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
+RUN git clone https://github.com/hpacheco/HAAP
+
+RUN cabal sandbox init
+ADD cabal.config $HOME/cabal.config
+RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/packages/SourceGraph-0.7.0.8/SourceGraph.cabal HAAP/HAAP.cabal hlint homplexity --disable-documentation
+RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
+
+WORKDIR $HOME/ghcjs-0.2.1.9007019
+RUN ghcjs-boot
+
+WORKDIR $HOME/HAAP
+RUN cabal install --ghcjs packages/codeworld-haap-api
+
+
