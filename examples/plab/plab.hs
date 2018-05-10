@@ -429,14 +429,14 @@ script = do
                         t6bestof 16 = 3
                         t6bestof 4 = 5
                     let match tno rno mno ps@[p1,p2,p3,p4] = do
-                        let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg, ioTimeout = Just 240 }
+                        let tourneyioargs folder = ioargs { ioSandbox = Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 240 }
                         let rts = ["+RTS","-K800m","-M800m","-RTS"] :: [String]
                         let tpath = "tourney" ++ pretty tno </> "round" ++ pretty rno </> "match" ++ pretty mno
                         let folder = projtmp </> "t6" </> tpath
                         let root = dirToRoot folder
                         let files = map (takeDirectory . tourneyGroupFile) $ filter (not . isDefaultPlayer) ps
                         let tourneyincludes = "-i"++ unSplitOn ":" (map (root </>) (files++["oracle"]))
-                        let ghcargs = def { ghcSafe = False, ghcRTS = True, ghcArgs = [tourneyincludes], ghcIO = tourneyioargs }
+                        let ghcargs folder = def { ghcSafe = False, ghcRTS = True, ghcArgs = [tourneyincludes], ghcIO = tourneyioargs folder }
                         let matchhtml = "tourneys/t6" </> addExtension ( tpath) "html"
                         
                         let rnoindex :: Int -> Int
@@ -464,17 +464,17 @@ script = do
                                     `mappend` fieldContext "bot3" (tourneyGroupBot p3 3)
                                     `mappend` fieldContext "bot4" (tourneyGroupBot p4 4)
                             let simulatefile = "Simulate.hs"
-                            haapRetry 2 $ runBaseShWith (tourneyioargs) $ do
+                            haapRetry 2 $ runBaseShWith (tourneyioargs folder) $ do
                                 shLoadApplyAndCopyTemplate simulatectx ("oracle/SimulateT6Match.hs") (folder </> simulatefile)
-                            ghcres <- orIOResult $ runBaseShWith (tourneyioargs) $ do
+                            ghcres <- orIOResult $ runBaseShWith (tourneyioargs folder) $ do
                                 shCd folder
-                                shGhcWith ghcargs [simulatefile]
+                                shGhcWith (ghcargs folder) [simulatefile]
                             (frames,positions) :: (Frames,[Int]) <- addMessageToError (pretty ghcres) $ do
-                                runBaseShWith (tourneyioargs) $ do
+                                runBaseShWith (tourneyioargs folder) $ do
                                     shCd folder
                                     exec <- shExec "Simulate"
-                                    shCommandToFileWith_ tourneyioargs exec (rts) (folder </> "bin")
-                                runBaseIOWith tourneyioargs $ decodeFile (folder </> "bin")
+                                    shCommandToFileWith_ (tourneyioargs folder) exec (rts) (folder </> "bin")
+                                runBaseIOWith (tourneyioargs folder) $ decodeFile (folder </> "bin")
                             let rank = zip ps positions
                             return (frames,rank)
                         
@@ -489,7 +489,7 @@ script = do
                                            `mappend` fieldContext "frames" (show frames)
                                            `mappend` fieldContext "players" (show players)
                                     let animatefile = "Animate.hs"
-                                    haapRetry 2 $ runBaseShWith (tourneyioargs) $ do
+                                    haapRetry 2 $ runBaseShWith (tourneyioargs folder) $ do
                                         shLoadApplyAndCopyTemplate animatectx ("oracle/AnimateT6Match.hs") (folder </> animatefile)
                                     
                                     -- T6 match viewer
