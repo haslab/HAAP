@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href=./css/normalize.css>
+    <link rel="stylesheet" href=./css/style.css>
+    <title>Spec</title>
+</head>
+
+<body>
+<div id="demo">
+
+<h1>spec1</h1>
+
+<div id="tablediv" class="table-responsive-vertical shadow-z-1">
+<table id="table" class="table table-hover table-mc-light-blue">
+    <thead>
+        <tr>
+            
+                <th>x</th>
+            
+                <th>y</th>
+            
+            <th>Resultado</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">97</td>
+                
+                <td class="datatext" data-title="arg">'a'</td>
+                
+                <td class=hspec-success data-title="Resultado">OK</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">97</td>
+                
+                <td class="datatext" data-title="arg">'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n97\n...but got...\n98"
+    expected: 97
+    got: 98</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">97</td>
+                
+                <td class="datatext" data-title="arg">'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n97\n...but got...\n99"
+    expected: 97
+    got: 99</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">97</td>
+                
+                <td class="datatext" data-title="arg">'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n97\n...but got...\n100"
+    expected: 97
+    got: 100</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">98</td>
+                
+                <td class="datatext" data-title="arg">'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n98\n...but got...\n97"
+    expected: 98
+    got: 97</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">98</td>
+                
+                <td class="datatext" data-title="arg">'b'</td>
+                
+                <td class=hspec-success data-title="Resultado">OK</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">98</td>
+                
+                <td class="datatext" data-title="arg">'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n98\n...but got...\n99"
+    expected: 98
+    got: 99</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">98</td>
+                
+                <td class="datatext" data-title="arg">'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n98\n...but got...\n100"
+    expected: 98
+    got: 100</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">3</td>
+                
+                <td class="datatext" data-title="arg">'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n3\n...but got...\n97"
+    expected: 3
+    got: 97</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">3</td>
+                
+                <td class="datatext" data-title="arg">'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n3\n...but got...\n98"
+    expected: 3
+    got: 98</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">3</td>
+                
+                <td class="datatext" data-title="arg">'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n3\n...but got...\n99"
+    expected: 3
+    got: 99</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">3</td>
+                
+                <td class="datatext" data-title="arg">'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n3\n...but got...\n100"
+    expected: 3
+    got: 100</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">4</td>
+                
+                <td class="datatext" data-title="arg">'a'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n4\n...but got...\n97"
+    expected: 4
+    got: 97</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">4</td>
+                
+                <td class="datatext" data-title="arg">'b'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n4\n...but got...\n98"
+    expected: 4
+    got: 98</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">4</td>
+                
+                <td class="datatext" data-title="arg">'c'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n4\n...but got...\n99"
+    expected: 4
+    got: 99</td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">4</td>
+                
+                <td class="datatext" data-title="arg">'d'</td>
+                
+                <td class=hspec-failure data-title="Resultado">Just "Equality assertion failed: expected...\n4\n...but got...\n100"
+    expected: 4
+    got: 100</td>
+            </tr>
+        
+    </tbody>
+</table>
+
+</div>
+</body>
+
+</html>
