@@ -39,7 +39,7 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-You can find the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example here.
+You can find the generated [helloworld](examples/helloworld/site/index.html) example here.
 
 ## minimalistic
 
@@ -53,7 +53,7 @@ cabal exec -- ghc minimalistics.hs
 ./minimalistic
 ```
 
-You can find the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example here.
+You can find the generated [minimalistic](examples/minimalistic/site/index.html) example here.
 
 ## plab
 
@@ -67,7 +67,7 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-You can find the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example here.
+You can find the generated [plab](examples/plab/site/index.html) example here.
 
 
 
