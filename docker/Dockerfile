@@ -39,6 +39,6 @@ WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN ghcjs-boot
 
 WORKDIR $HOME/HAAP
-RUN cabal install --ghcjs packages/codeworld-haap-api
+RUN cabal install --ghcjs packages/codeworld-haap-api QuickCheck safe
 
 

@@ -26,19 +26,50 @@ docker run -i -t hugopacheco/haap:latest /bin/bash
 
 # Examples
 
-You can experiment with an example.
+You can then try our examples.
+
+## helloworld
+
+A simple hello world example with a simple Hspec specification and Hakyll webpage generation:
 
 ```
-cd examples/<example>
-cabal --sandbox-config-file=../../cabal.sandbox.config exec -- ghc helloworld.hs
-cabal exec -- ghci examples/<example>/<example>.hs
-> main
+cd examples/helloworld
+cp ../../cabal.sandbox.config .
+cabal exec -- ghc helloworld.hs
+./helloworld
 ```
 
-You can find pre-compiled examples at:
-* [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/index.html).
-* [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/index.html).
-* [plab](https://hpacheco.github.io/HAAP/examples/plab/_site/index.html).
+You can find a pre-compiled [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/index.html) example here.
+
+## minimalistic
+
+A minimal example that showcases code analysis tools and CodeWorld integration:
+
+```
+cd examples/minimalistic
+cp ../../cabal.sandbox.config .
+cabal exec -- ghc minimalistics.hs
+./minimalistic
+./minimalistic
+```
+
+You can find a pre-compiled [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/index.html) example here.
+
+## plab
+
+A mockup of the Programming Laboratories class feedback page from ...
+
+
+```
+cd examples/plab
+cp ../../cabal.sandbox.config .
+cabal exec -- ghc plab.hs -ioracle
+./plab
+./plab
+```
+
+You can find a pre-compiled [plab](https://hpacheco.github.io/HAAP/examples/plab/_site/index.html) example here.
+
 
 
 
