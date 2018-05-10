@@ -4,6 +4,12 @@ MAINTAINER Hugo Pacheco <hpacheco@gmail.com>
 RUN apt-get update
 RUN apt-get -qqy install locales build-essential autoconf git nodejs nodejs-legacy zlib1g-dev libgmp-dev freeglut3-dev libtinfo-dev wget vim unzip
 
+RUN echo "LANG=en_AU.UTF-8" > /etc/default/locale
+RUN echo "en_AU.UTF-8 UTF-8" > /etc/locale.gen
+RUN /usr/sbin/locale-gen
+ENV LANG en_AU.UTF-8
+ENV LC_ALL C.UTF-8
+
 ENV HOME /home
 ENV PATH /home/.cabal/bin:/home/.cabal-sandbox/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN echo "export PATH=/home/.cabal/bin/:/home/.cabal-sandbox/bin:$PATH" >> /root/.profile

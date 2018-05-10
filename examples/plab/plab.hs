@@ -429,7 +429,7 @@ script = do
                         t6bestof 16 = 3
                         t6bestof 4 = 5
                     let match tno rno mno ps@[p1,p2,p3,p4] = do
-                        let tourneyioargs = ioargs { ioTimeout = Just 240 }
+                        let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg, ioTimeout = Just 240 }
                         let rts = ["+RTS","-K800m","-M800m","-RTS"] :: [String]
                         let tpath = "tourney" ++ pretty tno </> "round" ++ pretty rno </> "match" ++ pretty mno
                         let folder = projtmp </> "t6" </> tpath
@@ -551,6 +551,8 @@ groupsFeedback :: (MonadIO m,HasPlugin (AcidDB PLab_DB) t m) => [Group] -> (fora
 groupsFeedback grupos run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath moveviewerpath = do
     forM grupos $ \g -> liftM (g,) $ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath moveviewerpath g
 
+sandboxcfg = "cabal.sandbox.config"
+
 groupFeedback :: (MonadIO m,HasPlugin (AcidDB PLab_DB) t m) => (forall a. Haap (HakyllT :..: t) m a -> Haap t m a) -> GHCJSArgs -> IOArgs -> IOArgs -> FilePath -> FilePath -> FilePath -> Group -> Haap t m (FilePath,[PercentageScore])
 groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath moveviewerpath g = do
 --    refreshSvn
@@ -566,7 +568,6 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
         let hp = hp0 `mappend` hpLogin
         projname <- getProjectName
         projpath <- getProjectPath
-        let sandboxcfg = "cabal.sandbox.config"
         let gpage = "grupos" </> addExtension (show $ plabGroupId g) "html"
         let ghcargs = def
         let svnargs = def { svnHidden = False }
@@ -767,8 +768,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- homplexity
                         homplexitypath <- withHakyllP hp $ do
-                                let hSandox = Nothing
-                                let homplexity = HomplexityArgs hSandox [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
+                                let homplexity = HomplexityArgs (Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
                                 useAndRunHomplexity homplexity
                         
                         -- T3 ranking
