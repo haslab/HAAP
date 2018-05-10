@@ -400,7 +400,7 @@ script = do
                 tourneyplayers <- runHakyll False False hp0 $ forM groups $ \(p,_) -> orDo (\e -> return $ TourneyGroup (Left p,Just $ pretty e)) $ do
                     let modu = (groupModule p)
                     let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg,ioTimeout = Just 120 }
-                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIOArgs = tourneyioargs }
+                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False }
                     let (dir,path) = splitFileName (groupFile p)
                     iores <- orIOResult $ runBaseShWith (tourneyioargs) $ do
                         shCd dir
