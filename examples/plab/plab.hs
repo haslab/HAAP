@@ -399,12 +399,12 @@ script = do
                 -- T6 pre-processing
                 tourneyplayers <- runHakyll False False hp0 $ forM groups $ \(p,_) -> orDo (\e -> return $ TourneyGroup (Left p,Just $ pretty e)) $ do
                     let modu = (groupModule p)
-                    let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg, ioTimeout = Just 120 }
-                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs }
+                    let tourneyioargs folder = ioargs { ioSandbox = Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 120 }
+                    let ghcargs folder = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs folder }
                     let (dir,path) = splitFileName (groupFile p)
-                    iores <- orIOResult $ runBaseShWith (tourneyioargs) $ do
+                    iores <- orIOResult $ runBaseShWith (tourneyioargs dir) $ do
                         shCd dir
-                        shGhcWith ghcargs [path]
+                        shGhcWith (ghcargs dir) [path]
                     if (resOk iores)
                         then return $ TourneyGroup (Left p,Nothing)
                         else addMessageToError (pretty iores) $ do
