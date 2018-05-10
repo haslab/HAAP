@@ -1,0 +1,161 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body><pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>module Tarefa2_2017li1g180 where
+<span class="lineno">    2 </span>
+<span class="lineno">    3 </span>import LI11718
+<span class="lineno">    4 </span>import Data.List
+<span class="lineno">    5 </span>import Data.Maybe
+<span class="lineno">    6 </span>import Safe
+<span class="lineno">    7 </span>
+<span class="lineno">    8 </span>import Tarefa1_2017li1g180
+<span class="lineno">    9 </span>
+<span class="lineno">   10 </span>testesT2 :: [Tabuleiro]
+<span class="lineno">   11 </span><span class="decl"><span class="nottickedoff">testesT2 = tabs</span></span>
+<span class="lineno">   12 </span>
+<span class="lineno">   13 </span>validaPos :: Posicao -&gt; Tabuleiro -&gt; Bool
+<span class="lineno">   14 </span>-- hpacheco: mudei para incluir parede
+<span class="lineno">   15 </span><span class="decl"><span class="nottickedoff">validaPos (x,y) t = x &lt;= maybe 0 length (headMay t) &amp;&amp; y &lt;= length t</span></span>
+<span class="lineno">   16 </span>
+<span class="lineno">   17 </span>ponto2Pos :: Ponto -&gt; Posicao
+<span class="lineno">   18 </span><span class="decl"><span class="istickedoff">ponto2Pos (x,y) = (i,j)</span>
+<span class="lineno">   19 </span><span class="spaces">    </span><span class="istickedoff">where x' = floor x</span>
+<span class="lineno">   20 </span><span class="spaces">          </span><span class="istickedoff">y' = floor y</span>
+<span class="lineno">   21 </span><span class="spaces">          </span><span class="istickedoff">i = x'</span>
+<span class="lineno">   22 </span><span class="spaces">          </span><span class="istickedoff">j = y'</span></span>
+<span class="lineno">   23 </span>
+<span class="lineno">   24 </span>validaPonto :: Ponto -&gt; Tabuleiro -&gt; Bool
+<span class="lineno">   25 </span>-- hpacheco: mudei para incluir parede
+<span class="lineno">   26 </span><span class="decl"><span class="nottickedoff">validaPonto (a,b) t = x &lt;= maybe 0 length (headMay t) &amp;&amp; y &lt;= length t &amp;&amp; x &gt;= 0 &amp;&amp; y &gt;= 0</span>
+<span class="lineno">   27 </span><span class="spaces">  </span><span class="nottickedoff">where (x,y) = ponto2Pos (a,b)</span></span>
+<span class="lineno">   28 </span>
+<span class="lineno">   29 </span>valida :: Mapa -&gt; Bool
+<span class="lineno">   30 </span><span class="decl"><span class="nottickedoff">valida (Mapa _ []) = False</span>
+<span class="lineno">   31 </span><span class="spaces"></span><span class="nottickedoff">valida (Mapa (p,d) m) | not (validaTabuleiro m) = False</span>
+<span class="lineno">   32 </span><span class="spaces">                      </span><span class="nottickedoff">| c == [] = False</span>
+<span class="lineno">   33 </span><span class="spaces">                      </span><span class="nottickedoff">| otherwise = validaPos p m &amp;&amp; (daVolta c) &amp;&amp; (naoDesperdica c t) &amp;&amp; (sequencial c a)</span>
+<span class="lineno">   34 </span><span class="spaces">  </span><span class="nottickedoff">where c = percorre [] m p d</span>
+<span class="lineno">   35 </span><span class="spaces">        </span><span class="nottickedoff">(Peca t0 x,_,_) = head c</span>
+<span class="lineno">   36 </span><span class="spaces">        </span><span class="nottickedoff">a = if t0 == Rampa (roda (roda d True) True) then (x+1) else x</span>
+<span class="lineno">   37 </span><span class="spaces">        </span><span class="nottickedoff">t = todoPiso (0,0) m</span></span>
+<span class="lineno">   38 </span>
+<span class="lineno">   39 </span>validaTabuleiro :: Tabuleiro -&gt; Bool
+<span class="lineno">   40 </span><span class="decl"><span class="nottickedoff">validaTabuleiro m | length (nub (map length m)) &gt; 1 = False</span>
+<span class="lineno">   41 </span><span class="spaces">                  </span><span class="nottickedoff">| not (bordaLava m) = False</span>
+<span class="lineno">   42 </span><span class="spaces">                  </span><span class="nottickedoff">| otherwise = True</span></span>
+<span class="lineno">   43 </span>
+<span class="lineno">   44 </span>bordaLava :: Tabuleiro -&gt; Bool
+<span class="lineno">   45 </span><span class="decl"><span class="nottickedoff">bordaLava t = head t == h &amp;&amp; last t == h &amp;&amp; map head t == v &amp;&amp; map last t == v</span>
+<span class="lineno">   46 </span><span class="spaces">  </span><span class="nottickedoff">where h = replicate (length (head t)) (Peca Lava altLava)</span>
+<span class="lineno">   47 </span><span class="spaces">        </span><span class="nottickedoff">v = replicate (length t) (Peca Lava altLava)</span></span>
+<span class="lineno">   48 </span>
+<span class="lineno">   49 </span>percorre :: [(Peca,Posicao,Orientacao)] -&gt; Tabuleiro -&gt; Posicao -&gt; Orientacao -&gt; [(Peca,Posicao,Orientacao)]
+<span class="lineno">   50 </span><span class="decl"><span class="nottickedoff">percorre vs m (i,j) d | i &lt; 0 || j &lt; 0 || i &gt;= length (head m) || j &gt;= length m = vs</span>
+<span class="lineno">   51 </span><span class="spaces">                      </span><span class="nottickedoff">| d' == Nothing = vs</span>
+<span class="lineno">   52 </span><span class="spaces">                      </span><span class="nottickedoff">| v `elem` vs = vs++[v]</span>
+<span class="lineno">   53 </span><span class="spaces">                      </span><span class="nottickedoff">| otherwise = percorre (vs++[v]) m (mexe (i,j) (fromJust d')) (fromJust d')</span>
+<span class="lineno">   54 </span><span class="spaces">  </span><span class="nottickedoff">where v = (atNote2 &quot;percorre&quot; m j i,(i,j),d)</span>
+<span class="lineno">   55 </span><span class="spaces">        </span><span class="nottickedoff">d' = curva d (atNote2 &quot;percorre&quot; m j i)</span></span>
+<span class="lineno">   56 </span>
+<span class="lineno">   57 </span>
+<span class="lineno">   58 </span>lookMap :: Tabuleiro -&gt; Int -&gt; Int -&gt; Peca
+<span class="lineno">   59 </span><span class="decl"><span class="nottickedoff">lookMap xs j i | j &lt; length xs &amp;&amp; i &lt; maybe 0 length (headMay xs) = atNote &quot;lookMap&quot; (atNote &quot;lookMap&quot; xs j) i </span>
+<span class="lineno">   60 </span><span class="spaces"></span><span class="nottickedoff">lookMap xs j i = error $ &quot;lookMap &quot; ++ show xs ++ &quot; &quot; ++ show j ++ &quot; &quot; ++ show i</span></span>
+<span class="lineno">   61 </span>
+<span class="lineno">   62 </span>todoPiso :: Posicao -&gt; [[Peca]] -&gt; [Posicao]
+<span class="lineno">   63 </span><span class="decl"><span class="nottickedoff">todoPiso (i,j) m | j &gt;= length m = []</span>
+<span class="lineno">   64 </span><span class="spaces">                 </span><span class="nottickedoff">| i &gt;= length (head m) = todoPiso (0,j+1) m</span>
+<span class="lineno">   65 </span><span class="spaces">                 </span><span class="nottickedoff">| lookMap m j i == Peca Lava altLava = todoPiso (i+1,j) m</span>
+<span class="lineno">   66 </span><span class="spaces">                 </span><span class="nottickedoff">| otherwise = (i,j) : todoPiso (i+1,j) m</span></span>
+<span class="lineno">   67 </span>
+<span class="lineno">   68 </span>daVolta :: [(Peca,Posicao,Orientacao)] -&gt; Bool
+<span class="lineno">   69 </span><span class="decl"><span class="nottickedoff">daVolta [] = False</span>
+<span class="lineno">   70 </span><span class="spaces"></span><span class="nottickedoff">daVolta [_] = False</span>
+<span class="lineno">   71 </span><span class="spaces"></span><span class="nottickedoff">daVolta p = (head p) == (last p)</span></span>
+<span class="lineno">   72 </span>
+<span class="lineno">   73 </span>sequencial :: [(Peca,Posicao,Orientacao)] -&gt; Altura -&gt; Bool
+<span class="lineno">   74 </span><span class="decl"><span class="nottickedoff">sequencial [] _ = True</span>
+<span class="lineno">   75 </span><span class="spaces"></span><span class="nottickedoff">sequencial ((Peca (Rampa d') a',_,d):c) a = maybe False (sequencial c) a''</span>
+<span class="lineno">   76 </span><span class="spaces">  </span><span class="nottickedoff">where a'' = subir (a,d) (a',d')            </span>
+<span class="lineno">   77 </span><span class="spaces"></span><span class="nottickedoff">sequencial ((Peca _ a',_,_):c) a | a /= a' = False</span>
+<span class="lineno">   78 </span><span class="spaces">                                 </span><span class="nottickedoff">| otherwise = sequencial c a</span></span>
+<span class="lineno">   79 </span>
+<span class="lineno">   80 </span>subir :: (Altura,Orientacao) -&gt; (Altura,Orientacao) -&gt; Maybe Altura
+<span class="lineno">   81 </span><span class="decl"><span class="nottickedoff">subir (a,d) (a',d') | d == d' &amp;&amp; a == a' = Just (a+1)</span>
+<span class="lineno">   82 </span><span class="spaces">                    </span><span class="nottickedoff">| d == roda (roda d' True) True &amp;&amp; a == a' + 1 = Just a'</span>
+<span class="lineno">   83 </span><span class="spaces">                    </span><span class="nottickedoff">| otherwise = Nothing</span></span>
+<span class="lineno">   84 </span>
+<span class="lineno">   85 </span>naoDesperdica :: [(Peca,Posicao,Orientacao)] -&gt; [Posicao] -&gt; Bool
+<span class="lineno">   86 </span><span class="decl"><span class="nottickedoff">naoDesperdica c p = length (nub (map (\(_,x,_) -&gt; x) c)) == length (nub p)</span></span>
+<span class="lineno">   87 </span>
+<span class="lineno">   88 </span>curva :: Orientacao -&gt; Peca -&gt; Maybe Orientacao
+<span class="lineno">   89 </span><span class="decl"><span class="nottickedoff">curva o (Peca (Curva c) _) | o == c = Just $ roda o True</span>
+<span class="lineno">   90 </span><span class="spaces">                           </span><span class="nottickedoff">| o == (roda c False) = Just $ roda o False</span>
+<span class="lineno">   91 </span><span class="spaces">                           </span><span class="nottickedoff">| otherwise = Nothing</span>
+<span class="lineno">   92 </span><span class="spaces"></span><span class="nottickedoff">curva _ (Peca Lava _) = Nothing</span>
+<span class="lineno">   93 </span><span class="spaces"></span><span class="nottickedoff">curva o _ = Just o</span></span>
+<span class="lineno">   94 </span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span><span class="decl"><span class="nottickedoff">tabs = [mm_ex1,mm_ex2,mm_ex3,mm_exPI,mm_exLV,mm_exEX,mm_exLH,mm_why,mm_NSq,mm_Rec,mm_Rec']</span></span>
+<span class="lineno">   97 </span>
+<span class="lineno">   98 </span>-- mapa nao geravel por caminhos, lava extra a volta
+<span class="lineno">   99 </span><span class="decl"><span class="nottickedoff">mm_ex1 = [[Peca Lava 2, Peca Lava 2, Peca Lava 2, Peca Lava 2]</span>
+<span class="lineno">  100 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava 2, Peca (Curva Norte) 2,Peca (Curva Este) 2, Peca Lava 2]</span>
+<span class="lineno">  101 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava 2, Peca (Curva Oeste) 2,Peca (Curva Sul) 2, Peca Lava 2]</span>
+<span class="lineno">  102 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava 2, Peca Lava 2, Peca Lava 2, Peca Lava 2]]</span></span>
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span>-- mapa nao geravel por caminhos, altura /= inicial sem possibilidade de rampas
+<span class="lineno">  105 </span><span class="decl"><span class="nottickedoff">mm_ex2 = [[Peca (Curva Norte) 5,Peca (Curva Este) 5],[Peca (Curva Oeste) 5,Peca (Curva Sul) 5]]</span></span>
+<span class="lineno">  106 </span>
+<span class="lineno">  107 </span>-- mapa minimo sem vizinhos
+<span class="lineno">  108 </span><span class="decl"><span class="nottickedoff">mm_ex3 = [[Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2],[Peca Recta 2,Peca Lava 2,Peca Recta 2],[Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2]]</span></span>
+<span class="lineno">  109 </span>
+<span class="lineno">  110 </span>
+<span class="lineno">  111 </span>-- posicao inicial invalida
+<span class="lineno">  112 </span><span class="decl"><span class="nottickedoff">mm_exPI = [[Peca (Curva Norte) 2,Peca (Curva Este) 2],[Peca (Curva Oeste) 2,Peca (Curva Sul) 2]]</span></span>
+<span class="lineno">  113 </span>
+<span class="lineno">  114 </span>-- mapa so lava
+<span class="lineno">  115 </span><span class="decl"><span class="nottickedoff">mm_exLV = theFloorIsLava (5,10)</span></span>
+<span class="lineno">  116 </span>
+<span class="lineno">  117 </span>-- mapa com caminho extra
+<span class="lineno">  118 </span><span class="decl"><span class="nottickedoff">mm_exEX = [[Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2],[Peca Recta 2,Peca Recta 2,Peca Recta 2],[Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2]]</span></span>
+<span class="lineno">  119 </span>
+<span class="lineno">  120 </span>-- altura da lava invalida
+<span class="lineno">  121 </span><span class="decl"><span class="nottickedoff">mm_exLH = [[Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2],[Peca Recta 2,Peca Lava 2,Peca Recta 2],[Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2]]</span></span>
+<span class="lineno">  122 </span>
+<span class="lineno">  123 </span><span class="decl"><span class="nottickedoff">mm_why = [[Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2],[Peca Recta 2,Peca Recta 2,Peca Recta 2],[Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2]]</span></span>
+<span class="lineno">  124 </span>
+<span class="lineno">  125 </span><span class="decl"><span class="nottickedoff">mm_NSq = [[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  126 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava altLava, Peca (Curva Norte) 5,Peca (Curva Este) 5, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  127 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava altLava, Peca (Curva Oeste) 5,Peca (Curva Sul) 5, Peca Lava altLava]</span>
+<span class="lineno">  128 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  129 </span><span class="spaces">        </span><span class="nottickedoff">]</span></span>
+<span class="lineno">  130 </span>
+<span class="lineno">  131 </span><span class="decl"><span class="nottickedoff">mm_Rec = [[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  132 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava altLava, Peca Recta 5,Peca Lava altLava]</span>
+<span class="lineno">  133 </span><span class="spaces">        </span><span class="nottickedoff">,[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  134 </span><span class="spaces">        </span><span class="nottickedoff">]</span></span>                          
+<span class="lineno">  135 </span>
+<span class="lineno">  136 </span><span class="decl"><span class="nottickedoff">mm_Rec' = [[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  137 </span><span class="spaces">         </span><span class="nottickedoff">,[Peca Recta 5, Peca Recta 5,Peca Recta 5]</span>
+<span class="lineno">  138 </span><span class="spaces">         </span><span class="nottickedoff">,[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]</span>
+<span class="lineno">  139 </span><span class="spaces">         </span><span class="nottickedoff">]</span></span>
+
+</pre>
+</body>
+</html>

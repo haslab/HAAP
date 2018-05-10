@@ -1,0 +1,144 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body><pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE PatternGuards #-}
+<span class="lineno">    2 </span>
+<span class="lineno">    3 </span>module Tarefa4_2017li1g183 where
+<span class="lineno">    4 </span>
+<span class="lineno">    5 </span>import LI11718
+<span class="lineno">    6 </span>import Tarefa3_2017li1g183
+<span class="lineno">    7 </span>import Tarefa1_2017li1g183
+<span class="lineno">    8 </span>import Test.QuickCheck.Gen
+<span class="lineno">    9 </span>import Data.List
+<span class="lineno">   10 </span>import Data.Maybe
+<span class="lineno">   11 </span>--import Safe
+<span class="lineno">   12 </span>--import Debug.Trace
+<span class="lineno">   13 </span>
+<span class="lineno">   14 </span>testesT4 :: [(Tempo,Jogo,Acao)]
+<span class="lineno">   15 </span><span class="decl"><span class="istickedoff">testesT4 = [(0.2,jogoT { carros = ((head $ carros jogoT) { velocidade = (1,0)}) : tail (carros jogoT) },Acao True False True False (Just 0))</span>
+<span class="lineno">   16 </span><span class="spaces">           </span><span class="istickedoff">,(0.2,jogoT { carros = ((head $ carros jogoT) { velocidade = (3,-1)}) : tail (carros jogoT) },Acao True False False True (Just 0))</span>
+<span class="lineno">   17 </span><span class="spaces">           </span><span class="istickedoff">,(0.2,jogoT { carros = ((head $ carros jogoT) { velocidade = (0,0)}) : tail (carros jogoT) },Acao False True True False Nothing)</span>
+<span class="lineno">   18 </span><span class="spaces">           </span><span class="istickedoff">,(0.4,jogoT { carros = ((head $ carros jogoT) { velocidade = (1,0)}) : tail (carros jogoT) },Acao True False True False (Just 0))]</span></span>
+<span class="lineno">   19 </span>
+<span class="lineno">   20 </span><span class="decl"><span class="istickedoff">jogoT = jogoInicial $ constroi [Avanca,Avanca,CurvaDir,CurvaDir,Avanca,Avanca,CurvaDir,CurvaDir]</span></span>
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>
+<span class="lineno">   23 </span><span class="decl"><span class="istickedoff">njogadores = 1</span></span>
+<span class="lineno">   24 </span><span class="decl"><span class="istickedoff">qntnitro = 5</span></span>
+<span class="lineno">   25 </span>
+<span class="lineno">   26 </span>jogoInicial :: Mapa -&gt; Jogo
+<span class="lineno">   27 </span><span class="decl"><span class="istickedoff">jogoInicial m@(Mapa p t) = Jogo { mapa      = m </span>
+<span class="lineno">   28 </span><span class="spaces">                                </span><span class="istickedoff">, pista     = standard</span>
+<span class="lineno">   29 </span><span class="spaces">                                </span><span class="istickedoff">, carros    = map (carroInicial t (fst p)) [0..njogadores-1]</span>
+<span class="lineno">   30 </span><span class="spaces">                                </span><span class="istickedoff">, nitros    = replicate njogadores qntnitro</span>
+<span class="lineno">   31 </span><span class="spaces">                                </span><span class="istickedoff">, historico = replicate njogadores [(fst p)]</span>
+<span class="lineno">   32 </span><span class="spaces">                                </span><span class="istickedoff">}</span></span>
+<span class="lineno">   33 </span>
+<span class="lineno">   34 </span>carroInicial :: Tabuleiro -&gt; Posicao -&gt; Int -&gt; Carro
+<span class="lineno">   35 </span><span class="decl"><span class="istickedoff">carroInicial t (a,b) i = Carro { posicao    = centroPeca tp (a,b)</span>
+<span class="lineno">   36 </span><span class="spaces">                       </span><span class="istickedoff">        , direcao    = 0</span>
+<span class="lineno">   37 </span><span class="spaces">                       </span><span class="istickedoff">        , velocidade = <span class="nottickedoff">(0,0)</span></span>
+<span class="lineno">   38 </span><span class="spaces">                       </span><span class="istickedoff">        }</span>
+<span class="lineno">   39 </span><span class="spaces">    </span><span class="istickedoff">where  (Peca tp _) = (t!!b!!a)</span></span>
+<span class="lineno">   40 </span>
+<span class="lineno">   41 </span>
+<span class="lineno">   42 </span>centroPeca :: Tipo -&gt; Posicao -&gt; Ponto
+<span class="lineno">   43 </span><span class="decl"><span class="istickedoff">centroPeca (Curva Norte) (a,b) = <span class="nottickedoff">(toEnum a+0.7,toEnum b+0.7)</span></span>
+<span class="lineno">   44 </span><span class="spaces"></span><span class="istickedoff">centroPeca (Curva Este) (a,b) = <span class="nottickedoff">(toEnum a+0.3,toEnum b+0.7)</span></span>
+<span class="lineno">   45 </span><span class="spaces"></span><span class="istickedoff">centroPeca (Curva Sul) (a,b) = <span class="nottickedoff">(toEnum a+0.3,toEnum b+0.3)</span></span>
+<span class="lineno">   46 </span><span class="spaces"></span><span class="istickedoff">centroPeca (Curva Oeste) (a,b) = <span class="nottickedoff">(toEnum a+0.7,toEnum b+0.3)</span></span>
+<span class="lineno">   47 </span><span class="spaces"></span><span class="istickedoff">centroPeca _ (a,b) = (toEnum a+0.5,toEnum b+0.5)</span></span>
+<span class="lineno">   48 </span>
+<span class="lineno">   49 </span><span class="decl"><span class="istickedoff">standard = Propriedades (1.5) 1 4 2 15 90</span></span>
+<span class="lineno">   50 </span>
+<span class="lineno">   51 </span>
+<span class="lineno">   52 </span>atualiza :: Tempo -&gt; Jogo -&gt; Int -&gt; Acao -&gt; Jogo
+<span class="lineno">   53 </span><span class="decl"><span class="istickedoff">atualiza t e j a = lancaNitros t j e e' a</span>
+<span class="lineno">   54 </span><span class="spaces">  </span><span class="istickedoff">where e' = e { carros = cs', historico = hs' }</span>
+<span class="lineno">   55 </span><span class="spaces">        </span><span class="istickedoff">Mapa _ m = <span class="nottickedoff">(mapa e)</span></span>
+<span class="lineno">   56 </span><span class="spaces">        </span><span class="istickedoff">c' = moveCarro t e (carros e!!j,a)</span>
+<span class="lineno">   57 </span><span class="spaces">        </span><span class="istickedoff">h' = atualizaHistorico (carros e!!j) (historico e!!j)</span>
+<span class="lineno">   58 </span><span class="spaces">        </span><span class="istickedoff">cs' = (take j <span class="nottickedoff">(carros e)</span>)++(c':drop (j+1) (carros e))</span>
+<span class="lineno">   59 </span><span class="spaces">        </span><span class="istickedoff">hs' = (take j <span class="nottickedoff">(historico e)</span>)++(h':drop (j+1) (historico e))</span></span>
+<span class="lineno">   60 </span>
+<span class="lineno">   61 </span>moveCarro :: Tempo -&gt; Jogo -&gt; (Carro,Acao) -&gt; Carro
+<span class="lineno">   62 </span><span class="decl"><span class="istickedoff">moveCarro t e (c,a) = rodaCarro t e (andaCarro t e (c,a) ,a)</span></span>
+<span class="lineno">   63 </span>
+<span class="lineno">   64 </span>rodaCarro :: Tempo -&gt; Jogo -&gt; (Carro,Acao) -&gt; Carro
+<span class="lineno">   65 </span><span class="decl"><span class="istickedoff">rodaCarro t e (c,a) | direita a &amp;&amp; not (esquerda a) = c { direcao = direcao c - (t*k_roda (pista e))}</span>
+<span class="lineno">   66 </span><span class="spaces">              </span><span class="istickedoff">      | <span class="tickonlytrue">esquerda a &amp;&amp; not (direita a)</span> = c { direcao = direcao c + (t*k_roda (pista e))}</span>
+<span class="lineno">   67 </span><span class="spaces">              </span><span class="istickedoff">      | <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">c</span></span></span>
+<span class="lineno">   68 </span>
+<span class="lineno">   69 </span>atualizaHistorico :: Carro -&gt; [Posicao] -&gt; [Posicao]
+<span class="lineno">   70 </span><span class="decl"><span class="istickedoff">atualizaHistorico c [] = <span class="nottickedoff">[(floor (fst (posicao c)), floor (snd (posicao c)))]</span></span>
+<span class="lineno">   71 </span><span class="spaces"></span><span class="istickedoff">atualizaHistorico c (h:hs) = hs'</span>
+<span class="lineno">   72 </span><span class="spaces">  </span><span class="istickedoff">where (i,j) = (floor (fst (posicao c)), floor (snd (posicao c)))</span>
+<span class="lineno">   73 </span><span class="spaces">        </span><span class="istickedoff">hs' | <span class="tickonlytrue">h == (i,j)</span> = (h:hs)</span>
+<span class="lineno">   74 </span><span class="spaces">            </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">(i,j):h:hs</span></span></span>
+<span class="lineno">   75 </span>
+<span class="lineno">   76 </span>lancaNitros :: Tempo -&gt; Int -&gt; Jogo -&gt; Jogo -&gt; Acao -&gt; Jogo
+<span class="lineno">   77 </span><span class="decl"><span class="istickedoff">lancaNitros _ _ e0 e (Acao _ _ _ _ Nothing) = e</span>
+<span class="lineno">   78 </span><span class="spaces"></span><span class="istickedoff">lancaNitros t i e0 e (Acao _ _ _ _ (Just j)) | <span class="tickonlyfalse">(nitros e)!!i == 0</span> = <span class="nottickedoff">e</span></span>
+<span class="lineno">   79 </span><span class="spaces">                                          </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = e { carros = cs', nitros = ns' }</span>
+<span class="lineno">   80 </span><span class="spaces">  </span><span class="istickedoff">where tNitro = min t (max 0 ((nitros e)!!i))</span>
+<span class="lineno">   81 </span><span class="spaces">        </span><span class="istickedoff">ns' = (take i <span class="nottickedoff">(nitros e)</span>)++(n':drop (i+1) (nitros e))</span>
+<span class="lineno">   82 </span><span class="spaces">        </span><span class="istickedoff">cs' = (take j <span class="nottickedoff">(carros e)</span>)++(c':drop (j+1) (carros e))</span>
+<span class="lineno">   83 </span><span class="spaces">        </span><span class="istickedoff">n' = max 0 (((nitros e)!!i)-tNitro)</span>
+<span class="lineno">   84 </span><span class="spaces">        </span><span class="istickedoff">c = (carros e)!!j</span>
+<span class="lineno">   85 </span><span class="spaces">        </span><span class="istickedoff">c0 = (carros e0)!!j</span>
+<span class="lineno">   86 </span><span class="spaces">        </span><span class="istickedoff">c' = c { velocidade = (velocidade c) .+. (tNitro .*. (nitroVec (pista e) c0)) }</span></span>
+<span class="lineno">   87 </span>
+<span class="lineno">   88 </span>andaCarro :: Tempo -&gt; Jogo -&gt; (Carro,Acao) -&gt; Carro
+<span class="lineno">   89 </span><span class="decl"><span class="istickedoff">andaCarro t e (c,a) = c { velocidade = v' }</span>
+<span class="lineno">   90 </span><span class="spaces">  </span><span class="istickedoff">where v' = (velocidade c) .+. (t .*. ((accelVec ps (c,a)) .+. (dragVec ps c) .+. (driftVec ps c) .+. (gravityVec <span class="nottickedoff">ps</span> p <span class="nottickedoff">c</span>)))</span>
+<span class="lineno">   91 </span><span class="spaces">        </span><span class="istickedoff">ps = pista e</span>
+<span class="lineno">   92 </span><span class="spaces">        </span><span class="istickedoff">Mapa _ m = mapa e</span>
+<span class="lineno">   93 </span><span class="spaces">        </span><span class="istickedoff">(i,j) = (floor (fst (posicao c)), floor (snd (posicao c)))</span>
+<span class="lineno">   94 </span><span class="spaces">        </span><span class="istickedoff">p = m!!j!!i</span></span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span>accelVec :: Propriedades -&gt; (Carro,Acao) -&gt; Velocidade
+<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">accelVec ps (c,a) | acelerar a &amp;&amp; not (travar a) = arrowToComponents (k_acel ps,direcao c)</span>
+<span class="lineno">   98 </span><span class="spaces">                  </span><span class="istickedoff">| <span class="tickonlytrue">travar a &amp;&amp; not (acelerar a)</span> = arrowToComponents (k_acel ps,direcao c + 180)</span>
+<span class="lineno">   99 </span><span class="spaces">                  </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">(0,0)</span></span></span>
+<span class="lineno">  100 </span>
+<span class="lineno">  101 </span>dragVec :: Propriedades -&gt; Carro -&gt; Velocidade
+<span class="lineno">  102 </span><span class="decl"><span class="istickedoff">dragVec ps c = arrowToComponents (v*k_atrito ps,a + 180) </span>
+<span class="lineno">  103 </span><span class="spaces">  </span><span class="istickedoff">where (v,a) = componentsToArrow (velocidade c)</span></span>
+<span class="lineno">  104 </span>
+<span class="lineno">  105 </span>driftVec :: Propriedades -&gt; Carro -&gt; Velocidade
+<span class="lineno">  106 </span><span class="decl"><span class="istickedoff">driftVec ps c = arrowToComponents (driftCoef,driftAngle)</span>
+<span class="lineno">  107 </span><span class="spaces">  </span><span class="istickedoff">where (v,a) = componentsToArrow $ velocidade c</span>
+<span class="lineno">  108 </span><span class="spaces">        </span><span class="istickedoff">d = direcao c</span>
+<span class="lineno">  109 </span><span class="spaces">        </span><span class="istickedoff">driftAngle = if (sin (radians (a-d))) &gt; 0</span>
+<span class="lineno">  110 </span><span class="spaces">                     </span><span class="istickedoff">then d-90 -- going right </span>
+<span class="lineno">  111 </span><span class="spaces">                     </span><span class="istickedoff">else d+90 -- going left</span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">driftCoef = v * k_pneus ps * abs (sin (radians (a-d)))</span></span>
+<span class="lineno">  113 </span>    
+<span class="lineno">  114 </span>nitroVec :: Propriedades -&gt; Carro -&gt; Velocidade
+<span class="lineno">  115 </span><span class="decl"><span class="istickedoff">nitroVec ps c = arrowToComponents (k_nitro ps,direcao c)</span></span>
+<span class="lineno">  116 </span>
+<span class="lineno">  117 </span>gravityVec :: Propriedades -&gt; Peca -&gt; Carro -&gt; Velocidade
+<span class="lineno">  118 </span><span class="decl"><span class="istickedoff">gravityVec ps (Peca (Rampa Sul) _)   c = <span class="nottickedoff">arrowToComponents (k_peso ps, 90)</span></span>
+<span class="lineno">  119 </span><span class="spaces"></span><span class="istickedoff">gravityVec ps (Peca (Rampa Norte) _) c = <span class="nottickedoff">arrowToComponents (k_peso ps, 270)</span></span>
+<span class="lineno">  120 </span><span class="spaces"></span><span class="istickedoff">gravityVec ps (Peca (Rampa Oeste) _) c = <span class="nottickedoff">arrowToComponents (k_peso ps, 0)</span></span>
+<span class="lineno">  121 </span><span class="spaces"></span><span class="istickedoff">gravityVec ps (Peca (Rampa Este) _)  c = <span class="nottickedoff">arrowToComponents (k_peso ps, 180)</span></span>
+<span class="lineno">  122 </span><span class="spaces"></span><span class="istickedoff">gravityVec ps _                      c = (0,0)</span></span>
+
+</pre>
+</body>
+</html>

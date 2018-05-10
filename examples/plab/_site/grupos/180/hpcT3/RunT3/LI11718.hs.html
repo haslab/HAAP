@@ -1,0 +1,187 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body><pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-|
+<span class="lineno">    2 </span>Module      : LI11718
+<span class="lineno">    3 </span>Description : Módulo auxiliar para LI1 17/18
+<span class="lineno">    4 </span>
+<span class="lineno">    5 </span>Tipos de dados e funções auxiliares para a realização do projeto de LI1 em 2017/18.
+<span class="lineno">    6 </span>-}
+<span class="lineno">    7 </span>
+<span class="lineno">    8 </span>module LI11718 (
+<span class="lineno">    9 </span>    -- * Tipos de dados
+<span class="lineno">   10 </span>    -- ** Básicos
+<span class="lineno">   11 </span>    Altura,Orientacao(..),Posicao,Ponto,Angulo,Tempo,Velocidade,
+<span class="lineno">   12 </span>    -- ** Caminhos
+<span class="lineno">   13 </span>    Caminho(..),Passo(..),
+<span class="lineno">   14 </span>    -- ** Mapas
+<span class="lineno">   15 </span>    Mapa(..),Tabuleiro,Peca(..),Tipo(..),Dimensao,Carro(..),
+<span class="lineno">   16 </span>    -- ** Jogo
+<span class="lineno">   17 </span>    Jogo(..),Propriedades(..),Acao(..),
+<span class="lineno">   18 </span>    -- * Funções auxiliares fornecidas
+<span class="lineno">   19 </span>    dimensao, partida, dirInit, altInit, altLava
+<span class="lineno">   20 </span>    ) where
+<span class="lineno">   21 </span>
+<span class="lineno">   22 </span>-- | Uma sequência de passos que dá origem a um mapa.
+<span class="lineno">   23 </span>type Caminho = [Passo]
+<span class="lineno">   24 </span>-- | Tipos de passos que podem occorrer num 'Caminho'.
+<span class="lineno">   25 </span>data Passo 
+<span class="lineno">   26 </span>  -- | Segue em frente e mantem o nível
+<span class="lineno">   27 </span>  = Avanca
+<span class="lineno">   28 </span>  -- | Segue em frente e sobe um nível
+<span class="lineno">   29 </span>  | Sobe
+<span class="lineno">   30 </span>  -- | Segue em frente e desce um nível
+<span class="lineno">   31 </span>  | Desce 
+<span class="lineno">   32 </span>  -- | Curva à esquerda e mantem o nível
+<span class="lineno">   33 </span>  | CurvaEsq
+<span class="lineno">   34 </span>  -- | Curva à direita e mantem o nível
+<span class="lineno">   35 </span>  | CurvaDir
+<span class="lineno">   36 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">   37 </span>
+<span class="lineno">   38 </span>-- | Mapa de um jogo, composto por um tabuleiro, uma posição inicial e uma altura inicial.
+<span class="lineno">   39 </span>data Mapa = Mapa (Posicao,Orientacao) Tabuleiro
+<span class="lineno">   40 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">   41 </span>
+<span class="lineno">   42 </span>-- | O tabuleiro do mapa, representado por uma matriz de 'Peca'.
+<span class="lineno">   43 </span>type Tabuleiro = [[Peca]]
+<span class="lineno">   44 </span>
+<span class="lineno">   45 </span>-- | Uma peça num 'Tabuleiro'. A altura atribuída é sempre a do ponto mais /baixo/ da peça.
+<span class="lineno">   46 </span>data Peca = Peca Tipo Altura
+<span class="lineno">   47 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="istickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="istickedoff"><span class="decl"><span class="istickedoff">Show</span></span></span></span>) 
+<span class="lineno">   48 </span>
+<span class="lineno">   49 </span>-- | Tipos de peças contidos num 'Tabuleiro'.
+<span class="lineno">   50 </span>data Tipo = Rampa Orientacao | Curva Orientacao | Recta | Lava
+<span class="lineno">   51 </span>  deriving (<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">   52 </span>
+<span class="lineno">   53 </span>-- | Posições num 'Tabuleiro'.
+<span class="lineno">   54 </span>type Posicao  = (Int,Int)
+<span class="lineno">   55 </span>-- | Dimensões de um 'Tabuleiro'.
+<span class="lineno">   56 </span>type Dimensao = (Int,Int)
+<span class="lineno">   57 </span>-- | Altura de uma peça num 'Tabuleiro'.
+<span class="lineno">   58 </span>type Altura = Int 
+<span class="lineno">   59 </span>
+<span class="lineno">   60 </span>-- | Orientações no mapa.
+<span class="lineno">   61 </span>data Orientacao = Norte | Este | Sul | Oeste
+<span class="lineno">   62 </span>  deriving (<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Enum</span></span></span></span></span></span></span></span></span></span></span></span>)
+<span class="lineno">   63 </span>-- | Ponto no mapa.
+<span class="lineno">   64 </span>type Ponto = (Double,Double)
+<span class="lineno">   65 </span>-- | Ângulo em graus.
+<span class="lineno">   66 </span>type Angulo = Double
+<span class="lineno">   67 </span>-- | Períodos de tempo.
+<span class="lineno">   68 </span>type Tempo = Double
+<span class="lineno">   69 </span>-- | Vectores de velocidade.
+<span class="lineno">   70 </span>type Velocidade = Ponto
+<span class="lineno">   71 </span>
+<span class="lineno">   72 </span>{- | 
+<span class="lineno">   73 </span>  O estado de um carro dentro de um 'Mapa'.
+<span class="lineno">   74 </span>  A direção da velocidade (movimento) /não/ é necessariamente a mesma da direção do carro.
+<span class="lineno">   75 </span>-}
+<span class="lineno">   76 </span>data Carro = Carro
+<span class="lineno">   77 </span>    { <span class="istickedoff"><span class="decl"><span class="istickedoff">posicao</span></span></span>    :: Ponto      -- ^ a posição atual do carro
+<span class="lineno">   78 </span>    , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">direcao</span></span></span>    :: Angulo     -- ^ a direção atual do carro
+<span class="lineno">   79 </span>    , <span class="istickedoff"><span class="decl"><span class="istickedoff">velocidade</span></span></span> :: Velocidade -- ^ a velocidade atual do carro
+<span class="lineno">   80 </span>    }
+<span class="lineno">   81 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="istickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">   82 </span>
+<span class="lineno">   83 </span>{- | Direção inicial na construção de um caminho.
+<span class="lineno">   84 </span>
+<span class="lineno">   85 </span>prop&gt; dirInit == Este
+<span class="lineno">   86 </span>-}
+<span class="lineno">   87 </span>dirInit :: Orientacao
+<span class="lineno">   88 </span><span class="decl"><span class="nottickedoff">dirInit = Este</span></span>
+<span class="lineno">   89 </span>
+<span class="lineno">   90 </span>{- | Altura inicial na construção de um caminho.
+<span class="lineno">   91 </span>
+<span class="lineno">   92 </span>prop&gt; altInit == 0
+<span class="lineno">   93 </span>-}
+<span class="lineno">   94 </span>altInit :: Altura
+<span class="lineno">   95 </span><span class="decl"><span class="nottickedoff">altInit = 0</span></span>
+<span class="lineno">   96 </span>
+<span class="lineno">   97 </span>{- | Altura da lava.
+<span class="lineno">   98 </span>
+<span class="lineno">   99 </span>prop&gt; altLava == 0
+<span class="lineno">  100 </span>-}
+<span class="lineno">  101 </span>altLava :: Altura
+<span class="lineno">  102 </span><span class="decl"><span class="istickedoff">altLava = 0</span></span>
+<span class="lineno">  103 </span>
+<span class="lineno">  104 </span>{- | Dado um caminho, calcula a dimensão do tabuleiro correspondente.
+<span class="lineno">  105 </span>
+<span class="lineno">  106 </span>&gt;&gt;&gt; dimensao [CurvaDir,CurvaDir,CurvaDir,CurvaDir]
+<span class="lineno">  107 </span>(4,4)
+<span class="lineno">  108 </span>-}
+<span class="lineno">  109 </span>dimensao :: Caminho -&gt; Dimensao
+<span class="lineno">  110 </span><span class="decl"><span class="nottickedoff">dimensao c = (2+m'+abs m+1,2+n'+abs n+1)</span>
+<span class="lineno">  111 </span><span class="spaces">  </span><span class="nottickedoff">where ((m,m'),(n,n')) = bB ((0,0),(0,0)) (0,0) dirInit c</span></span>
+<span class="lineno">  112 </span>        
+<span class="lineno">  113 </span>{- |
+<span class="lineno">  114 </span>Dado um caminho, calcula a sua posição inicial no tabuleiro correspondente.
+<span class="lineno">  115 </span>
+<span class="lineno">  116 </span>&gt;&gt;&gt; partida [CurvaDir,CurvaDir,CurvaDir,CurvaDir]
+<span class="lineno">  117 </span>(2,1)
+<span class="lineno">  118 </span>-}
+<span class="lineno">  119 </span>partida :: Caminho -&gt; Posicao
+<span class="lineno">  120 </span><span class="decl"><span class="nottickedoff">partida c = (1+abs m,1+abs n)</span>
+<span class="lineno">  121 </span><span class="spaces">  </span><span class="nottickedoff">where ((m,m'),(n,n')) = bB ((0,0),(0,0)) (0,0) dirInit c</span></span>
+<span class="lineno">  122 </span>
+<span class="lineno">  123 </span><span class="decl"><span class="nottickedoff">bB m i _ [] = up m i</span>
+<span class="lineno">  124 </span><span class="spaces"></span><span class="nottickedoff">bB m i d (s:c) = bB (up m i) (mx i d') d' c</span>
+<span class="lineno">  125 </span><span class="spaces">  </span><span class="nottickedoff">where d' = toEnum (((fromEnum d) + k) `mod` 4)</span>
+<span class="lineno">  126 </span><span class="spaces">        </span><span class="nottickedoff">k | s == CurvaDir = 1</span>
+<span class="lineno">  127 </span><span class="spaces">          </span><span class="nottickedoff">| s == CurvaEsq = (-1)</span>
+<span class="lineno">  128 </span><span class="spaces">          </span><span class="nottickedoff">| otherwise = 0</span></span>
+<span class="lineno">  129 </span><span class="decl"><span class="nottickedoff">up ((m,m'),(n,n')) (i,j) = ((min m i, max m' i), (min n j, max n' j))</span></span>
+<span class="lineno">  130 </span><span class="decl"><span class="nottickedoff">mx (x,y) d = (x+round (sin a),y-round (cos a))</span>
+<span class="lineno">  131 </span><span class="spaces">  </span><span class="nottickedoff">where a = ((toEnum.fromEnum) d)*(pi/2)</span></span>
+<span class="lineno">  132 </span>
+<span class="lineno">  133 </span>{- | 
+<span class="lineno">  134 </span>  O estado de um jogo dentro, incluindo o mapa e as suas propriedades e o estado dos vários jogadores.
+<span class="lineno">  135 </span>  Os campos 'carros', 'nitros' e 'historico' devem ter a mesma dimensão, o número de jogadores.
+<span class="lineno">  136 </span>-}
+<span class="lineno">  137 </span>data Jogo = Jogo 
+<span class="lineno">  138 </span>  { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">mapa</span></span></span>        :: Mapa         -- ^ o mapa do percurso
+<span class="lineno">  139 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">pista</span></span></span>       :: Propriedades -- ^ as propriedades do percurso
+<span class="lineno">  140 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">carros</span></span></span>      :: [Carro]      -- ^ o estado do carro de cada jogador
+<span class="lineno">  141 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nitros</span></span></span>      :: [Tempo]      -- ^ a quantidade de nitro disponível para cada jogador
+<span class="lineno">  142 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">historico</span></span></span>   :: [[Posicao]]  -- ^ o histórico de posições de cada jogador
+<span class="lineno">  143 </span>  }
+<span class="lineno">  144 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">  145 </span>
+<span class="lineno">  146 </span>-- | As propriedades físicas de um percurso.
+<span class="lineno">  147 </span>data Propriedades = Propriedades 
+<span class="lineno">  148 </span>  { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_atrito</span></span></span>    :: Double -- ^ o atrito do piso
+<span class="lineno">  149 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_pneus</span></span></span>     :: Double -- ^ o atrito dos pneus 
+<span class="lineno">  150 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_acel</span></span></span>      :: Double -- ^ a intensidade da aceleração
+<span class="lineno">  151 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_peso</span></span></span>      :: Double -- ^ o peso do carro
+<span class="lineno">  152 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_nitro</span></span></span>     :: Double -- ^ a intensidade do nitro
+<span class="lineno">  153 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">k_roda</span></span></span>      :: Double -- ^ a sensibilidade do guiador
+<span class="lineno">  154 </span>  }
+<span class="lineno">  155 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+<span class="lineno">  156 </span>
+<span class="lineno">  157 </span>-- | As ações que podem ser tomadas por cada jogador em cada instante.
+<span class="lineno">  158 </span>data Acao = Acao 
+<span class="lineno">  159 </span>  { <span class="nottickedoff"><span class="decl"><span class="nottickedoff">acelerar</span></span></span> :: Bool      -- ^ se está a acelerar
+<span class="lineno">  160 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">travar</span></span></span>   :: Bool      -- ^ se está a travar
+<span class="lineno">  161 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">esquerda</span></span></span> :: Bool      -- ^ se está a curvar para a esquerda
+<span class="lineno">  162 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">direita</span></span></span>  :: Bool      -- ^ se está a curvar para a direita
+<span class="lineno">  163 </span>  , <span class="nottickedoff"><span class="decl"><span class="nottickedoff">nitro</span></span></span>    :: Maybe Int -- ^ se o nitro está ativo em algum jogador
+<span class="lineno">  164 </span>  }
+<span class="lineno">  165 </span>  deriving (<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Eq</span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Read</span></span></span></span></span></span>,<span class="decl"><span class="nottickedoff"><span class="decl"><span class="nottickedoff">Show</span></span></span></span>)
+
+</pre>
+</body>
+</html>

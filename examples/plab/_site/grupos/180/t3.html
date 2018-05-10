@@ -1,0 +1,1302 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href=../../css/normalize.css>
+    <link rel="stylesheet" href=../../css/style.css>
+    <title>Tarefa 3</title>
+</head>
+
+<body>
+
+<p>Output:
+[1 of 5] Compiling LI11718          ( LI11718.hs, LI11718.o )
+[2 of 5] Compiling Tarefa1_2017li1g180 ( Tarefa1_2017li1g180.hs, Tarefa1_2017li1g180.o )
+[3 of 5] Compiling Tarefa2_2017li1g180 ( Tarefa2_2017li1g180.hs, Tarefa2_2017li1g180.o )
+[4 of 5] Compiling Tarefa3_2017li1g180 ( Tarefa3_2017li1g180.hs, Tarefa3_2017li1g180.o )
+[5 of 5] Compiling Main             ( RunT3.hs, RunT3.o )
+Linking RunT3 ...
+
+Errors:
+
+Exit Code: 0</p>
+    
+<div id="demo">
+
+<div id="tablediv" class="table-responsive-vertical shadow-z-1">
+<table id="table" class="table table-hover table-mc-light-blue">
+    <thead>
+        <tr>
+            
+                <th>(Tabuleiro,Tempo,Carro)</th>
+            
+            <th>Resultado</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/1/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (5.5,1.5), direcao = 0.0, velocidade = (0.9,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/2/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (5.5,2.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/3/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,1.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/4/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (5.5,1.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/5/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (3.5,1.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/6/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (5.5,1.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/7/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,1.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/8/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (13.4,1.5), direcao = 0.0, velocidade = (0.3,-0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/9/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (1.6,1.5), direcao = 0.0, velocidade = (-0.3,-0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/10/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Oeste) (-1),Peca (Curva Este) (-1),
+  Peca Lava 0,Peca (Curva Norte) 0,Peca (Curva Este) 0,
+  Peca Lava 0,Peca (Curva Norte) 1,Peca (Curva Este) 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Rampa Sul) 0,Peca Lava 0,
+  Peca (Curva Oeste) (-1),Peca (Rampa Este) (-1),
+  Peca (Curva Sul) 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Curva Sul) 1,Peca Recta 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca Recta 1,Peca (Curva Sul) 1,Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+......................
+..//<<\\..//\\..//\\..
+..\/..\\>>//\\>>//[]..
+..\\<<[]<<[]>>>>[]//..
+......................
+,1.2,Carro {posicao = (8.5,3.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/11/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Oeste) (-1),Peca (Curva Este) (-1),
+  Peca Lava 0,Peca (Curva Norte) 0,Peca (Curva Este) 0,
+  Peca Lava 0,Peca (Curva Norte) 1,Peca (Curva Este) 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Rampa Sul) 0,Peca Lava 0,
+  Peca (Curva Oeste) (-1),Peca (Rampa Este) (-1),
+  Peca (Curva Sul) 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Curva Sul) 1,Peca Recta 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca Recta 1,Peca (Curva Sul) 1,Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+......................
+..//<<\\..//\\..//\\..
+..\/..\\>>//\\>>//[]..
+..\\<<[]<<[]>>>>[]//..
+......................
+,1.2,Carro {posicao = (5.5,3.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/12/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Oeste) (-1),Peca (Curva Este) (-1),
+  Peca Lava 0,Peca (Curva Norte) 0,Peca (Curva Este) 0,
+  Peca Lava 0,Peca (Curva Norte) 1,Peca (Curva Este) 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Rampa Sul) 0,Peca Lava 0,
+  Peca (Curva Oeste) (-1),Peca (Rampa Este) (-1),
+  Peca (Curva Sul) 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Curva Sul) 1,Peca Recta 1,
+  Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca Recta 1,Peca (Curva Sul) 1,Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+......................
+..//<<\\..//\\..//\\..
+..\/..\\>>//\\>>//[]..
+..\\<<[]<<[]>>>>[]//..
+......................
+,1.2,Carro {posicao = (3.5,3.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/13/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (3.6,1.5), direcao = 0.0, velocidade = (-1.6,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/14/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (4.6,1.5), direcao = 0.0, velocidade = (-2.6,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/15/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (3.6,1.5), direcao = 0.0, velocidade = (-2.6,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/16/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,5.5,Carro {posicao = (12.5,1.2), direcao = 0.0, velocidade = (-2.1,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/17/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,1.5), direcao = 0.0, velocidade = (0.1,1.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/18/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,2.5), direcao = 0.0, velocidade = (0.1,1.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/19/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,2.5), direcao = 0.0, velocidade = (0.1,2.3)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/20/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (8.5,2.5), direcao = 0.0, velocidade = (0.1,3.3)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/21/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (5.5,1.5), direcao = 0.0, velocidade = (0.1,1.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/22/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (11.6,1.5), direcao = 0.0, velocidade = (2.1,0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/23/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (1.6,2.5), direcao = 0.0, velocidade = (-0.1,-1.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/24/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (12.5,1.5), direcao = 0.0, velocidade = (2.8,-0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/25/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (1.6,2.5), direcao = 0.0, velocidade = (-0.3,-0.1)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/26/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (10.5,1.5), direcao = 0.0, velocidade = (-0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/27/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (10.5,2.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/28/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (2.5,1.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/29/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (4.5,1.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/30/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (4.5,1.5), direcao = 0.0, velocidade = (-0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/31/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,2.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/32/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,2.5), direcao = 0.0, velocidade = (-0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/33/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,1.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/34/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,1.5), direcao = 0.0, velocidade = (-0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/35/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,2.5), direcao = 0.0, velocidade = (0.0,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/36/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,2.5), direcao = 0.0, velocidade = (0.1,0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+            <tr>
+                
+                <td class="datatext" data-title="arg">(<a href="../../grupos/180/t3/37/run.html">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Norte) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,
+  Peca (Rampa Oeste) (-1),Peca Recta (-1),
+  Peca (Rampa Este) (-1),Peca (Rampa Este) 0,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca (Curva Este) (-1),Peca Lava 0],
+ [Peca Lava 0,Peca (Curva Oeste) 0,
+  Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,
+  Peca (Rampa Este) 0,Peca Recta 1,
+  Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),
+  Peca Recta (-1),Peca (Rampa Oeste) (-2),
+  Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),
+  Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),
+  Peca Lava 0],
+ [Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,
+  Peca Lava 0,Peca Lava 0,Peca Lava 0]]</a>
+..............................
+..//>>[]<<[][]<<[]>>>><<<<\\..
+..\\>><<>>[]<<<<[]<<<<>>>>//..
+..............................
+,1.2,Carro {posicao = (9.5,1.5), direcao = 0.0, velocidade = (0.1,-0.9)})</td>
+                
+                <td class="hspec-failure" data-title="Resultado">failed to parse hspec output: </td>
+            </tr>
+        
+    </tbody>
+</table>
+
+</div>
+
+</body>
+
+</html>
