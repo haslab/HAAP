@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body><pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>reciprocal :: Int -&gt; (String, Int)
+<span class="lineno">    2 </span><span class="decl"><span class="istickedoff">reciprocal n | <span class="tickonlytrue">n &gt; 1</span> = ('0' : '.' : digits, recur)</span>
+<span class="lineno">    3 </span><span class="spaces">             </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">error</span></span>
+<span class="lineno">    4 </span><span class="spaces">                  </span><span class="istickedoff"><span class="nottickedoff">&quot;attempting to compute reciprocal of number &lt;= 1&quot;</span></span>
+<span class="lineno">    5 </span><span class="spaces">  </span><span class="istickedoff">where</span>
+<span class="lineno">    6 </span><span class="spaces">  </span><span class="istickedoff">(digits, recur) = divide n 1 []</span></span>
+<span class="lineno">    7 </span>divide :: Int -&gt; Int -&gt; [Int] -&gt; (String, Int)
+<span class="lineno">    8 </span><span class="decl"><span class="istickedoff">divide n c cs | c `elem` cs = ([], position c cs)</span>
+<span class="lineno">    9 </span><span class="spaces">              </span><span class="istickedoff">| <span class="tickonlyfalse">r == 0</span>      = <span class="nottickedoff">(show q, 0)</span></span>
+<span class="lineno">   10 </span><span class="spaces">              </span><span class="istickedoff">| <span class="tickonlytrue">r /= 0</span>      = (show q ++ digits, recur)</span>
+<span class="lineno">   11 </span><span class="spaces">  </span><span class="istickedoff">where</span>
+<span class="lineno">   12 </span><span class="spaces">  </span><span class="istickedoff">(q, r) = (c*10) `quotRem` n</span>
+<span class="lineno">   13 </span><span class="spaces">  </span><span class="istickedoff">(digits, recur) = divide n r (c:cs)</span></span>
+<span class="lineno">   14 </span>
+<span class="lineno">   15 </span>position :: Int -&gt; [Int] -&gt; Int
+<span class="lineno">   16 </span><span class="decl"><span class="istickedoff">position n (x:xs) | n==x      = 1</span>
+<span class="lineno">   17 </span><span class="spaces">                  </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = 1 + position n xs</span></span>
+<span class="lineno">   18 </span>
+<span class="lineno">   19 </span>showRecip :: Int -&gt; String
+<span class="lineno">   20 </span><span class="decl"><span class="istickedoff">showRecip n =</span>
+<span class="lineno">   21 </span><span class="spaces">  </span><span class="istickedoff">&quot;1/&quot; ++ show n ++ &quot; = &quot; ++</span>
+<span class="lineno">   22 </span><span class="spaces">  </span><span class="istickedoff">if <span class="tickonlyfalse">r==0</span> then <span class="nottickedoff">d</span> else take p d ++ &quot;(&quot; ++ drop p d ++ &quot;)&quot;</span>
+<span class="lineno">   23 </span><span class="spaces">  </span><span class="istickedoff">where</span>
+<span class="lineno">   24 </span><span class="spaces">  </span><span class="istickedoff">p = length d - r</span>
+<span class="lineno">   25 </span><span class="spaces">  </span><span class="istickedoff">(d, r) = reciprocal n</span></span>
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span><span class="decl"><span class="istickedoff">main = mainn 4</span></span>
+<span class="lineno">   28 </span><span class="decl"><span class="istickedoff">mainn 0 = return <span class="nottickedoff">()</span></span>
+<span class="lineno">   29 </span><span class="spaces"></span><span class="istickedoff">mainn n = do</span>
+<span class="lineno">   30 </span><span class="spaces">  </span><span class="istickedoff">number &lt;- readLn</span>
+<span class="lineno">   31 </span><span class="spaces">  </span><span class="istickedoff">putStrLn (showRecip number)</span>
+<span class="lineno">   32 </span><span class="spaces">  </span><span class="istickedoff">mainn (pred n)</span></span>
+
+</pre>
+</body>
+</html>
