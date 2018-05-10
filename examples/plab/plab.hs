@@ -594,7 +594,8 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         let gpath = sourcePath source
                         let gsrcpath = gpath </> "src"
-                        let ghcargs = def { ghcIO = def { ioSandbox = Just $ dirToRoot gsrcpath </> sandboxcfg } }
+                        let ghcioargs = ioargs { ioSandbox = Just $ dirToRoot gsrcpath </> sandboxcfg }
+                        let ghcargs = def { ghcIO = ghcioargs }
                         let ghtml = "grupos" </> show (plabGroupId g)
                         --let gdate = fmap svnDate info
                         
@@ -606,7 +607,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         let gt1html = (ghtml </> "t1.html")
                         (specT1path,hpcT1path) <- withHakyllP hp $ do
                             let hpcpath1 = Just (ghtml </> "hpcT1")
-                            let hpcT1 = HpcArgs (gsrcpath </> "RunT1") (ghcargs) (ioargs) Nothing hpcpath1 True
+                            let hpcT1 = HpcArgs (gsrcpath </> "RunT1") (ghcargs) (ghcioargs) Nothing hpcpath1 True
                             (specT1path,hpcT1path) <- useAndRunHpc hpcT1 gt1html $ \ghcT1res -> orErrorHakyllPage gt1html (hakyllRoute hp $ ghtml </> "t1.html") $ addMessageToError (pretty ghcT1res) $ do
                                 testsT1 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
                                         shCd $ gsrcpath
@@ -633,7 +634,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         let gt2html = (ghtml </> "t2.html")
                         (specT2path,hpcT2path) <- withHakyllP hp $ do
                             let hpcpath2 = Just (ghtml </> "hpcT2")
-                            let hpcT2 = HpcArgs (gsrcpath </> "RunT2") (ghcargs) (ioargs) Nothing hpcpath2 True
+                            let hpcT2 = HpcArgs (gsrcpath </> "RunT2") (ghcargs) (ghcioargs) Nothing hpcpath2 True
                             (specT2path,hpcT2path) <- useAndRunHpc hpcT2 gt2html $ \ghcT2res -> orErrorHakyllPage gt2html (hakyllRoute hp $ ghtml </> "t2.html") $ addMessageToError (pretty ghcT2res) $ do
                                 testsT2 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
                                         shCd $ gsrcpath
@@ -664,7 +665,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         let gt3html = (ghtml </> "t3.html")
                         (specT3path,hpcT3path) <- withHakyllP hp $ do
                             let hpcpath3 = Just (ghtml </> "hpcT3")
-                            let hpcT3 = HpcArgs (gsrcpath </> "RunT3") (ghcargs) (ioargs) Nothing hpcpath3 True
+                            let hpcT3 = HpcArgs (gsrcpath </> "RunT3") (ghcargs) (ghcioargs) Nothing hpcpath3 True
                             (specT3path,hpcT3path) <- useAndRunHpc hpcT3 gt3html $ \ghcT3res -> orErrorHakyllPage gt3html (hakyllRoute hp $ ghtml </> "t3.html") $ addMessageToError (pretty ghcT3res) $ do
                                 testsT3 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
                                         shCd $ gsrcpath
@@ -714,7 +715,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         let gt4html = (ghtml </> "t4.html")
                         (specT4path,hpcT4path) <- withHakyllP hp $ do
                             let hpcpath4 = Just (ghtml </> "hpcT4")
-                            let hpcT4 = HpcArgs (gsrcpath </> "RunT4") (ghcargs) (ioargs) Nothing hpcpath4 True
+                            let hpcT4 = HpcArgs (gsrcpath </> "RunT4") (ghcargs) (ghcioargs) Nothing hpcpath4 True
                             (specT4path,hpcT4path) <- useAndRunHpc hpcT4 gt4html $ \ghcT4res -> orErrorHakyllPage gt4html (hakyllRoute hp $ ghtml </> "t4.html") $ addMessageToError (pretty ghcT4res) $ do
                                 testsT4 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
                                         shCd $ gsrcpath
