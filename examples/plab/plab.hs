@@ -187,7 +187,7 @@ plab_Tasks = [t1,t2,t3,t4,t5,t6]
     mkTarefa i = HaapFile (mkLocal i) (mkRemote i) HaapTemplateFile
     mkLocal i = "oracle" </> "Tarefa" ++ show i ++ ".hs"
     mkRemote i = "src" </> "Tarefa" ++ show i ++ "_${group}.hs"
-    mkLib = HaapFile "oracle/PLab1718.hs" "src/PLab1718.hs" HaapLibraryFile
+    mkLib = HaapFile "oracle/LI11718.hs" "src/LI11718.hs" HaapLibraryFile
     mkMapas = HaapFile "oracle/Mapas.hs" "src/Mapas.hs" HaapLibraryFile
     mkRel1 = HaapFile "oracle/relatorio/calvin.jpg" "relatorio/calvin.jpg" HaapBinaryFile
     mkRel2 = HaapFile "oracle/relatorio/relatorio.tex" "relatorio/relatorio.tex" HaapBinaryFile
@@ -399,8 +399,8 @@ script = do
                 -- T6 pre-processing
                 tourneyplayers <- runHakyll False False hp0 $ forM groups $ \(p,_) -> orDo (\e -> return $ TourneyGroup (Left p,Just $ pretty e)) $ do
                     let modu = (groupModule p)
-                    let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg, ioTimeout = Just 120 }
-                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs }
+                    let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg,ioTimeout = Just 120 }
+                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIOArgs = tourneyioargs }
                     let (dir,path) = splitFileName (groupFile p)
                     iores <- orIOResult $ runBaseShWith (tourneyioargs) $ do
                         shCd dir

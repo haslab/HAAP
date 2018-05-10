@@ -38,7 +38,9 @@ RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN ghcjs-boot
 
-WORKDIR $HOME/HAAP
-RUN cabal install --ghcjs packages/codeworld-haap-api QuickCheck safe
+WORKDIR /
+RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api QuickCheck GenericPretty safe
+
+RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 
 
