@@ -1,0 +1,449 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<style type="text/css">
+span.lineno { color: white; background: #aaaaaa; border-right: solid white 12px }
+span.nottickedoff { background: yellow}
+span.istickedoff { background: white }
+span.tickonlyfalse { margin: -1px; border: 1px solid #f20913; background: #f20913 }
+span.tickonlytrue  { margin: -1px; border: 1px solid #60de51; background: #60de51 }
+span.funcount { font-size: small; color: orange; z-index: 2; position: absolute; right: 20 }
+span.decl { font-weight: bold }
+span.spaces    { background: white }
+</style>
+</head>
+<body><pre>
+<span class="decl"><span class="nottickedoff">never executed</span> <span class="tickonlytrue">always true</span> <span class="tickonlyfalse">always false</span></span>
+</pre>
+<pre>
+<span class="lineno">    1 </span>{-# LANGUAGE PatternGuards #-}
+<span class="lineno">    2 </span>
+<span class="lineno">    3 </span>module Tarefa3_2017li1g183 where
+<span class="lineno">    4 </span>
+<span class="lineno">    5 </span>import LI11718
+<span class="lineno">    6 </span>import Tarefa2_2017li1g183
+<span class="lineno">    7 </span>import Test.QuickCheck.Gen
+<span class="lineno">    8 </span>import Data.List
+<span class="lineno">    9 </span>import Data.Maybe
+<span class="lineno">   10 </span>import Safe
+<span class="lineno">   11 </span>
+<span class="lineno">   12 </span>testesT3 :: [(Tabuleiro,Tempo,Carro)]
+<span class="lineno">   13 </span><span class="decl"><span class="istickedoff">testesT3 = unitTests</span></span>
+<span class="lineno">   14 </span>
+<span class="lineno">   15 </span>randomizeCarro :: Tabuleiro -&gt; Double -&gt; Carro -&gt; Gen Carro
+<span class="lineno">   16 </span><span class="decl"><span class="nottickedoff">randomizeCarro tab delta c = do</span>
+<span class="lineno">   17 </span><span class="spaces">    </span><span class="nottickedoff">suchThat genC (validaCarro tab)</span>
+<span class="lineno">   18 </span><span class="spaces">  </span><span class="nottickedoff">where</span>
+<span class="lineno">   19 </span><span class="spaces">    </span><span class="nottickedoff">(x,y) = posicao c</span>
+<span class="lineno">   20 </span><span class="spaces">    </span><span class="nottickedoff">genC = do</span>
+<span class="lineno">   21 </span><span class="spaces">        </span><span class="nottickedoff">dx &lt;- choose (0,delta)</span>
+<span class="lineno">   22 </span><span class="spaces">        </span><span class="nottickedoff">dy &lt;- choose (0,delta)</span>
+<span class="lineno">   23 </span><span class="spaces">        </span><span class="nottickedoff">let x' = x + dx</span>
+<span class="lineno">   24 </span><span class="spaces">        </span><span class="nottickedoff">let y' = y + dy</span>
+<span class="lineno">   25 </span><span class="spaces">        </span><span class="nottickedoff">return c { posicao = (x',y') }</span></span>
+<span class="lineno">   26 </span>
+<span class="lineno">   27 </span>ranksT3 :: [(Tabuleiro,Tempo,Carro)]
+<span class="lineno">   28 </span><span class="decl"><span class="nottickedoff">ranksT3 = unitTests</span></span>
+<span class="lineno">   29 </span>
+<span class="lineno">   30 </span>-- Nuno/Hugo's simpler version
+<span class="lineno">   31 </span>-- ranksT3Nuno :: [(Tabuleiro,Tempo,Carro)]
+<span class="lineno">   32 </span>-- ranksT3Nuno = [(tab1,5,carro1)]
+<span class="lineno">   33 </span>--     where
+<span class="lineno">   34 </span>--     tab1 = [[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]
+<span class="lineno">   35 </span>--                           ,[Peca Lava altLava, Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2, Peca Lava altLava]
+<span class="lineno">   36 </span>--                           ,[Peca Lava altLava, Peca Recta 2,Peca Lava altLava,Peca Recta 2, Peca Lava altLava]
+<span class="lineno">   37 </span>--                           ,[Peca Lava altLava, Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2, Peca Lava altLava]
+<span class="lineno">   38 </span>--                           ,[Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava, Peca Lava altLava]
+<span class="lineno">   39 </span>--                           ]
+<span class="lineno">   40 </span>--     carro1 = Carro (3,3) 30 (2,1.5)
+<span class="lineno">   41 </span>
+<span class="lineno">   42 </span>solutionsT3 :: [((Tabuleiro,Tempo,Carro),Maybe Carro)]
+<span class="lineno">   43 </span><span class="decl"><span class="nottickedoff">solutionsT3 = zip ranksT3 (map aux ranksT3)</span>
+<span class="lineno">   44 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
+<span class="lineno">   45 </span><span class="spaces">    </span><span class="nottickedoff">aux x@(tab,tempo,carro) = movimenta tab tempo carro</span></span>
+<span class="lineno">   46 </span>
+<span class="lineno">   47 </span>compareT3Solutions :: Double -&gt; Maybe Carro -&gt; Maybe Carro -&gt; Double
+<span class="lineno">   48 </span><span class="decl"><span class="nottickedoff">compareT3Solutions distance Nothing Nothing = 100</span>
+<span class="lineno">   49 </span><span class="spaces"></span><span class="nottickedoff">compareT3Solutions distance Nothing (Just y) = 0</span>
+<span class="lineno">   50 </span><span class="spaces"></span><span class="nottickedoff">compareT3Solutions distance (Just x) Nothing = 0</span>
+<span class="lineno">   51 </span><span class="spaces"></span><span class="nottickedoff">compareT3Solutions distance (Just x) (Just y) = (pos+dir+vel) / 3</span>
+<span class="lineno">   52 </span><span class="spaces">    </span><span class="nottickedoff">where</span>
+<span class="lineno">   53 </span><span class="spaces">    </span><span class="nottickedoff">pos = if distance == 0 then 100 else (1 - dist (posicao x) (posicao y) / distance) * 100</span>
+<span class="lineno">   54 </span><span class="spaces">    </span><span class="nottickedoff">dir = (1 - (normAngulo (abs (direcao x - direcao y))) / 360) * 100</span>
+<span class="lineno">   55 </span><span class="spaces">    </span><span class="nottickedoff">vel = if distance == 0 then 100 else (1 - dist (velocidade x) (velocidade y) / distance) * 100</span></span>
+<span class="lineno">   56 </span>
+<span class="lineno">   57 </span><span class="decl"><span class="nottickedoff">normAngulo x = if x &gt;= 360 then normAngulo (x - 360) else x</span></span>
+<span class="lineno">   58 </span>
+<span class="lineno">   59 </span>genTempo :: Gen Tempo
+<span class="lineno">   60 </span><span class="decl"><span class="nottickedoff">genTempo = choose (0,30)</span></span>
+<span class="lineno">   61 </span>
+<span class="lineno">   62 </span>validaCarro :: Tabuleiro -&gt; Carro -&gt; Bool
+<span class="lineno">   63 </span><span class="decl"><span class="nottickedoff">validaCarro tab carro = (not $ derrete tab (posicao carro))</span></span>
+<span class="lineno">   64 </span>
+<span class="lineno">   65 </span><span class="decl"><span class="istickedoff">ponto2Pos (i,j) = (round i, round j)</span></span>
+<span class="lineno">   66 </span>
+<span class="lineno">   67 </span>derrete :: Tabuleiro -&gt; Ponto -&gt; Bool
+<span class="lineno">   68 </span><span class="decl"><span class="nottickedoff">derrete t p = derrete' tp a</span>
+<span class="lineno">   69 </span><span class="spaces">  </span><span class="nottickedoff">where</span>
+<span class="lineno">   70 </span><span class="spaces">  </span><span class="nottickedoff">(i,j) = ponto2Pos p</span>
+<span class="lineno">   71 </span><span class="spaces">  </span><span class="nottickedoff">a = denorm p (i,j)</span>
+<span class="lineno">   72 </span><span class="spaces">  </span><span class="nottickedoff">Peca tp _ = (atNote &quot;derrete&quot; (atNote &quot;derrete&quot; t j) i)</span>
+<span class="lineno">   73 </span><span class="spaces">  </span><span class="nottickedoff">derrete' :: Tipo -&gt; Ponto -&gt; Bool </span>
+<span class="lineno">   74 </span><span class="spaces">  </span><span class="nottickedoff">derrete' Lava _ = True</span>
+<span class="lineno">   75 </span><span class="spaces">  </span><span class="nottickedoff">-- hpacheco: mudei para incluir parede</span>
+<span class="lineno">   76 </span><span class="spaces">  </span><span class="nottickedoff">derrete' (Curva Norte) (x,y) = x &lt; (1-y)</span>
+<span class="lineno">   77 </span><span class="spaces">  </span><span class="nottickedoff">derrete' (Curva Este) (x,y) = x &gt; y</span>
+<span class="lineno">   78 </span><span class="spaces">  </span><span class="nottickedoff">derrete' (Curva Sul) (x,y) = x &gt; (1-y)</span>
+<span class="lineno">   79 </span><span class="spaces">  </span><span class="nottickedoff">derrete' (Curva Oeste) (x,y) = x &lt; y</span>
+<span class="lineno">   80 </span><span class="spaces">  </span><span class="nottickedoff">derrete' _ _  = False</span></span>
+<span class="lineno">   81 </span>
+<span class="lineno">   82 </span>movimenta :: Tabuleiro -&gt; Tempo -&gt; Carro -&gt; Maybe Carro
+<span class="lineno">   83 </span><span class="decl"><span class="istickedoff">movimenta m t c = case (colideLocal m v (a,b) i) of</span>
+<span class="lineno">   84 </span><span class="spaces">                  </span><span class="istickedoff">Nothing -&gt; Nothing</span>
+<span class="lineno">   85 </span><span class="spaces">                  </span><span class="istickedoff">Just (p',v') -&gt; Just $ c { posicao = p', velocidade = v' }</span>
+<span class="lineno">   86 </span><span class="spaces">  </span><span class="istickedoff">where a = posicao c</span>
+<span class="lineno">   87 </span><span class="spaces">        </span><span class="istickedoff">v = velocidade c</span>
+<span class="lineno">   88 </span><span class="spaces">        </span><span class="istickedoff">b = a .+. (t .*. v)</span>
+<span class="lineno">   89 </span><span class="spaces">        </span><span class="istickedoff">i = ponto2Pos a</span></span>
+<span class="lineno">   90 </span>
+<span class="lineno">   91 </span>bounce :: (Double,Double) -&gt; (Double,Double) -&gt; (Double,Double)
+<span class="lineno">   92 </span><span class="decl"><span class="istickedoff">bounce (d,a1) (1,a2) = componentsToArrow $ (arrowToComponents (d,a1)) .+. (-x,-y)</span>
+<span class="lineno">   93 </span><span class="spaces">    </span><span class="istickedoff">where dp = 2 * (arrowToComponents (d,a1) .$. arrowToComponents (1,a2))</span>
+<span class="lineno">   94 </span><span class="spaces">          </span><span class="istickedoff">(x,y) = dp .*. (arrowToComponents (1,a2))</span></span>
+<span class="lineno">   95 </span>
+<span class="lineno">   96 </span>colideLocal :: Tabuleiro -&gt; Velocidade -&gt; (Ponto,Ponto) -&gt; Posicao -&gt; Maybe (Ponto,Velocidade)
+<span class="lineno">   97 </span><span class="decl"><span class="istickedoff">colideLocal e v ab ij = case colideLocalAcc [] e v ab ij of</span>
+<span class="lineno">   98 </span><span class="spaces">                          </span><span class="istickedoff">(l,Just v) -&gt; Just (last l,v)</span>
+<span class="lineno">   99 </span><span class="spaces">                          </span><span class="istickedoff">(_,Nothing) -&gt; Nothing</span></span>
+<span class="lineno">  100 </span>
+<span class="lineno">  101 </span>colideLocalAcc :: [Ponto] -&gt; Tabuleiro -&gt; Velocidade -&gt; (Ponto,Ponto) -&gt; Posicao -&gt; ([Ponto],Maybe Velocidade)
+<span class="lineno">  102 </span><span class="decl"><span class="istickedoff">colideLocalAcc ps m v (a,b) (i,j) | morto = (<span class="nottickedoff">ps++[a,b]</span>,Nothing)</span>
+<span class="lineno">  103 </span><span class="spaces">                                  </span><span class="istickedoff">| <span class="tickonlyfalse">colideInterno</span> = <span class="nottickedoff">colideLocalAcc (ps++[a]) m iVel iPos (i+1,j)</span>  -- se houverem colisões internas (diagonais), da prioridade e volta a aplicar novo vector</span>
+<span class="lineno">  104 </span><span class="spaces">                                  </span><span class="istickedoff">| dentroPeca (<span class="nottickedoff">a</span>,b) (i,j) <span class="nottickedoff">g</span> = (ps++[<span class="nottickedoff">a</span>,b],Just v)                    -- caso contrario, se estiver dentro da peça pode parar</span>
+<span class="lineno">  105 </span><span class="spaces">                                  </span><span class="istickedoff">| colideExterno = colideLocalAcc (ps++[<span class="nottickedoff">a</span>]) m eVel ePos (i,j)  -- se passar para fora da peça mas houver parede, colide na parede e volta a aplicar novo vector</span>
+<span class="lineno">  106 </span><span class="spaces">                                  </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = colideLocalAcc (ps++[<span class="nottickedoff">a</span>]) m v (aPos,b) ij'       -- se passar para fora da peça mas não houver parede, chama na peça seguinte</span>
+<span class="lineno">  107 </span><span class="spaces">  </span><span class="istickedoff">where (_,g) = <span class="nottickedoff">componentsToArrow (b.-.a)</span></span>
+<span class="lineno">  108 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  109 </span><span class="spaces">        </span><span class="istickedoff">morto = (isJust int &amp;&amp; isNothing (fromJust int)) || (colideExterno &amp;&amp; not (fromJust $ temParede m (i,j) (fromJust ext)))</span>
+<span class="lineno">  110 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  111 </span><span class="spaces">        </span><span class="istickedoff">int = colisaoInterna (atNote <span class="nottickedoff">&quot;colideLocalAcc&quot;</span> (atNote <span class="nottickedoff">&quot;colideLocalAcc&quot;</span> m j) i) (i,j) (a,b)                            </span>
+<span class="lineno">  112 </span><span class="spaces">        </span><span class="istickedoff">colideInterno = isJust int &amp;&amp; <span class="nottickedoff">isJust (fromJust int) &amp;&amp; colisaoRelevante (a,b) (fromJust (fromJust int))</span></span>
+<span class="lineno">  113 </span><span class="spaces">        </span><span class="istickedoff">(iPos,iVel) = <span class="nottickedoff">inv v (a,b) (fromJust int)</span> </span>
+<span class="lineno">  114 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  115 </span><span class="spaces">        </span><span class="istickedoff">ext = atravessaOnde (i,j) (a,b)    </span>
+<span class="lineno">  116 </span><span class="spaces">        </span><span class="istickedoff">colideExterno = isJust ext &amp;&amp; (isJust . temParede m (i,j)) (fromJust ext)</span>
+<span class="lineno">  117 </span><span class="spaces">        </span><span class="istickedoff">(ePos,eVel) = inv v (<span class="nottickedoff">a</span>,b) (Just (norm (fst (fromJust ext)) (i,j),snd (fromJust ext)))</span>
+<span class="lineno">  118 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  119 </span><span class="spaces">        </span><span class="istickedoff">(aPos,aVel) = (norm (fst (fromJust ext)) (i,j), snd (fromJust ext))</span>
+<span class="lineno">  120 </span><span class="spaces">        </span><span class="istickedoff">ij' = atravessa aVel (i,j)</span></span>  
+<span class="lineno">  121 </span>
+<span class="lineno">  122 </span>
+<span class="lineno">  123 </span><span class="decl"><span class="istickedoff">norm (x,y) (i,j) = (x+toEnum i,y+toEnum j)</span></span>
+<span class="lineno">  124 </span><span class="decl"><span class="istickedoff">denorm (x,y) (i,j) = (x-toEnum i,y-toEnum j)</span></span>
+<span class="lineno">  125 </span>
+<span class="lineno">  126 </span>-- dada uma velocidade e um deslocamento, inverte ambos dada uma colisão
+<span class="lineno">  127 </span>inv :: Velocidade -&gt; (Ponto,Ponto) -&gt; Maybe (Ponto,Double) -&gt; ((Ponto,Ponto),Velocidade)
+<span class="lineno">  128 </span><span class="decl"><span class="istickedoff">inv v ab Nothing = <span class="nottickedoff">(ab,v)</span></span>
+<span class="lineno">  129 </span><span class="spaces"></span><span class="istickedoff">inv v ab (Just (c,g)) = ((c,d),arrowToComponents (vd,v'))</span>
+<span class="lineno">  130 </span><span class="spaces">  </span><span class="istickedoff">where (_,d,v') = inverte ab c g</span>
+<span class="lineno">  131 </span><span class="spaces">        </span><span class="istickedoff">(vd,_) = componentsToArrow v</span></span>
+<span class="lineno">  132 </span>
+<span class="lineno">  133 </span>inverte :: (Ponto,Ponto) -&gt; Ponto -&gt; Double -&gt; (Ponto,Ponto,Double)
+<span class="lineno">  134 </span><span class="decl"><span class="istickedoff">inverte (a,b) c g = (<span class="nottickedoff">c</span>,d,v')</span>
+<span class="lineno">  135 </span><span class="spaces">  </span><span class="istickedoff">where (z,v') = bounce (componentsToArrow (b .-. c)) (1,g)</span>
+<span class="lineno">  136 </span><span class="spaces">        </span><span class="istickedoff">d = c .+. arrowToComponents (z,v')</span></span>
+<span class="lineno">  137 </span>
+<span class="lineno">  138 </span>-- dada uma peça e um segmento (relativo à peça), detecta colisoes e devolve angulo da normal
+<span class="lineno">  139 </span>-- colisões internas apenas acontecem em diagonais e no maximo uma
+<span class="lineno">  140 </span>colisaoInterna :: Peca -&gt; Posicao -&gt; (Ponto,Ponto) -&gt; Maybe (Maybe (Ponto,Double))
+<span class="lineno">  141 </span><span class="decl"><span class="istickedoff">colisaoInterna (Peca (Curva d) al) ij (a,b) | <span class="tickonlytrue">d == Norte || d == Sul</span> = f (intersecta ab ((1,0),(0,1))) <span class="nottickedoff">(135 + dlt)</span></span>
+<span class="lineno">  142 </span><span class="spaces">                                            </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">f (intersecta ab ((0,0),(1,1))) (45 + dlt)</span></span>
+<span class="lineno">  143 </span><span class="spaces">  </span><span class="istickedoff">where f :: Maybe Ponto -&gt; Double -&gt; Maybe (Maybe (Ponto,Double))</span>
+<span class="lineno">  144 </span><span class="spaces">        </span><span class="istickedoff">f Nothing _ = Nothing</span>
+<span class="lineno">  145 </span><span class="spaces">        </span><span class="istickedoff">f (Just a) b | <span class="tickonlyfalse">al &lt; altLava</span> = <span class="nottickedoff">Just $ Just (norm a ij,b)</span></span>
+<span class="lineno">  146 </span><span class="spaces">                     </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Just Nothing</span>
+<span class="lineno">  147 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">dlt = if d == Norte || d == Este then 180 else 0</span></span>
+<span class="lineno">  148 </span><span class="spaces">        </span><span class="istickedoff">ab = (denorm a ij, denorm b ij)</span>
+<span class="lineno">  149 </span><span class="spaces"></span><span class="istickedoff">colisaoInterna _ _ _ = Nothing</span></span>
+<span class="lineno">  150 </span>
+<span class="lineno">  151 </span>-- se o movimento mantem-se dentro da peça
+<span class="lineno">  152 </span>dentroPeca :: (Ponto,Ponto) -&gt; Posicao -&gt; Double -&gt; Bool
+<span class="lineno">  153 </span><span class="decl"><span class="istickedoff">dentroPeca (a,b) (i,j) g = belongs b</span>
+<span class="lineno">  154 </span><span class="spaces">  </span><span class="istickedoff">where belongs (x,y) = (x == toEnum i+1 || floor x == i) &amp;&amp; (floor y == j || y == toEnum j+1)</span></span>
+<span class="lineno">  155 </span>
+<span class="lineno">  156 </span>-- dado um segmento (relativo à peça), calcula pontos de interceção e angulos das normais
+<span class="lineno">  157 </span>-- entre 0 e 2 no caso extremo (segmento que começa em cima da linha e atravessa outra)
+<span class="lineno">  158 </span>atravessaOnde :: Posicao -&gt; (Ponto,Ponto) -&gt; Maybe (Ponto, Double)
+<span class="lineno">  159 </span><span class="decl"><span class="istickedoff">atravessaOnde ij (x,y) | null rel = Nothing</span>
+<span class="lineno">  160 </span><span class="spaces">                       </span><span class="istickedoff">| <span class="tickonlytrue">length rel == 1</span> = Just (head rel)</span>
+<span class="lineno">  161 </span><span class="spaces">                       </span><span class="istickedoff">| <span class="nottickedoff">otherwise</span> = <span class="nottickedoff">Just (last rel)</span> --error $ &quot;Duas travessias: &quot;++(show rel)</span>
+<span class="lineno">  162 </span><span class="spaces">  </span><span class="istickedoff">where rel = filter (colisaoRelevante (x,y)) $ normalize $ zip is [0,270,90,180]</span>
+<span class="lineno">  163 </span><span class="spaces">        </span><span class="istickedoff">is = [intersecta xy ((i,i),(toEnum j,toEnum $ (j+1)`mod`2)) | i &lt;- [0,1], j &lt;- [0,1]]</span>
+<span class="lineno">  164 </span><span class="spaces">        </span><span class="istickedoff">normalize = catMaybes . map (\(a,b) -&gt; if (isJust a) then Just (fromJust a,b) else Nothing)</span>
+<span class="lineno">  165 </span><span class="spaces">        </span><span class="istickedoff">xy = (denorm x ij, denorm y ij)</span></span>
+<span class="lineno">  166 </span>
+<span class="lineno">  167 </span>-- para uma peça e uma aresta, testa se vai haver colisão
+<span class="lineno">  168 </span>temParede :: Tabuleiro -&gt; Posicao -&gt; (Ponto,Double) -&gt; Maybe Bool
+<span class="lineno">  169 </span><span class="decl"><span class="istickedoff">temParede m (i,j) c | t == Lava = Just (a1 &lt; altLava)</span>
+<span class="lineno">  170 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">snd c == 270 &amp;&amp; (t == Curva <span class="nottickedoff">Sul</span> || t == Curva <span class="nottickedoff">Oeste</span>)</span> = <span class="nottickedoff">Just (a1 &lt; altLava)</span></span>
+<span class="lineno">  171 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">snd c == 180 &amp;&amp; <span class="nottickedoff">(t == Curva Norte || t == Curva Oeste)</span></span> = <span class="nottickedoff">Just (a1 &lt; altLava)</span></span>
+<span class="lineno">  172 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">snd c == 90 &amp;&amp; (t == Curva <span class="nottickedoff">Norte</span> || t == Curva <span class="nottickedoff">Este</span>)</span> = <span class="nottickedoff">Just (a1 &lt; altLava)</span></span>
+<span class="lineno">  173 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">snd c == 0 &amp;&amp; (t == Curva Sul || t == Curva Este)</span> = <span class="nottickedoff">Just (a1 &lt; altLava)</span></span>
+<span class="lineno">  174 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">middle &amp;&amp; <span class="nottickedoff">mwall t0 (fst c) &amp;&amp; aa &gt; aa'</span></span> = <span class="nottickedoff">Just True</span></span>
+<span class="lineno">  175 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">middle &amp;&amp; <span class="nottickedoff">mfall t0 (fst c) &amp;&amp; aa &lt; aa'</span></span> = <span class="nottickedoff">Just False</span>                    </span>
+<span class="lineno">  176 </span><span class="spaces">                    </span><span class="istickedoff">| a2 &gt; a1 = Just True</span>
+<span class="lineno">  177 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlyfalse">a2 &lt; a1</span> = <span class="nottickedoff">Just False</span></span>
+<span class="lineno">  178 </span><span class="spaces">                    </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = Nothing</span>
+<span class="lineno">  179 </span><span class="spaces">  </span><span class="istickedoff">where (i',j') = atravessa (snd c) (i,j)</span>
+<span class="lineno">  180 </span><span class="spaces">        </span><span class="istickedoff">Peca t aa = atNote <span class="nottickedoff">&quot;temParede&quot;</span> (atNote <span class="nottickedoff">&quot;temParede&quot;</span> m j') i'</span>
+<span class="lineno">  181 </span><span class="spaces">        </span><span class="istickedoff">Peca t0 aa' = atNote <span class="nottickedoff">&quot;temParede&quot;</span> (atNote <span class="nottickedoff">&quot;temParede&quot;</span> m j) i</span>
+<span class="lineno">  182 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">isR (Rampa _) = True</span></span>
+<span class="lineno">  183 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">isR _ = False</span></span>
+<span class="lineno">  184 </span><span class="spaces">        </span><span class="istickedoff">(a1,a2) = normAlturas (atNote <span class="nottickedoff">&quot;temParede&quot;</span> (atNote <span class="nottickedoff">&quot;temParede&quot;</span> m j) i) (atNote <span class="nottickedoff">&quot;temParede&quot;</span> (atNote <span class="nottickedoff">&quot;temParede&quot;</span> m j') i')</span>
+<span class="lineno">  185 </span><span class="spaces">        </span><span class="istickedoff">middle = case t of (Rampa x) -&gt; t0 == (Rampa (toEnum (((fromEnum x) + 2) `mod` 4))) &amp;&amp; (abs $ aa-aa') == 1</span>
+<span class="lineno">  186 </span><span class="spaces">                           </span><span class="istickedoff">otherwise -&gt; False</span>
+<span class="lineno">  187 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">mwall (Rampa Oeste) (x,y) = x &gt;= 0.5</span></span>
+<span class="lineno">  188 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">mwall (Rampa Este) (x,y) = x &lt;= 0.5</span></span>
+<span class="lineno">  189 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">mwall (Rampa Norte) (x,y) = y &gt;= 0.5</span></span>
+<span class="lineno">  190 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">mwall (Rampa Sul) (x,y) = y &lt;= 0.5</span></span>
+<span class="lineno">  191 </span><span class="spaces">        </span><span class="istickedoff"><span class="nottickedoff">mfall r p = not $ mwall r p</span></span></span>
+<span class="lineno">  192 </span>        
+<span class="lineno">  193 </span>normAlturas :: Peca -&gt; Peca -&gt; (Altura,Altura)
+<span class="lineno">  194 </span><span class="decl"><span class="istickedoff">normAlturas (Peca (Rampa _) a1) p@(Peca _ a2) | a2 &gt; a1 = normAlturas (Peca Recta (a1+1)) p</span>
+<span class="lineno">  195 </span><span class="spaces">                                              </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = normAlturas (Peca Recta a1) p</span>
+<span class="lineno">  196 </span><span class="spaces"></span><span class="istickedoff">normAlturas p@(Peca _ a1) (Peca (Rampa _) a2) | a2 &lt; a1 = normAlturas p (Peca Recta (a2+1))</span>
+<span class="lineno">  197 </span><span class="spaces">                                              </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = normAlturas p (Peca Recta a2)</span>
+<span class="lineno">  198 </span><span class="spaces"></span><span class="istickedoff">normAlturas (Peca _ a1) (Peca _ a2) = (a1,a2)</span></span>
+<span class="lineno">  199 </span> 
+<span class="lineno">  200 </span>-- dado o angulo de travessia, da a nova posiçao
+<span class="lineno">  201 </span>atravessa :: Double -&gt; Posicao -&gt; Posicao
+<span class="lineno">  202 </span><span class="decl"><span class="istickedoff">atravessa 270 (i,j) = (i,j-1)</span>
+<span class="lineno">  203 </span><span class="spaces"></span><span class="istickedoff">atravessa 90  (i,j) = (i,j+1)</span>
+<span class="lineno">  204 </span><span class="spaces"></span><span class="istickedoff">atravessa 0   (i,j) = (i-1,j)</span>
+<span class="lineno">  205 </span><span class="spaces"></span><span class="istickedoff">atravessa 180 (i,j) = <span class="nottickedoff">(i+1,j)</span></span></span>
+<span class="lineno">  206 </span>
+<span class="lineno">  207 </span>-- dado o deslocamento e o ponto de colisão com o angulo da normal, testa de é relevante
+<span class="lineno">  208 </span>-- é relevante se a diferença de angulos &gt; 90º
+<span class="lineno">  209 </span>colisaoRelevante :: (Ponto,Ponto) -&gt; (Ponto,Double) -&gt; Bool
+<span class="lineno">  210 </span><span class="decl"><span class="istickedoff">colisaoRelevante ((a1,a2),(b1,b2)) ((x,y),a) = diff &gt; 90 &amp;&amp; diff &lt; 270 </span>
+<span class="lineno">  211 </span><span class="spaces">  </span><span class="istickedoff">where (_,a') = componentsToArrow (b1-a1,b2-a2)</span>
+<span class="lineno">  212 </span><span class="spaces">        </span><span class="istickedoff">diff = f (a-a')</span>
+<span class="lineno">  213 </span><span class="spaces">        </span><span class="istickedoff">f x | x &lt; 0 = f (x+360)</span>
+<span class="lineno">  214 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlyfalse">x &gt; 360</span> = <span class="nottickedoff">f (x-360)</span></span>
+<span class="lineno">  215 </span><span class="spaces">            </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span> = x</span></span>
+<span class="lineno">  216 </span>
+<span class="lineno">  217 </span>
+<span class="lineno">  218 </span>-- geometry
+<span class="lineno">  219 </span>
+<span class="lineno">  220 </span>-- copiado do Gloss para Double
+<span class="lineno">  221 </span>intersecta :: (Ponto,Ponto) -&gt; (Ponto,Ponto) -&gt; Maybe Ponto
+<span class="lineno">  222 </span><span class="decl"><span class="istickedoff">intersecta (p1,p2) (p3,p4) | Just p0 &lt;- intersectaL p1 p2 p3 p4</span>
+<span class="lineno">  223 </span><span class="spaces">                           </span><span class="istickedoff">, t12   &lt;- closestPontoOnL p1 p2 p0</span>
+<span class="lineno">  224 </span><span class="spaces">                           </span><span class="istickedoff">, t23   &lt;- closestPontoOnL p3 p4 p0</span>
+<span class="lineno">  225 </span><span class="spaces">                           </span><span class="istickedoff">, t12 &gt;= 0 &amp;&amp; t12 &lt;= 1</span>
+<span class="lineno">  226 </span><span class="spaces">                           </span><span class="istickedoff">, t23 &gt;= 0 &amp;&amp; t23 &lt;= 1</span>
+<span class="lineno">  227 </span><span class="spaces">                           </span><span class="istickedoff">= Just p0</span>
+<span class="lineno">  228 </span><span class="spaces">                           </span><span class="istickedoff">| <span class="tickonlytrue">otherwise</span></span>
+<span class="lineno">  229 </span><span class="spaces">                           </span><span class="istickedoff">= Nothing</span></span>
+<span class="lineno">  230 </span>
+<span class="lineno">  231 </span>-- copiado do Gloss para Double
+<span class="lineno">  232 </span>intersectaL :: Ponto -&gt; Ponto -&gt; Ponto -&gt; Ponto -&gt; Maybe Ponto
+<span class="lineno">  233 </span><span class="decl"><span class="istickedoff">intersectaL (x1, y1) (x2, y2) (x3, y3) (x4, y4)</span>
+<span class="lineno">  234 </span><span class="spaces"> </span><span class="istickedoff">= let  dx12  = x1 - x2</span>
+<span class="lineno">  235 </span><span class="spaces">        </span><span class="istickedoff">dx34  = x3 - x4</span>
+<span class="lineno">  236 </span><span class="spaces">        </span><span class="istickedoff">dy12  = y1 - y2</span>
+<span class="lineno">  237 </span><span class="spaces">        </span><span class="istickedoff">dy34  = y3 - y4</span>
+<span class="lineno">  238 </span><span class="spaces">  </span><span class="istickedoff"></span>
+<span class="lineno">  239 </span><span class="spaces">        </span><span class="istickedoff">den = dx12 * dy34  - dy12 * dx34</span>
+<span class="lineno">  240 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  241 </span><span class="spaces">    </span><span class="istickedoff">in if den == 0</span>
+<span class="lineno">  242 </span><span class="spaces">       </span><span class="istickedoff">then Nothing</span>
+<span class="lineno">  243 </span><span class="spaces">       </span><span class="istickedoff">else let det12 = x1*y2 - y1*x2 </span>
+<span class="lineno">  244 </span><span class="spaces">                </span><span class="istickedoff">det34 = x3*y4 - y3*x4 </span>
+<span class="lineno">  245 </span><span class="spaces">                </span><span class="istickedoff">numx  = det12 * dx34 - dx12 * det34</span>
+<span class="lineno">  246 </span><span class="spaces">                </span><span class="istickedoff">numy  = det12 * dy34 - dy12 * det34</span>
+<span class="lineno">  247 </span><span class="spaces">            </span><span class="istickedoff">in Just (numx / den, numy / den)</span></span>
+<span class="lineno">  248 </span>
+<span class="lineno">  249 </span>-- copiado do Gloss para Double
+<span class="lineno">  250 </span>closestPontoOnL :: Ponto -&gt; Ponto -&gt; Ponto -&gt; Double
+<span class="lineno">  251 </span><span class="decl"><span class="istickedoff">closestPontoOnL p1 p2 p3 = (p3 .-. p1) .$. (p2 .-. p1) / (p2 .-. p1) .$. (p2 .-. p1)</span></span>
+<span class="lineno">  252 </span>
+<span class="lineno">  253 </span>(.*.) :: Double -&gt; (Double,Double) -&gt; (Double,Double)
+<span class="lineno">  254 </span><span class="decl"><span class="istickedoff">(.*.) x (a,b) = ((x*a),(x*b))</span></span>
+<span class="lineno">  255 </span>       
+<span class="lineno">  256 </span>(.+.) :: (Double,Double) -&gt; (Double,Double) -&gt; (Double,Double)
+<span class="lineno">  257 </span><span class="decl"><span class="istickedoff">(.+.) (x,y) (a,b) = ((x+a),(y+b))</span></span>
+<span class="lineno">  258 </span>
+<span class="lineno">  259 </span>(.-.) :: (Double,Double) -&gt; (Double,Double) -&gt; (Double,Double)
+<span class="lineno">  260 </span><span class="decl"><span class="istickedoff">(.-.) (x,y) (a,b) = ((x-a),(y-b))</span></span>
+<span class="lineno">  261 </span>
+<span class="lineno">  262 </span>-- the dot product between two (Double,Double)s
+<span class="lineno">  263 </span>(.$.) :: (Double,Double) -&gt; (Double,Double) -&gt; Double
+<span class="lineno">  264 </span><span class="decl"><span class="istickedoff">(.$.) (d1,a1) (d2,a2) = (x1*x2) + (y1*y2)</span>
+<span class="lineno">  265 </span><span class="spaces">    </span><span class="istickedoff">where (x1,y1) = (d1,a1)</span>
+<span class="lineno">  266 </span><span class="spaces">          </span><span class="istickedoff">(x2,y2) = (d2,a2)</span></span>
+<span class="lineno">  267 </span>
+<span class="lineno">  268 </span><span class="decl"><span class="istickedoff">radians th = th * (pi/180)</span></span>
+<span class="lineno">  269 </span><span class="decl"><span class="istickedoff">degrees th = th * (180/pi)</span></span>
+<span class="lineno">  270 </span>
+<span class="lineno">  271 </span>arrowToComponents :: (Double,Double) -&gt; Ponto
+<span class="lineno">  272 </span><span class="decl"><span class="istickedoff">arrowToComponents (v,th) = (getX v th,getY v th)</span>
+<span class="lineno">  273 </span><span class="spaces">    </span><span class="istickedoff">where getX v th = v * cos (radians (th))</span>
+<span class="lineno">  274 </span><span class="spaces">          </span><span class="istickedoff">getY v th = v * sin (radians (-th))</span></span>
+<span class="lineno">  275 </span>
+<span class="lineno">  276 </span>componentsToArrow :: Ponto -&gt; (Double,Double)
+<span class="lineno">  277 </span><span class="decl"><span class="istickedoff">componentsToArrow (x,0) | <span class="nottickedoff">x &gt;= 0</span> = <span class="nottickedoff">(x,0)</span></span>
+<span class="lineno">  278 </span><span class="spaces"></span><span class="istickedoff">componentsToArrow (x,0) | <span class="nottickedoff">x &lt; 0</span> = <span class="nottickedoff">(abs x,180)</span></span>
+<span class="lineno">  279 </span><span class="spaces"></span><span class="istickedoff">componentsToArrow (0,y) | <span class="nottickedoff">y &gt;= 0</span> = <span class="nottickedoff">(y,-90)</span></span>
+<span class="lineno">  280 </span><span class="spaces"></span><span class="istickedoff">componentsToArrow (0,y) | <span class="nottickedoff">y &lt; 0</span> = <span class="nottickedoff">(abs y,90)</span></span>
+<span class="lineno">  281 </span><span class="spaces"></span><span class="istickedoff">componentsToArrow (x,y) = (hyp,dir angle)</span>
+<span class="lineno">  282 </span><span class="spaces">    </span><span class="istickedoff">where</span>
+<span class="lineno">  283 </span><span class="spaces">    </span><span class="istickedoff">dir o = case (x &gt;= 0, y &gt;= 0) of</span>
+<span class="lineno">  284 </span><span class="spaces">                </span><span class="istickedoff">(True,True) -&gt; -o</span>
+<span class="lineno">  285 </span><span class="spaces">                </span><span class="istickedoff">(True,False) -&gt; o</span>
+<span class="lineno">  286 </span><span class="spaces">                </span><span class="istickedoff">(False,False) -&gt; <span class="nottickedoff">180 - o</span></span>
+<span class="lineno">  287 </span><span class="spaces">                </span><span class="istickedoff">(False,True) -&gt; 180 + o</span>
+<span class="lineno">  288 </span><span class="spaces">    </span><span class="istickedoff">hyp = sqrt ((abs x)^2 + (abs y)^2)</span>
+<span class="lineno">  289 </span><span class="spaces">    </span><span class="istickedoff">angle = degrees $ atan (abs y / abs x)</span></span>
+<span class="lineno">  290 </span>
+<span class="lineno">  291 </span>dist :: Ponto -&gt; Ponto -&gt; Double
+<span class="lineno">  292 </span><span class="decl"><span class="nottickedoff">dist (x1,y1) (x2,y2) = sqrt ((x2-x1)^2+(y2-y1)^2)</span></span>
+<span class="lineno">  293 </span>
+<span class="lineno">  294 </span>
+<span class="lineno">  295 </span>--------------
+<span class="lineno">  296 </span>
+<span class="lineno">  297 </span><span class="decl"><span class="istickedoff">testeMapa =</span>
+<span class="lineno">  298 </span><span class="spaces">  </span><span class="istickedoff">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0</span>
+<span class="lineno">  299 </span><span class="spaces">               </span><span class="istickedoff">,Peca Lava 0,Peca Lava 0,Peca Lava 0]</span>
+<span class="lineno">  300 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca (Curva Norte) 0,Peca (Rampa Este) 0,Peca Recta 1,Peca (Rampa Oeste) 0,Peca Recta 0,Peca Recta 0,Peca (Rampa Oeste) (-1),Peca Recta (-1)</span>
+<span class="lineno">  301 </span><span class="spaces">               </span><span class="istickedoff">,Peca (Rampa Este) (-1),Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1),Peca (Curva Este) (-1),Peca Lava 0]</span>
+<span class="lineno">  302 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca (Curva Oeste) 0,Peca (Rampa Este) 0,Peca (Rampa Oeste) 0,Peca (Rampa Este) 0,Peca Recta 1,Peca (Rampa Oeste) 0,Peca (Rampa Oeste) (-1)</span>
+<span class="lineno">  303 </span><span class="spaces">               </span><span class="istickedoff">,Peca Recta (-1),Peca (Rampa Oeste) (-2),Peca (Rampa Oeste) (-3),Peca (Rampa Este) (-3),Peca (Rampa Este) (-2),Peca (Curva Sul) (-1),Peca Lava 0]</span>
+<span class="lineno">  304 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0</span>
+<span class="lineno">  305 </span><span class="spaces">               </span><span class="istickedoff">,Peca Lava 0,Peca Lava 0,Peca Lava 0]]</span></span>
+<span class="lineno">  306 </span>--   00011110000009999001100999  
+<span class="lineno">  307 </span>-- ..//&gt;&gt;[]&lt;&lt;[][]&lt;&lt;[]&gt;&gt;&gt;&gt;&lt;&lt;&lt;&lt;\\..
+<span class="lineno">  308 </span>-- ..\\&gt;&gt;&lt;&lt;&gt;&gt;[]&lt;&lt;&lt;&lt;[]&lt;&lt;&lt;&lt;&gt;&gt;&gt;&gt;//..
+<span class="lineno">  309 </span>--   00011001111009999887788999
+<span class="lineno">  310 </span>
+<span class="lineno">  311 </span><span class="decl"><span class="istickedoff">testeCurvas =</span>
+<span class="lineno">  312 </span><span class="spaces">  </span><span class="istickedoff">[[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0]</span>
+<span class="lineno">  313 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca (Curva Norte) 0,Peca (Rampa Oeste) (-1),Peca (Curva Este) (-1),Peca Lava 0,Peca (Curva Norte) 0,Peca (Curva Este) 0</span>
+<span class="lineno">  314 </span><span class="spaces">               </span><span class="istickedoff">,Peca Lava 0,Peca (Curva Norte) 1,Peca (Curva Este) 1,Peca Lava 0]</span>
+<span class="lineno">  315 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca (Rampa Sul) 0,Peca Lava 0,Peca (Curva Oeste) (-1),Peca (Rampa Este) (-1),Peca (Curva Sul) 0,Peca (Curva Oeste) 0</span>
+<span class="lineno">  316 </span><span class="spaces">               </span><span class="istickedoff">,Peca (Rampa Este) 0,Peca (Curva Sul) 1,Peca Recta 1,Peca Lava 0]</span>
+<span class="lineno">  317 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca (Curva Oeste) 1,Peca (Rampa Oeste) 0,Peca Recta 0,Peca (Rampa Oeste) (-1),Peca Recta (-1),Peca (Rampa Este) (-1)</span>
+<span class="lineno">  318 </span><span class="spaces">               </span><span class="istickedoff">,Peca (Rampa Este) 0,Peca Recta 1,Peca (Curva Sul) 1,Peca Lava 0]</span>
+<span class="lineno">  319 </span><span class="spaces">  </span><span class="istickedoff">,[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0]]</span></span>
+<span class="lineno">  320 </span>
+<span class="lineno">  321 </span>-- ..//&lt;&lt;\\..//\\..//\\..
+<span class="lineno">  322 </span>-- ..\/..\\&gt;&gt;//\\&gt;&gt;//[]..
+<span class="lineno">  323 </span>-- ..\\&lt;&lt;[]&lt;&lt;[]&gt;&gt;&gt;&gt;[]//..
+<span class="lineno">  324 </span>
+<span class="lineno">  325 </span>unitTests :: [(Tabuleiro,Tempo,Carro)]
+<span class="lineno">  326 </span><span class="decl"><span class="istickedoff">unitTests = [</span>
+<span class="lineno">  327 </span><span class="spaces">  </span><span class="istickedoff">--- apenas um passo recursivo</span>
+<span class="lineno">  328 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: passa percurso</span>
+<span class="lineno">  329 </span><span class="spaces">    </span><span class="istickedoff">(testeMapa , 1.2, Carro (5.5,1.5) 0 (0.9,0.1))</span>
+<span class="lineno">  330 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: cai adjacente</span>
+<span class="lineno">  331 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (5.5,2.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  332 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: passa adjacente</span>
+<span class="lineno">  333 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  334 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca adjacente</span>
+<span class="lineno">  335 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (5.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  336 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: cai lava</span>
+<span class="lineno">  337 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (3.5,1.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  338 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: passa lava (mesma altura)</span>
+<span class="lineno">  339 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (5.5,1.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  340 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca lava</span>
+<span class="lineno">  341 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,1.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  342 </span><span class="spaces">  </span><span class="istickedoff">-- curva: choca lava</span>
+<span class="lineno">  343 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (13.4,1.5) 0 (0.3,-0.1))</span>
+<span class="lineno">  344 </span><span class="spaces">  </span><span class="istickedoff">-- curva: cai lava (mesma altura)</span>
+<span class="lineno">  345 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (1.6,1.5) 0 (-0.3,-0.1))</span>
+<span class="lineno">  346 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  347 </span><span class="spaces">  </span><span class="istickedoff">-- recta-&gt;curva: cai</span>
+<span class="lineno">  348 </span><span class="spaces">  </span><span class="istickedoff">, (testeCurvas , 1.2, Carro (8.5,3.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  349 </span><span class="spaces">  </span><span class="istickedoff">-- recta-&gt;curva: lava</span>
+<span class="lineno">  350 </span><span class="spaces">  </span><span class="istickedoff">, (testeCurvas , 1.2, Carro (5.5,3.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  351 </span><span class="spaces">  </span><span class="istickedoff">-- recta-&gt;curva: choca</span>
+<span class="lineno">  352 </span><span class="spaces">  </span><span class="istickedoff">, (testeCurvas , 1.2, Carro (3.5,3.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  353 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  354 </span><span class="spaces">  </span><span class="istickedoff">--- dois+ passos recursivos</span>
+<span class="lineno">  355 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: passa percurso 2</span>
+<span class="lineno">  356 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (3.6,1.5) 0 (-1.6,0.1))  </span>
+<span class="lineno">  357 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: passa percurso 3</span>
+<span class="lineno">  358 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (4.6,1.5) 0 (-2.6,0.1))  </span>
+<span class="lineno">  359 </span><span class="spaces">  </span><span class="istickedoff">-- curvas: cai lava (mesma altura) 3</span>
+<span class="lineno">  360 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (3.6,1.5) 0 (-2.6,0.1))  </span>
+<span class="lineno">  361 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: adjacente + cai lava (mesma altura) 10 </span>
+<span class="lineno">  362 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 5.5, Carro (12.5,1.2) 0 (-2.1,0.1))</span>
+<span class="lineno">  363 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: adjacente + choca lava 2 </span>
+<span class="lineno">  364 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,1.5) 0 (0.1,1.9))</span>
+<span class="lineno">  365 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca lava + adjacente 2 </span>
+<span class="lineno">  366 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,2.5) 0 (0.1,1.9))</span>
+<span class="lineno">  367 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca lava + adjacente + choca lava 3 </span>
+<span class="lineno">  368 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,2.5) 0 (0.1,2.3))</span>
+<span class="lineno">  369 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca lava + adjacente + choca lava + adjacente 4 </span>
+<span class="lineno">  370 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (8.5,2.5) 0 (0.1,3.3))</span>
+<span class="lineno">  371 </span><span class="spaces">  </span><span class="istickedoff">-- rectas: choca adjacente + cai lava (mesma altura) 2</span>
+<span class="lineno">  372 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (5.5,1.5) 0 (0.1,1.9))</span>
+<span class="lineno">  373 </span><span class="spaces">  </span><span class="istickedoff">-- curvas: adjacente + choca lava 3</span>
+<span class="lineno">  374 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (11.6,1.5) 0 (2.1,0.1))</span>
+<span class="lineno">  375 </span><span class="spaces">  </span><span class="istickedoff">-- curva: adjacente + cai lava 2</span>
+<span class="lineno">  376 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (1.6,2.5) 0 (-0.1,-1.1))</span>
+<span class="lineno">  377 </span><span class="spaces">  </span><span class="istickedoff">-- curva: choca lava 2</span>
+<span class="lineno">  378 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (12.5,1.5) 0 (2.8,-0.1))</span>
+<span class="lineno">  379 </span><span class="spaces">  </span><span class="istickedoff">-- curva: cai 2 (passa a lava) -- @nmm nao percebo a particularidade deste teste!</span>
+<span class="lineno">  380 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (1.6,2.5) 0 (-0.3,-0.1))</span>
+<span class="lineno">  381 </span><span class="spaces"></span><span class="istickedoff"></span>
+<span class="lineno">  382 </span><span class="spaces">  </span><span class="istickedoff">----- PLANO NOVO (cai se queda &gt;= 1, choca se degrau &gt;= 1, passa se diff. entre 1 e -1)</span>
+<span class="lineno">  383 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: cai </span>
+<span class="lineno">  384 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (10.5,1.5) 0 (-0.1,0.9))</span>
+<span class="lineno">  385 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: choca </span>
+<span class="lineno">  386 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (10.5,2.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  387 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: passa (igual)</span>
+<span class="lineno">  388 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (2.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  389 </span><span class="spaces">  </span><span class="istickedoff">-- rampas x2: passa (um pouco maior)</span>
+<span class="lineno">  390 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (4.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  391 </span><span class="spaces">  </span><span class="istickedoff">-- rampas x2: passa (um pouco menor)</span>
+<span class="lineno">  392 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (4.5,1.5) 0 (-0.1,0.9))</span>
+<span class="lineno">  393 </span><span class="spaces">  </span><span class="istickedoff">---- casos difíceis (sobe/desce Bom Jesus)!</span>
+<span class="lineno">  394 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: choca (tricky)</span>
+<span class="lineno">  395 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,2.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  396 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: não choca (tricky)</span>
+<span class="lineno">  397 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,2.5) 0 (-0.1,-0.9))</span>
+<span class="lineno">  398 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: passa (tricky)</span>
+<span class="lineno">  399 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  400 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: não passa (tricky)</span>
+<span class="lineno">  401 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,1.5) 0 (-0.1,0.9))</span>
+<span class="lineno">  402 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: choca rés-vés (tricky x2)</span>
+<span class="lineno">  403 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,2.5) 0 (0,-0.9))</span>
+<span class="lineno">  404 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: choca lava</span>
+<span class="lineno">  405 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,2.5) 0 (0.1,0.9))</span>
+<span class="lineno">  406 </span><span class="spaces">  </span><span class="istickedoff">-- rampas: cai lava</span>
+<span class="lineno">  407 </span><span class="spaces">  </span><span class="istickedoff">, (testeMapa , 1.2, Carro (9.5,1.5) 0 (0.1,-0.9))</span>
+<span class="lineno">  408 </span><span class="spaces">  </span><span class="istickedoff">------</span>
+<span class="lineno">  409 </span><span class="spaces">  </span><span class="istickedoff"></span>
+<span class="lineno">  410 </span><span class="spaces">  </span><span class="istickedoff">----- PLANO ANTIGO (cai se altura maior, choca se menor, passa se igual)</span>
+<span class="lineno">  411 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas: cai </span>
+<span class="lineno">  412 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (6.5,2.5) 0 (0.1,-0.9)) -- oracle: (6.6,1.4), got Noth</span>
+<span class="lineno">  413 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas: passa</span>
+<span class="lineno">  414 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (2.5,1.5) 0 (0.1,0.9))</span>
+<span class="lineno">  415 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas: choca</span>
+<span class="lineno">  416 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (3.5,2.5) 0 (0.1,-0.9)) -- oracle: (_.1.5), got (_,2.6)</span>
+<span class="lineno">  417 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas x2: choca</span>
+<span class="lineno">  418 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (4.5,1.5) 0 (0.1,0.9))  -- oracle (_.2.5), got (_,1.4)</span>
+<span class="lineno">  419 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas x2: cai</span>
+<span class="lineno">  420 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (4.5,1.5) 0 (-0.1,0.9)) -- oracle (4.4,2.6), got Noth</span>
+<span class="lineno">  421 </span><span class="spaces">  </span><span class="istickedoff">-- -- rampas x2: bónus - passa?</span>
+<span class="lineno">  422 </span><span class="spaces">  </span><span class="istickedoff">-- , (testeMapa , 1.2, Carro (4.5,1.5) 0 (0,0.9))</span>
+<span class="lineno">  423 </span><span class="spaces">  </span><span class="istickedoff">-------------</span>
+<span class="lineno">  424 </span><span class="spaces">  </span><span class="istickedoff">]</span></span>
+<span class="lineno">  425 </span>
+<span class="lineno">  426 </span>
+<span class="lineno">  427 </span>
+
+</pre>
+</body>
+</html>

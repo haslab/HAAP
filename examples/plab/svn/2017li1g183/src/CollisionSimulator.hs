@@ -301,10 +301,10 @@ glossEvento e s = s { jogador = c' }
   where c' = glossEventoCarro e (jogador s)
 
 glossEventoCarro :: Event -> EstadoCarro -> EstadoCarro
-glossEventoCarro (EventKey (SpecialKey KeyDown ) kst _) e = e { trava   = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyUp   ) kst _) e = e { acelera = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyLeft ) kst _) e = e { viraE   = kst == Down }
-glossEventoCarro (EventKey (SpecialKey KeyRight) kst _) e = e { viraD   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyDown ) kst _ _) e = e { trava   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyUp   ) kst _ _) e = e { acelera = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyLeft ) kst _ _) e = e { viraE   = kst == Down }
+glossEventoCarro (EventKey (SpecialKey KeyRight) kst _ _) e = e { viraD   = kst == Down }
 glossEventoCarro _ st = st
 
 glossTempo :: Float -> EstadoJogo -> EstadoJogo
@@ -333,9 +333,9 @@ joga i = do
         tamanho = min tamanhoX tamanhoY
         mapas = (map constroi caminhos_validos) ++ mapas_validos
         ini@(Mapa p m) = atNote "joga" mapas i
-    let imgs = makeImages tamanho screen
+    imgs <- loadImages tamanho screen
     let e = (estadoInicial ini tamanho imgs)
-    play screen back e glossDesenha glossEvento glossTempo
+    play screen back 20 e glossDesenha glossEvento glossTempo
 
 main = catch (joga 0) $ \(e::SomeException) -> CW.trace (Text.pack $ displayException e) $ throw e
 

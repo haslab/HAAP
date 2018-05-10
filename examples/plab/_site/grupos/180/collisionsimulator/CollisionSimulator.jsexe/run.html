@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=default,Array.prototype.find,Number.isFinite,Number.isInteger,console,console.log,document.head,performance.now"></script>
+      <title>CodeWorld - Physics Viewer</title>
+      <link rel="stylesheet" href="../../../../css/codeworld.css">
+    
+    <script language="javascript" src="rts.js"></script>
+    <script language="javascript" src="lib.js"></script>
+    <script language="javascript" src="out.js"></script>
+  </head>
+  <body style="text-align: center">
+      
+    <canvas id="screen" class="widescreen"></canvas>
+    <pre id="message" class="dropbox game">=== Compiling ===
+Output:
+[2 of 6] Compiling LI11718          ( LI11718.hs, LI11718.js_o )
+[6 of 6] Compiling Main             ( CollisionSimulator.hs, CollisionSimulator.js_o )
+Linking ../../../tmp/grupos/180/collisionsimulator/CollisionSimulator.jsexe (JSImages,LI11718,Main,Tarefa1_2017li1g180,Tarefa2_2017li1g180,Tarefa3_2017li1g180)
+
+Errors:
+
+Exit Code: 0
+=== Running ===</pre>
+    
+    
+    <img style="visibility: hidden;" id="lava" src="../../../../images/lava.jpg">
+    
+    <img style="visibility: hidden;" id="nitro1" src="../../../../images/nitro1.png">
+    
+    <img style="visibility: hidden;" id="nitro2" src="../../../../images/nitro2.png">
+    
+    <img style="visibility: hidden;" id="nitro3" src="../../../../images/nitro3.png">
+    
+    <img style="visibility: hidden;" id="nitro4" src="../../../../images/nitro4.png">
+    
+    <img style="visibility: hidden;" id="puff" src="../../../../images/puff.png">
+    
+    <img style="visibility: hidden;" id="bar1" src="../../../../images/bar1.png">
+    
+    <img style="visibility: hidden;" id="bar2" src="../../../../images/bar2.png">
+    
+    <img style="visibility: hidden;" id="bar3" src="../../../../images/bar3.png">
+    
+    <img style="visibility: hidden;" id="bar4" src="../../../../images/bar4.png">
+    
+    <img style="visibility: hidden;" id="p1" src="../../../../images/p1.png">
+    
+    <img style="visibility: hidden;" id="p2" src="../../../../images/p2.png">
+    
+    <img style="visibility: hidden;" id="p3" src="../../../../images/p3.png">
+    
+    <img style="visibility: hidden;" id="p4" src="../../../../images/p4.png">
+    
+    <img style="visibility: hidden;" id="c1" src="../../../../images/c1.png">
+    
+    <img style="visibility: hidden;" id="c2" src="../../../../images/c2.png">
+    
+    <img style="visibility: hidden;" id="c3" src="../../../../images/c3.png">
+    
+    <img style="visibility: hidden;" id="c4" src="../../../../images/c4.png">
+    
+    <img style="visibility: hidden;" id="n1" src="../../../../images/1.png">
+    
+    <img style="visibility: hidden;" id="n2" src="../../../../images/2.png">
+    
+    <img style="visibility: hidden;" id="n3" src="../../../../images/3.png">
+    
+    <img style="visibility: hidden;" id="n4" src="../../../../images/4.png">
+    
+    <img style="visibility: hidden;" id="btt" src="../../../../images/btt.png">
+    
+    <img style="visibility: hidden;" id="mrt" src="../../../../images/mrt.png">
+    
+    <img style="visibility: hidden;" id="timer" src="../../../../images/timer.png">
+    
+    <img style="visibility: hidden;" id="f0" src="../../../../images/fonts/0.bmp">
+    
+    <img style="visibility: hidden;" id="f1" src="../../../../images/fonts/1.bmp">
+    
+    <img style="visibility: hidden;" id="f2" src="../../../../images/fonts/2.bmp">
+    
+    <img style="visibility: hidden;" id="f3" src="../../../../images/fonts/3.bmp">
+    
+    <img style="visibility: hidden;" id="f4" src="../../../../images/fonts/4.bmp">
+    
+    <img style="visibility: hidden;" id="f5" src="../../../../images/fonts/5.bmp">
+    
+    <img style="visibility: hidden;" id="f6" src="../../../../images/fonts/6.bmp">
+    
+    <img style="visibility: hidden;" id="f7" src="../../../../images/fonts/7.bmp">
+    
+    <img style="visibility: hidden;" id="f8" src="../../../../images/fonts/8.bmp">
+    
+    <img style="visibility: hidden;" id="f9" src="../../../../images/fonts/9.bmp">
+    
+    <img style="visibility: hidden;" id="fa" src="../../../../images/fonts/a.bmp">
+    
+    <img style="visibility: hidden;" id="fb" src="../../../../images/fonts/b.bmp">
+    
+    <img style="visibility: hidden;" id="fc" src="../../../../images/fonts/c.bmp">
+    
+    <img style="visibility: hidden;" id="fd" src="../../../../images/fonts/d.bmp">
+    
+    <img style="visibility: hidden;" id="fe" src="../../../../images/fonts/e.bmp">
+    
+    <img style="visibility: hidden;" id="ff" src="../../../../images/fonts/f.bmp">
+    
+    <img style="visibility: hidden;" id="fg" src="../../../../images/fonts/g.bmp">
+    
+    <img style="visibility: hidden;" id="fh" src="../../../../images/fonts/h.bmp">
+    
+    <img style="visibility: hidden;" id="fi" src="../../../../images/fonts/i.bmp">
+    
+    <img style="visibility: hidden;" id="fj" src="../../../../images/fonts/j.bmp">
+    
+    <img style="visibility: hidden;" id="fk" src="../../../../images/fonts/k.bmp">
+    
+    <img style="visibility: hidden;" id="fl" src="../../../../images/fonts/l.bmp">
+    
+    <img style="visibility: hidden;" id="fm" src="../../../../images/fonts/m.bmp">
+    
+    <img style="visibility: hidden;" id="fn" src="../../../../images/fonts/n.bmp">
+    
+    <img style="visibility: hidden;" id="fo" src="../../../../images/fonts/o.bmp">
+    
+    <img style="visibility: hidden;" id="fp" src="../../../../images/fonts/p.bmp">
+    
+    <img style="visibility: hidden;" id="fq" src="../../../../images/fonts/q.bmp">
+    
+    <img style="visibility: hidden;" id="fr" src="../../../../images/fonts/r.bmp">
+    
+    <img style="visibility: hidden;" id="fs" src="../../../../images/fonts/s.bmp">
+    
+    <img style="visibility: hidden;" id="ft" src="../../../../images/fonts/t.bmp">
+    
+    <img style="visibility: hidden;" id="fu" src="../../../../images/fonts/u.bmp">
+    
+    <img style="visibility: hidden;" id="fv" src="../../../../images/fonts/v.bmp">
+    
+    <img style="visibility: hidden;" id="fw" src="../../../../images/fonts/w.bmp">
+    
+    <img style="visibility: hidden;" id="fx" src="../../../../images/fonts/x.bmp">
+    
+    <img style="visibility: hidden;" id="fy" src="../../../../images/fonts/y.bmp">
+    
+    <img style="visibility: hidden;" id="fz" src="../../../../images/fonts/z.bmp">
+    
+    
+    
+  </body>
+  
+  <script type="text/javascript">
+    function reportRuntimeError(err, str) {
+      if (window.parent.addToMessage) {
+        var message = window.parent.addToMessage('\n' + str);
+        var msgelem = window.parent.document.getElementById('message');
+        msgelem.scrollTop = msgelem.scrollHeight;
+
+        if (err) {
+          msgelem.classList.add('error');
+        }
+      } else {
+        console.log(str);
+      }
+
+    }
+  </script>
+  
+  <script language="javascript" src="runmain.js" defer></script>
+  <script type="text/javascript" src="../../../../js/ghcjs-debugmode.js"></script>
+  <script type="text/javascript" src="../../../../js/cw-demo.js"></script>
+</html>
