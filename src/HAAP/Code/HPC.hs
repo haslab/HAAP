@@ -60,7 +60,6 @@ data HpcArgs = HpcArgs
     { hpcExecutable :: FilePath -- executables to run with hpc
     , hpcGHC :: GHCArgs
     , hpcIO :: IOArgs
-    , hpcSandbox :: Maybe FilePath
     , hpcHtmlPath :: Maybe FilePath -- relative path to the project to store hpc results
     , hpcRTS :: Bool
     }
@@ -154,7 +153,7 @@ runHpcReport defa m = do
         tmp <- getProjectTmpPath
         let ghc = (hpcGHC hpc)
         let io = (hpcIO hpc)
-        let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
+        let io' = io
         let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
         do
             hpcCleanup dir exec
@@ -188,7 +187,7 @@ runHpc def m = do
         tmp <- getProjectTmpPath
         let ghc = (hpcGHC hpc)
         let io = (hpcIO hpc)
-        let io' = io { ioSandbox = fmap (dirToRoot dir </>) (hpcSandbox hpc) }
+        let io' = io 
         let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
         do
             hpcCleanup dir exec
