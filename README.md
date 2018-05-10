@@ -57,8 +57,7 @@ You can find the generated [minimalistic](https://hpacheco.github.io/HAAP/exampl
 
 ## plab
 
-A mockup of the Programming Laboratories class feedback page from ...
-
+A mockup of the [Laaboratórios de Informática I](https://haslab.github.io/Teaching/LI1/) class feedback page.
 
 ```
 cd examples/plab
