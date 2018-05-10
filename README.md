@@ -14,7 +14,7 @@ For CodeWorld animations you need to have `ghcjs` installed:
 2. add `ghcjs` to your path
 3. install the codeworld packages
 ```
-cabal install --ghcjs codeworld-haap-api
+cabal install --ghcjs packages/codeworld-haap-api
 ```
 
 ## Docker
@@ -39,7 +39,7 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-You can find a pre-compiled [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/index.html) example here.
+You can find the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/_site/index.html) example here.
 
 ## minimalistic
 
@@ -53,7 +53,7 @@ cabal exec -- ghc minimalistics.hs
 ./minimalistic
 ```
 
-You can find a pre-compiled [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/index.html) example here.
+You can find the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/_site/index.html) example here.
 
 ## plab
 
@@ -68,7 +68,7 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-You can find a pre-compiled [plab](https://hpacheco.github.io/HAAP/examples/plab/_site/index.html) example here.
+You can find the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/_site/index.html) example here.
 
 
 
