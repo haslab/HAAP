@@ -399,8 +399,8 @@ script = do
                 -- T6 pre-processing
                 tourneyplayers <- runHakyll False False hp0 $ forM groups $ \(p,_) -> orDo (\e -> return $ TourneyGroup (Left p,Just $ pretty e)) $ do
                     let modu = (groupModule p)
-                    let tourneyioargs = ioargs { ioTimeout = Just 120 }
-                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs { ioSandbox = Just sandboxcfg } }
+                    let tourneyioargs = ioargs { ioSandbox = Just sandboxcfg, ioTimeout = Just 120 }
+                    let ghcargs = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs }
                     let (dir,path) = splitFileName (groupFile p)
                     iores <- orIOResult $ runBaseShWith (tourneyioargs) $ do
                         shCd dir
@@ -569,7 +569,6 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
         projname <- getProjectName
         projpath <- getProjectPath
         let gpage = "grupos" </> addExtension (show $ plabGroupId g) "html"
-        let ghcargs = def
         let svnargs = def { svnHidden = False }
         
         let gctx = fieldContext "group" (plabGroupString g)
@@ -595,6 +594,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         let gpath = sourcePath source
                         let gsrcpath = gpath </> "src"
+                        let ghcargs = def { ghcIO = def { ioSandbox = Just $ dirToRoot gsrcpath </> sandboxcfg } }
                         let ghtml = "grupos" </> show (plabGroupId g)
                         --let gdate = fmap svnDate info
                         
