@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Spec@ plugin to run test specifications.
+-}
+
+
 {-# LANGUAGE TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where

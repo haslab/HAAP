@@ -10,13 +10,13 @@ Build-type:          Simple
 Cabal-version:       >=1.8
 
 Description:
-  This module provides the drawing code for CodeWorld.  It is heavily inspired by
-  Gloss, but modified for consistency and pedagogical reasons.
+  This module is an adaptation of the _codeworld-api_ package (<https://github.com/google/codeworld/tree/master/codeworld-api>) for HAAP.
   .
-  It comes with two backends. When compiled with GHCJS, it uses the JavaScript FFI to
-  run on <http://code.world/>.  When compiled with GHC, it uses the blank-canvas
-  package to provide a webpage consisting of just a panel locally. This way, the same
-  program that runs on the CodeWorld server can also be run locally.
+  The original package provides drawing code for CodeWorld, that is heavily inspired by Gloss but has been modified and simplified for mostly pedagogical reasons.
+  .
+  The HAAP package attempts to provide a more neat integration with Gloss, by providing a similar interface and implementing additional features such as image support and window re-dimensioning.
+  .
+  This package must to be compiled with GHCJS.
 
 Library
   Hs-source-dirs:      src

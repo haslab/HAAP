@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Tourney@ plugin to run tournaments and generate HTML webpages with the brackets.
+-}
+
+
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, TemplateHaskell, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.Test.Tourney where

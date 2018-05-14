@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides functions for rendering HTML tables.
+-}
+
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.HTML.Table where

@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides basic tmeplating functionality.
+-}
+
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module HAAP.Template where

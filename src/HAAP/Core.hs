@@ -1,3 +1,15 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the core components of HAAP.
+HAAP follows a 'configuration-as-an-application' architecture, common in Haskell web frameworks such as Happstack.
+
+An HAAP @Project@ defines the initial configuration, that includes the project’s name and its filelesystem paths, together with listings of student groups and tasks. Each task is comprised by a set of files that can have both local (templates or oracles used for assessment) and/or remote (student solutions) representations.
+
+Scripting is done in the @Haap@ monad, that provides basic logging and error-handling capabilities.
+An @Haap@ program |p| can be run (|runHaap project p|) as a batch script that generates assessment data for a given |project|.
+-}
+
 {-# LANGUAGE UndecidableInstances, TypeOperators, ConstraintKinds, StandaloneDeriving, FlexibleContexts, RankNTypes, DeriveDataTypeable, FlexibleInstances, MultiParamTypeClasses, TypeFamilies, GeneralizedNewtypeDeriving, TypeFamilyDependencies, DeriveGeneric, TemplateHaskell #-}
 module HAAP.Core where
 

@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Homplexity@ plugin that invokes the external _homplexity_ tool (<https://hackage.haskell.org/package/homplexity>) to give automatic suggestions on how to improve overall code quality.
+
+-}
+
 {-# LANGUAGE EmptyDataDecls, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
 
 module HAAP.Code.Homplexity where

@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Haddock@ plugin that invokes the _haddock_ tool (<https://hackage.haskell.org/package/haddock>) to generate documentation of Haskell code.
+
+-}
+
 {-# LANGUAGE TypeOperators, EmptyDataDecls, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, OverloadedStrings #-}
 
 module HAAP.Doc.Haddock where

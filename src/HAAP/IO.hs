@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides basic IO functionalities.
+-}
+
 {-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
 
 module HAAP.IO where

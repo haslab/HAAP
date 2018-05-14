@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @GHCJS@ plugin runs the _ghcjs_ Haskell-to-JavaScript compiler.
+
+-}
+
+
 {-# LANGUAGE EmptyDataDecls, TypeOperators, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances #-}
 
 module HAAP.Compiler.GHCJS where

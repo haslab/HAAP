@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module extracts basic modularity metrics from Haskell code.
+
+-}
+
 {-# LANGUAGE OverloadedStrings, DeriveGeneric #-}
 
 module HAAP.Code.Analysis.Modularity where

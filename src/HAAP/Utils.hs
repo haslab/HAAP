@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides a miscellaneous utility functions.
+-}
+
 module HAAP.Utils where
 
 import Data.Map (Map(..))

@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides basic logging capabilities.
+-}
+
 module HAAP.Log where
 
 import HAAP.Core

@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @HLint@ plugin that invokes the external _hlint_ tool (<https://hackage.haskell.org/package/hlint>) to give automatic suggestions on how to improve overall code quality.
+
+-}
+
 {-# LANGUAGE EmptyDataDecls, OverloadedStrings, TypeFamilies, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 
 module HAAP.Code.HLint where

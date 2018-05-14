@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @AcidDB@ plugin that provides persistent state serialization @HaapDB@ functionalities with ACID guarantees via the _acid-db_ library (<https://hackage.haskell.org/package/acid-state>).
+
+-}
+
+
 {-# LANGUAGE TypeOperators, FlexibleInstances, MultiParamTypeClasses, EmptyDataDecls, GeneralizedNewtypeDeriving, UndecidableInstances, FlexibleContexts, RankNTypes, GADTs, TypeFamilies, InstanceSigs, ScopedTypeVariables, TemplateHaskell #-}
 
 module HAAP.DB.Acid where

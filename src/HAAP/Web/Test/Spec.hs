@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Spec@ plugin to run test specifications and generate HTML webpages with the results.
+-}
+
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 
 module HAAP.Web.Test.Spec where

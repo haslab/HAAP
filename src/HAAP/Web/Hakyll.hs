@@ -1,6 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Hakyll@ plugin (<https://hackage.haskell.org/package/hakyll>) for static web-page generation.
+-}
+
 {-# LANGUAGE TypeOperators, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, OverloadedStrings, ScopedTypeVariables, GeneralizedNewtypeDeriving, MultiParamTypeClasses, Rank2Types #-}
-
-
 
 module HAAP.Web.Hakyll
     ( module HAAP.Web.Hakyll

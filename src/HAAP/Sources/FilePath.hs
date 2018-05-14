@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @FilePathSource@ plugin that provides the simplest instance of a @HaapSource@ as a filepath.
+-}
+
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.FilePath where

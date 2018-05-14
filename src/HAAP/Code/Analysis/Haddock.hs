@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides documentation analysis functions by resorting to the _Haddock_ library (<https://hackage.haskell.org/package/haddock-library>).
+
+-}
+
+
 {-# LANGUAGE OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
 
 module HAAP.Code.Analysis.Haddock where

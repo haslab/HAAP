@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides shell scripting functionalities.
+-}
+
 {-# LANGUAGE MultiParamTypeClasses, GeneralizedNewtypeDeriving, TypeOperators, UndecidableInstances, ScopedTypeVariables, EmptyDataDecls, GADTs, TypeFamilies, FlexibleContexts #-}
 
 module HAAP.Shelly where

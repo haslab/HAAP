@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Rank@ plugin to generate rankings as HTML webpages.
+-}
+
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Web.Test.Rank where

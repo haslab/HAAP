@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides documentation analysis functions by resorting to the _SourceGraph_ library (<https://hackage.haskell.org/package/SourceGraph>).
+
+-}
+
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, DeriveGeneric #-}
 
 module HAAP.Code.Analysis.SourceGraph where

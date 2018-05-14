@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @HPC@ plugin that invokes the external _hpc_ tool (<https://hackage.haskell.org/package/hpc>) for analyzing Haaskell code coverage.
+
+-}
+
+
 {-# LANGUAGE TypeOperators, EmptyDataDecls, TypeFamilies, UndecidableInstances, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, ViewPatterns, DeriveGeneric, OverloadedStrings #-}
 
 module HAAP.Code.HPC where

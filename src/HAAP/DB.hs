@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides a generic interface for HAAP databases.
+-}
+
 {-# LANGUAGE ConstraintKinds, TypeFamilies, TypeFamilyDependencies #-}
 
 module HAAP.DB where

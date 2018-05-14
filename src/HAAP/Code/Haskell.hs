@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides functions for processing Haskell source code files.
+
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 
 module HAAP.Code.Haskell where

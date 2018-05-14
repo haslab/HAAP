@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Rank@ plugin to generate rankings.
+-}
+
 {-# LANGUAGE TypeOperators, DeriveGeneric, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, DeriveFunctor, DeriveAnyClass, TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Test.Rank where

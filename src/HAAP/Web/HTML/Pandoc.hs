@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides wrappers to the _pandoc_ library (<https://hackage.haskell.org/package/pandoc>) for inter-format markdown processing.
+-}
+
 module HAAP.Web.HTML.Pandoc where
 
 import HAAP.Pretty

@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @SVN@ plugin that provides support for _subversion_ @HaapSource@s.
+-}
+
 {-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.SVN where

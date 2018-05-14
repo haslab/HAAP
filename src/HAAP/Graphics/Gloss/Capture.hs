@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @Gloss@ plugin for the animation of _gloss_ (<https://hackage.haskell.org/package/gloss>) code as a video.
+
+-}
+
 {-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, UndecidableInstances, EmptyDataDecls, CPP, TupleSections #-}
 
 module HAAP.Graphics.Gloss.Capture where

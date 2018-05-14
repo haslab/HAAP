@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides basic metrics of data type and higher-order functions usage in Haskell code.
+
+-}
+
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 
 module HAAP.Code.Analysis.Usage where

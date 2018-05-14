@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @GHC@ plugin runs the _ghc_ Haskell compiler.
+
+-}
+
+
 {-# LANGUAGE EmptyDataDecls, TypeOperators, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances #-}
 
 module HAAP.Compiler.GHC where

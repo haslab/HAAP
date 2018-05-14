@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @CodeWorld@ plugin to compile _CodeWorld_ animations (<https://github.com/google/codeworld>) to HTML webpages.
+-}
+
+
 {-# LANGUAGE UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, EmptyDataDecls, OverloadedStrings #-}
 
 module HAAP.Web.Graphics.CodeWorld where

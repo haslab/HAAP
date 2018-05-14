@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides convenient git commands.
+
+-}
+
 module HAAP.Code.Git where
 
 import HAAP.IO

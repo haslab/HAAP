@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides wrappers to the _blaze-html_ library (<https://hackage.haskell.org/package/blaze-html>) for HTML generation.
+-}
+
 {-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 
 module HAAP.Web.Blaze

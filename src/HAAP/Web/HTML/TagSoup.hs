@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides wrappers to the _tagsoup_ library (<https://hackage.haskell.org/package/tagsoup>) for unstructured processing of HTML/XML documents.
+-}
+
 {-# LANGUAGE FlexibleContexts #-}
 
 module HAAP.Web.HTML.TagSoup where

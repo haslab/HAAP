@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module defines a basic pretty printing interface for HAAP.
+-}
+
 module HAAP.Pretty
     ( module HAAP.Pretty
     , module Text.PrettyPrint

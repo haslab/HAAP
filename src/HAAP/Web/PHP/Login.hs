@@ -1,3 +1,11 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides functions for injecting basic PHP authentication into HTML files.
+
+TODO: generalize login database format.
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 
 module HAAP.Web.PHP.Login where

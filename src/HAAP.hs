@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides a convient interface that imports all the HAAP features.
+-}
+
 module HAAP
     ( module HAAP.Core
     , module HAAP.DB

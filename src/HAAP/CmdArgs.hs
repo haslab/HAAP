@@ -1,3 +1,9 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @CmdArgs@ plugin (<https://hackage.haskell.org/package/cmdargs>) for command-line argument support.
+-}
+
 {-# LANGUAGE DeriveDataTypeable, TypeOperators, FlexibleInstances, UndecidableInstances, FlexibleContexts, TypeFamilies, MultiParamTypeClasses, ConstraintKinds #-}
 
 module HAAP.CmdArgs where

@@ -1,3 +1,12 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides a generic interface for HAAP plugins.
+HAAP follows a 'configuration-as-an-application' architecture, common in Haskell web frameworks such as Happstack.
+The plugins abstraction is defined to be reusable and composable, and each feature of HAAP is provided via a different plugin.
+This is facilitated by the ability to load plugins into a stack (|usePlugin|) and use plugins at any level of the stack (|liftPlugin|).
+-}
+
 {-# LANGUAGE UndecidableSuperClasses, RankNTypes, TypeOperators, UndecidableInstances, FlexibleInstances, FunctionalDependencies, TypeFamilyDependencies, TypeFamilies, MultiParamTypeClasses, FlexibleContexts, ConstraintKinds, GeneralizedNewtypeDeriving #-}
 module HAAP.Plugin where
 

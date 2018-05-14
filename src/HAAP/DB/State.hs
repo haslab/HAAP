@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @StateDB@ plugin that provides non-persistent @HaapDB@ application state as a @State@ monad.
+
+-}
+
 {-# LANGUAGE TypeOperators, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances, EmptyDataDecls, TypeFamilies, InstanceSigs #-}
 
 module HAAP.DB.State where

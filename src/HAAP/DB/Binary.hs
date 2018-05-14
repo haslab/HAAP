@@ -1,3 +1,10 @@
+{-
+HAAP: Haskell Automated Assessment Platform
+
+This module provides the @BinaryDB@ plugin that provides binary serialization @HaapDB@ functionalities via the _binary_ library (<https://hackage.haskell.org/package/binary>).
+
+-}
+
 {-# LANGUAGE TypeOperators, ScopedTypeVariables, FlexibleInstances, MultiParamTypeClasses, FlexibleContexts, UndecidableInstances, EmptyDataDecls, TypeFamilies, InstanceSigs #-}
 
 module HAAP.DB.Binary where
