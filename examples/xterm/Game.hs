@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 import Data.String
 import qualified Data.Text as T
 
@@ -50,13 +52,6 @@ runBot bot board = catch run (\(e::SomeException) -> return $ Left $ show e)
     run = do
         res <- bot board
         return $! Right $! force res
-
-orError str m = m >>= \x -> case x of
-    Nothing -> Prelude.error $ str
-    Just x -> return x
-
-type Play = Either String String
-type Plays = [Play]
 
 playmatch :: [Bot] -> IO Plays
 playmatch bots = do

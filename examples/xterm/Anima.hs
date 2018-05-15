@@ -53,25 +53,6 @@ mainAnimate plays = do
     open term el 
     animate term plays
 
-
-
---main = torneio
--- | Simulação de um jogo com plays à escolha
---simula :: (Board -> IO Tile) -> IO ()
---simula play = do [a] <- getArgs
---                 let n = read a
---                 aux (Board [] (replicate n 0) (Just E)) 1
---    where aux b n | isNothing (next b) = putStrLn $ show b
---                  | otherwise = do putStrLn $ show b
---                                   getLine
---                                   writeFile ("trace/play" ++ show n ++ ".xml") $ showElement $ fromBoard b
---                                   t <- playrandom b
---                                   let b' = b {terrain = terrain b ++ [t], next = Nothing}
---                                   writeFile ("trace/next" ++ show n ++ ".xml") $ showElement $ fromBoard b'
---                                   b'' <- avanca b'
---                                   aux b'' (n+1)
-
-
 type Play = Either String String
 type Plays = [Play]
 
