@@ -40,7 +40,7 @@ WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN ghcjs-boot
 
 WORKDIR /
-RUN cabal install --ghcjs codeworld-haap-api Xterm QuickCheck GenericPretty safe xml
+RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/Xterm QuickCheck GenericPretty safe xml --disable-documentation
 
 RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 

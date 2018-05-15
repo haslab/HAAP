@@ -62,9 +62,8 @@ A minimal example that showcases [xterm.js](https://xtermjs.org/) integration:
 ```
 cd examples/minimalistic
 cp ../../cabal.sandbox.config .
-cabal exec -- ghc minimalistics.hs
-./minimalistic
-./minimalistic
+cabal exec -- ghc xterm.hs
+./xterm
 ```
 
 Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
