@@ -1,6 +1,6 @@
 module Anima where
 
-import JavaScript.XTerm
+import JavaScript.Xterm
 import Data.String
 import qualified Data.Text as T
 
