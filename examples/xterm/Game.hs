@@ -31,11 +31,8 @@ import Control.DeepSeq
 
 main :: IO ()
 main = do
-    plays <- playmatch [greedyBot,outraBot]
+    plays <- playmatch [mkBot greedyBot,mkBot outraBot]
     mainAnimate plays
-
-greedyBot = mkBot greedy
-outraBot = mkBot outra
 
 type Bot = Board -> IO Tile
 

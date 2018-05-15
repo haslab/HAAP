@@ -10,10 +10,16 @@ import Control.Monad (when)
 import Data.List (sortBy, (\\), nubBy)
 import Data.Ord (comparing)
 
-bot :: Element -> IO Element
-bot board = do
+greedyBot :: Element -> IO Element
+greedyBot board = do
     let Just b = toBoard board
     t <- play greedybiased b
+    return $ fromTile t
+
+outraBot :: Element -> IO Element
+outraBot board = do
+    let Just b = toBoard board
+    t <- play potential b
     return $ fromTile t
 
 -- | Play greedy com bias para poupar meeples 
