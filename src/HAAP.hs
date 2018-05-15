@@ -48,6 +48,7 @@ module HAAP
     , module HAAP.Plugin
     , module HAAP.Graphics.Gloss.Capture
     , module HAAP.CmdArgs
+    , module HAAP.Web.Graphics.Xterm
     ) where
 
 import HAAP.Core
@@ -93,6 +94,7 @@ import HAAP.Code.Analysis.SourceGraph
 import HAAP.Code.Analysis.Usage
 import HAAP.Plugin
 import HAAP.Graphics.Gloss.Capture
+import HAAP.Web.Graphics.Xterm
 
 
 

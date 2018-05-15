@@ -1,0 +1,35 @@
+Name:                Xterm
+Version:             0.0.1
+Synopsis:            GHCJS bindings for the Xterm.js library
+License:             BSD3
+Author:              Hugo Pacheco
+Maintainer:          Hugo Pacheco <hpacheco@gmail.com>
+Copyright:           (c) 2017, The CodeWorld Authors
+Build-type:          Simple
+Cabal-version:       >=1.8
+
+Description:
+  GHCJS bindings for the Xterm.js library
+  .
+  This package must to be compiled with GHCJS.
+
+Data-Files: css/*.css, js/*.js
+
+Library
+  Hs-source-dirs:      .
+  Other-Modules:
+    Paths_Xterm
+  Build-depends:       base >= 4.8 && < 5, async, text
+  Exposed-modules:     XtermArgs
+
+  if impl(ghcjs)
+    Build-depends:
+                       ghcjs-base,
+                       ghcjs-prim,
+                       ghcjs-dom             >= 0.9
+    Exposed-modules:     JavaScript.Xterm
+  else
+    Build-depends:     
+
+  Exposed:             True
+  Ghc-options:         -O2
