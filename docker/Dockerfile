@@ -31,15 +31,16 @@ RUN tar -xvf ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 RUN git clone https://github.com/hpacheco/HAAP
 
 RUN cabal sandbox init
+RUN cabal sandbox add-source $HOME/HAAP/packages/*
 ADD cabal.config $HOME/cabal.config
-RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/packages/SourceGraph-0.7.0.8/SourceGraph.cabal HAAP/HAAP.cabal hlint homplexity --disable-documentation
+RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal hlint homplexity --disable-documentation
 RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 
 WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN ghcjs-boot
 
 WORKDIR /
-RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api QuickCheck GenericPretty safe
+RUN cabal install --ghcjs codeworld-haap-api Xterm QuickCheck GenericPretty safe xml
 
 RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 

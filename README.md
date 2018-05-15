@@ -9,7 +9,7 @@ cabal sandbox init
 cabal install HAAP.cabal
 ```
 
-For CodeWorld animations you need to have `ghcjs` installed:
+For [CodeWorld](https://github.com/google/codeworld) animations you need to have [ghcjs](https://github.com/ghcjs/ghcjs) installed:
 1. install `ghcjs` from https://github.com/commercialhaskell/stack/blob/master/doc/ghcjs.md
 2. add `ghcjs` to your path
 3. install the codeworld packages
@@ -30,7 +30,7 @@ You can then try our examples.
 
 ## helloworld
 
-A simple hello world example with a simple Hspec specification and Hakyll webpage generation:
+A simple hello world example with a simple [Hspec](https://hspec.github.io/) specification and [Hakyll](https://jaspervdj.be/hakyll/) webpage generation:
 
 ```
 cd examples/helloworld
@@ -39,11 +39,11 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-You can find the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example here.
+Check the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
 
 ## minimalistic
 
-A minimal example that showcases code analysis tools and CodeWorld integration:
+A minimal example that showcases code analysis tools and [CodeWorld](https://github.com/google/codeworld) integration:
 
 ```
 cd examples/minimalistic
@@ -53,7 +53,21 @@ cabal exec -- ghc minimalistics.hs
 ./minimalistic
 ```
 
-You can find the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example here.
+Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
+
+## xterm
+
+A minimal example that showcases [xterm.js](https://xtermjs.org/) integration:
+
+```
+cd examples/minimalistic
+cp ../../cabal.sandbox.config .
+cabal exec -- ghc minimalistics.hs
+./minimalistic
+./minimalistic
+```
+
+Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
 ## plab
 
@@ -67,7 +81,7 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-You can find the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example here.
+Check the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
 
 
 
