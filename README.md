@@ -66,7 +66,7 @@ cabal exec -- ghc xterm.hs
 ./xterm
 ```
 
-Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
+Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
 
 ## plab
 
