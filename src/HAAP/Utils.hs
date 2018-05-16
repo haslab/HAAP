@@ -20,6 +20,10 @@ import qualified Data.ByteString as ByteString
 
 import System.FilePath
 import System.FilePath.Find
+import System.Directory
+import System.IO.Unsafe
+
+import Control.Monad
 
 import Text.Printf
 
@@ -157,3 +161,13 @@ compareSnd x y = compare (snd x) (snd y)
 
 readDay :: String -> Day
 readDay str = readTime defaultTimeLocale (iso8601DateFormat Nothing) str
+
+canonicalFilePath :: FilePath -> IO FilePath
+canonicalFilePath fp = do
+  exists <- liftM2 (||) (doesFileExist fp) (doesDirectoryExist fp)
+  if exists
+    then canonicalizePath fp
+    else fmap (</> fp) getCurrentDirectory
+
+canonicalFilePath' :: FilePath -> FilePath
+canonicalFilePath' = unsafePerformIO . canonicalFilePath

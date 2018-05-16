@@ -16,6 +16,7 @@ import HAAP.IO
 import HAAP.Pretty
 import HAAP.Plugin
 import HAAP.Shelly
+import HAAP.Utils
 
 import System.FilePath
 import System.Directory
@@ -178,7 +179,7 @@ loadAndApplyHTMLTemplate iden ctx item = do
     return i
 
 relativeRoute :: FilePath -> Routes
-relativeRoute prefix = customRoute $ \iden -> makeRelative prefix (toFilePath iden)
+relativeRoute prefix = customRoute $ \iden -> makeRelative (canonicalFilePath' prefix) (canonicalFilePath' $ toFilePath iden)
 
 liftCompiler :: (String -> String) -> Item String -> Compiler (Item String)
 liftCompiler f i = return $ fmap f i
