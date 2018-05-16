@@ -34,9 +34,6 @@ main = do
         useAndRunXterm exXterm
         
         hakyllRules $ do
-            match (fromGlob ("templates/minimalistic.html")) $ do
-                route idRoute
-                compile templateBodyCompiler
                 
             create ["index.md"] $ do
                 route (setExtension "html")
@@ -46,8 +43,7 @@ main = do
         return ()
 
 exXterm :: XtermArgs
-exXterm = XtermArgs (Left "Game.hs") "Game" ghcjs def "."
+exXterm = XtermArgs (Left "Game.hs") "Game" ghcjs def "web"
     where
     ghcjs = def { ghcjsSafe = False }
---    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
 
