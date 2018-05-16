@@ -49,6 +49,8 @@ import Hakyll
 
 import Paths_HAAP
 
+import Debug.Trace
+
 -- * Hakyll plugin
 
 data Hakyll
@@ -179,7 +181,7 @@ loadAndApplyHTMLTemplate iden ctx item = do
     return i
 
 relativeRoute :: FilePath -> Routes
-relativeRoute prefix = customRoute $ \iden -> makeRelative (canonicalFilePath' prefix) (canonicalFilePath' $ toFilePath iden)
+relativeRoute prefix = customRoute $ \iden -> trace ("relativeRoute " ++ show prefix ++ " " ++ show iden) $ makeRelative (canonicalFilePath' prefix) (canonicalFilePath' $ toFilePath iden)
 
 liftCompiler :: (String -> String) -> Item String -> Compiler (Item String)
 liftCompiler f i = return $ fmap f i
