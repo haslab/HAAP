@@ -41,7 +41,7 @@ main = do
             create ["index.md"] $ do
                 route (setExtension "html")
                 compile $ do
-                    makeItem ("#Xterm example\n[run](spec.html)"::String) >>= renderPandoc
+                    makeItem ("#Xterm example\n[run](Game.jsexe/run.html)"::String) >>= renderPandoc
         
         return ()
 

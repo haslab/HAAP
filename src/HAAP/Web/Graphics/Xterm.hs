@@ -99,6 +99,9 @@ runXterm = do
         
         if resOk res
             then addMessageToError (pretty res) $ do
+                
+                getHakyllArgs >>= copyXtermDataFiles . hakyllCfg
+                
                 hakyllRules $ do 
                     
                     matchXtermFiles
@@ -135,18 +138,21 @@ instance HaapMonad m => HasPlugin Xterm (ReaderT XtermArgs) m where
 instance (HaapStack t2 m,HaapPluginT (ReaderT XtermArgs) m (t2 m)) => HasPlugin Xterm (ComposeT (ReaderT XtermArgs) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
+copyXtermDataFiles :: (MonadIO m,HaapStack t m) => Configuration -> Haap t m ()
+copyXtermDataFiles cfg = do
+    datapath <- runBaseIO' $ getXtermFile ""
+    xs <- runBaseIO' $ listDirectory datapath
+    runBaseSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> x)
+
 matchXtermFiles :: Rules ()
 matchXtermFiles = do
-    folder <- preprocess $ getXtermFile "."
-    let xtroute = customRoute $ makeRelative folder . toFilePath
     
-    
-    match (fromGlob (folder </> "js" </> "*.js")) $ do
-        route xtroute
+    match (fromGlob ("js" </> "*.js")) $ do
+        route idRoute
         compile copyFileCompiler
 
-    match (fromGlob (folder </> "css" </> "*.css")) $ do
-        route xtroute
+    match (fromGlob ("css" </> "*.css")) $ do
+        route idRoute
         compile compressCssCompiler
 
 

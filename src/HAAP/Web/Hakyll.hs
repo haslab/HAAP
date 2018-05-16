@@ -36,6 +36,7 @@ import qualified Control.Monad.State as State
 import qualified Control.Monad.RWS as RWS
 import Control.Monad.RWS (RWST(..))
 import Control.Monad.State (MonadState(..))
+import Control.Monad.Reader (MonadReader(..))
 import Control.Monad.Catch (MonadCatch,MonadThrow)
 import Control.Monad.Trans
 
@@ -82,8 +83,8 @@ instance Monoid (Rules ()) where
     mempty = return ()
     mappend x y = x >> y
 
-newtype HakyllT m a = HakyllT { unHakyllT :: RWST () (Rules ()) HakyllP m a }
-  deriving (Functor,Applicative,Monad,MFunctor,MonadTrans,MonadIO,MonadCatch,MonadThrow,MonadState HakyllP,MonadWriter (Rules ()))
+newtype HakyllT m a = HakyllT { unHakyllT :: RWST HakyllArgs (Rules ()) HakyllP m a }
+  deriving (Functor,Applicative,Monad,MFunctor,MonadTrans,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules ()))
 
 instance HaapMonad m => HaapStack HakyllT m where
     liftStack = lift
@@ -103,7 +104,7 @@ runHaapHakyllT :: (HaapStack t m,MonadIO m) => PluginI Hakyll -> Haap (HakyllT :
 runHaapHakyllT args m = do
     let go :: (MonadIO m,HaapStack t m) => forall b . (HakyllT :..: t) m b -> t m b
         go (ComposeT (HakyllT m)) = do
-            (e,hp,rules) <- RWS.runRWST m () (hakyllP args)
+            (e,hp,rules) <- RWS.runRWST m (args) (hakyllP args)
             let datarules = do
                 matchDataTemplates
                 matchDataCSSs
@@ -165,6 +166,9 @@ orErrorHakyllPage page def m = orDo go m
 
 getHakyllP :: (HasPlugin Hakyll t m) => Haap t m HakyllP
 getHakyllP = liftHaap $ liftPluginProxy (Proxy::Proxy Hakyll) $ State.get
+
+getHakyllArgs :: (HasPlugin Hakyll t m) => Haap t m HakyllArgs
+getHakyllArgs = liftHaap $ liftPluginProxy (Proxy::Proxy Hakyll) $ Reader.ask
 
 -- * Hakyll Utilities
 

@@ -24,6 +24,12 @@ import Paths_Xterm
 getXtermFile :: FilePath -> IO FilePath
 getXtermFile = getDataFileName 
 
+getXtermFiles :: IO [FilePath]
+getXtermFiles = do
+    x1 <- getDataFileName "js/xterm.js"
+    x2 <- getDataFileName "css/xterm.css"
+    return [x1,x2]
+
 data TerminalOpts = TerminalOpts
     { cursorBlink :: Bool
     , rows :: Int
