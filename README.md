@@ -57,7 +57,7 @@ Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/mini
 
 ## xterm
 
-A minimal example that showcases [xterm.js](https://xtermjs.org/) integration:
+An example that showcases [xterm.js](https://xtermjs.org/) integration:
 
 ```
 cd examples/xterm
