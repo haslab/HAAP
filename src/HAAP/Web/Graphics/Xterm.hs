@@ -103,9 +103,6 @@ runXterm = do
                 getHakyllArgs >>= copyXtermDataFiles . hakyllCfg
                 
                 hakyllRules $ do 
-                    
-                    matchXtermFiles
-                    
                     let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
@@ -129,7 +126,7 @@ runXterm = do
                                       `mappend` constField "message" message
                                       `mappend` constField "textmessage" textmessage
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile xtCtx >>= hakyllCompile hp
-                    
+                    matchXtermFiles
                 return (hakyllRoute hp $ destfolder </> "run.html")
             else throwError $ HaapException $ pretty res
 
@@ -146,11 +143,9 @@ copyXtermDataFiles cfg = do
 
 matchXtermFiles :: Rules ()
 matchXtermFiles = do
-    
     match (fromGlob ("js" </> "*.js")) $ do
         route idRoute
         compile copyFileCompiler
-
     match (fromGlob ("css" </> "*.css")) $ do
         route idRoute
         compile compressCssCompiler
