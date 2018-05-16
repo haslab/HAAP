@@ -60,7 +60,7 @@ Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/mini
 A minimal example that showcases [xterm.js](https://xtermjs.org/) integration:
 
 ```
-cd examples/minimalistic
+cd examples/xterm
 cp ../../cabal.sandbox.config .
 cabal exec -- ghc xterm.hs
 ./xterm
