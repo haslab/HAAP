@@ -101,7 +101,8 @@ runXterm = do
             then addMessageToError (pretty res) $ do
                 
                 getHakyllArgs >>= copyXtermDataFiles . hakyllCfg
-                
+                liftIO $ putStrLn $ "hakyll:" ++ show destfolder
+                liftIO $ putStrLn $ "hakyll:" ++ show tmp
                 hakyllRules $ do 
                     let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
