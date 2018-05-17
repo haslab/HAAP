@@ -179,12 +179,13 @@ runBot :: String -> Bot (SyncWorker ([String],Int,Int) (Maybe Char))
 runBot workerfile = Bot (newSyncWorker workerfile) go
     where
     go mapa player ticks worker = do
+        inp <- Control.Exception.evaluate $! prettyMapa $ avancaTempoMapa mapa ticks
         tryPutSyncWorker worker (inp::[String],player::Int,ticks::Int)
         mbres <- tryTakeSyncWorker worker
         case mbres of
             Nothing -> do
                 return (Nothing,worker)
-            Just jogada -> return (jogada,,worker)
+            Just jogada -> return (jogada,worker)
     
 asyncTimeout_ :: Int -> IO a -> IO (Maybe a)
 asyncTimeout_ i f =
