@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, CPP, Trustworthy, TemplateHaskell, TupleSections, ViewPatterns, DeriveDataTypeable, ScopedTypeVariables #-}
 
-module Main where
+module GameB where
 
 --import Utils
 
