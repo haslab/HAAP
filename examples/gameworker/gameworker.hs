@@ -72,13 +72,13 @@ main = do
             create ["index.md"] $ do
                 route (setExtension "html")
                 compile $ do
-                    makeItem ("#Game and JavaScript workers Example\n[play](gameworker/Game.jsexe/run.html)"::String) >>= renderPandoc
+                    makeItem ("#Game and JavaScript Web Workers Example\n[play](gameworker/Game.jsexe/run.html)"::String) >>= renderPandoc
         
         return ()
 
 exCodeWorld :: HasPlugin Hakyll t IO => Haap t IO CodeWorldArgs
 exCodeWorld = do
-    cwImgs <- runBaseSh $ shFindWhen (\x -> takeExtension x == ".bmp") "graphics"
+    cwImgs <- runBaseSh $ shFindWhen (\x -> return $ takeExtension x == ".bmp") "graphics"
     hakyllRules $ forM_ cwImgs $ \cwImg -> do
         match (fromGlob cwImg) $ do
             route idRoute
