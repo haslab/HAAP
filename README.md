@@ -79,7 +79,7 @@ cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
 
-Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
+Check the generated [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
 
 ## plab
 
