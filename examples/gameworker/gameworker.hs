@@ -80,11 +80,10 @@ main = do
 exCodeWorld :: HasPlugin Hakyll t IO => Haap t IO CodeWorldArgs
 exCodeWorld = do
     cwImgs <- runBaseIO $ find (return True) (extension ==? ".bmp") "graphics"
-    --runBaseSh $ shFindWhen (\x -> return $ takeExtension x == ".bmp") "graphics"
     hakyllRules $ forM_ cwImgs $ \cwImg -> do
         match (fromGlob cwImg) $ do
             route idRoute
             compile copyFileCompiler
     let ghcjs = def { ghcjsSafe = False }
-    return $ CodeWorldArgs (Left "Game.hs") "Game" (CWGame CWGameConsole) ghcjs def "gameworker" (map (\x -> (x,x)) cwImgs) []
+    return $ CodeWorldArgs (Left "Game.hs") "Game" (CWGame CWGameFullScreen) ghcjs def "gameworker" (map (\x -> (x,x)) cwImgs) []
 
