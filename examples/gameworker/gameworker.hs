@@ -85,5 +85,5 @@ exCodeWorld = do
             route idRoute
             compile copyFileCompiler
     let ghcjs = def { ghcjsSafe = False }
-    return $ CodeWorldArgs (Left "Game.hs") "Game" (CWGame CWGameFullScreen) ghcjs def "gameworker" (map (\x -> (x,x)) cwImgs) []
+    return $ CodeWorldArgs (Left "Game.hs") "Game" (CWGame CWGameFullscreen) ghcjs def "gameworker" (map (\x -> (x,x)) cwImgs) []
 
