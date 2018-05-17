@@ -60,9 +60,9 @@ mainGameB [js2,js3,js4] = jogo $ GUIArgs Nothing GUIPlay mapa p1 p2 p3 p4 1000 F
     where
     mapa = MGen 25 $ Just 1234
     p1 = PHuman ("P1",Nothing)
-    p2 = PBot (runBot js2 G175.bot) ("li1g175",Nothing)
-    p3 = PBot (runBot js3 G147.bot) ("li1g147",Nothing)
-    p4 = PBot (runBot js4 G100.bot) ("li1g100",Nothing)
+    p2 = PBot (runBot js2) ("li1g175",Nothing)
+    p3 = PBot (runBot js3) ("li1g147",Nothing)
+    p4 = PBot (runBot js4) ("li1g100",Nothing)
 
 -- * Parâmetros variáveis
 
@@ -175,8 +175,8 @@ type MyBot = [String] -> Int -> Int -> Maybe Char
 --parado :: Bot estado
 --parado = Bot $ \xs i j estado -> return (Nothing,estado)
 
-runBot :: String -> MyBot -> Bot (SyncWorker ([String],Int,Int) (Maybe Char))
-runBot workerfile bot = Bot (newSyncWorker workerfile) go
+runBot :: String -> Bot (SyncWorker ([String],Int,Int) (Maybe Char))
+runBot workerfile = Bot (newSyncWorker workerfile) go
     where
     go mapa player ticks worker = do
         tryPutSyncWorker worker (inp::[String],player::Int,ticks::Int)
