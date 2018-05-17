@@ -175,48 +175,16 @@ type MyBot = [String] -> Int -> Int -> Maybe Char
 --parado :: Bot estado
 --parado = Bot $ \xs i j estado -> return (Nothing,estado)
 
-foreign import javascript unsafe "$1.onmessage = $2;"
-    js_worker_listen_message :: Worker.Worker -> Callback (JSVal -> IO ()) -> IO ()
-    
-foreign import javascript unsafe "$r = $1.data;"
-    js_worker_get_data :: JSVal -> IO JSVal
-
-foreign import javascript unsafe "$1.postMessage($2);"
-    js_worker_postMessage  :: Worker.Worker -> JSVal -> IO ()
-
-postMessage :: (ToJSVal a,MonadIO m) => Worker.Worker -> a -> m ()
-postMessage w v = liftIO $ do
-    jsv <- toJSVal v
-    --CW.trace (T.pack "sending message to worker") $
-    js_worker_postMessage w jsv
-
-workerListen :: (FromJSVal a,MonadIO m) => Worker.Worker -> (a -> IO ()) -> m ()
-workerListen w f = liftIO $ do
-    callback <- asyncCallback1 $ \e -> do
-        v <- js_worker_get_data e
-        Just a <- fromJSVal v
-        f a
-    js_worker_listen_message w callback
-
-runBot :: String -> MyBot -> Bot (MVar (Maybe Char),Worker.Worker)
-runBot workerfile bot = Bot ini go
+runBot :: String -> MyBot -> Bot (SyncWorker ([String],Int,Int) (Maybe Char))
+runBot workerfile bot = Bot (newSyncWorker workerfile) go
     where
-    ini = do
-        mvar <- newEmptyMVar
-        worker <- Worker.create (toJSString workerfile)
-        workerListen worker $ \jogada -> {-CW.trace (T.pack $ "placing jogada " ++ show jogada) $-} putMVar mvar jogada
-        return (mvar,worker)
-    go mapa player ticks (mvar,worker) = do
-        mbres <- tryTakeMVar mvar
+    go mapa player ticks worker = do
+        tryPutSyncWorker worker (inp::[String],player::Int,ticks::Int)
+        mbres <- tryTakeSyncWorker worker
         case mbres of
             Nothing -> do
-                --CW.trace (T.pack "waiting on play") $
-                return (Nothing,(mvar,worker))
-            Just jogada -> {-CW.trace (T.pack "running bot") $-} do
-                inp <- Control.Exception.evaluate $! prettyMapa $ avancaTempoMapa mapa ticks
-                Main.postMessage worker (inp::[String],player::Int,ticks::Int)
-                {-CW.trace (T.pack $ "return " ++ show jogada) $-}
-                return (jogada,(mvar,worker))
+                return (Nothing,worker)
+            Just jogada -> return (jogada,,worker)
     
 asyncTimeout_ :: Int -> IO a -> IO (Maybe a)
 asyncTimeout_ i f =
