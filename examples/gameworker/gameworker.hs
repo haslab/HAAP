@@ -37,6 +37,7 @@ import Control.Monad (unless)
 
 import System.Directory
 import System.FilePath
+import System.FilePath.Find
 import Control.DeepSeq
 
 example :: Project
@@ -78,7 +79,8 @@ main = do
 
 exCodeWorld :: HasPlugin Hakyll t IO => Haap t IO CodeWorldArgs
 exCodeWorld = do
-    cwImgs <- runBaseSh $ shFindWhen (\x -> return $ takeExtension x == ".bmp") "graphics"
+    cwImgs <- runBaseIO $ find (return True) (extension ==? ".bmp") "graphics"
+    --runBaseSh $ shFindWhen (\x -> return $ takeExtension x == ".bmp") "graphics"
     hakyllRules $ forM_ cwImgs $ \cwImg -> do
         match (fromGlob cwImg) $ do
             route idRoute
