@@ -44,7 +44,7 @@ import qualified Data.Text as T
 import System.Environment
 --import System.Console.CmdArgs hiding (record)
 
-import Bomberman.Engine hiding (main)
+import Engine hiding (main)
 --import qualified Bomberman.AI as AI
 import Text.Printf
 import Text.Read hiding (Char)

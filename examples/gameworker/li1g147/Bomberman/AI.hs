@@ -18,6 +18,9 @@ import qualified Control.Monad.Writer as Writer
 
 --import Utils
 
+average2 :: Fractional a => a -> a -> a
+average2 x y = (x + y) / 2
+
 type Play = Maybe Char
 allPlays :: [Play]
 allPlays = [Nothing,Just 'U',Just 'D',Just 'L',Just 'R',Just 'B']
@@ -137,7 +140,3 @@ compareMove x y@(Just 'B') = GT
 compareMove Nothing y = GT
 compareMove x Nothing = LT
 compareMove x y = compare x y
-
-
-average2 :: Fractional a => a -> a -> a
-average2 x y = (x + y) / 2
