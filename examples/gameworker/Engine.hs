@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, FlexibleContexts, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
-module Bomberman.Engine where
+module Engine where
 
 import Control.Applicative ((<*))
 import Data.Map (Map(..))
