@@ -1,0 +1,34 @@
+Name:                ghcjs-extras
+Version:             0.0.1
+Synopsis:            Additional GHCJS bindings
+License:             BSD3
+Author:              Hugo Pacheco
+Maintainer:          Hugo Pacheco <hpacheco@gmail.com>
+Copyright:           (c) 2018, Hugo Pacheco
+Build-type:          Simple
+Cabal-version:       >=1.8
+
+Description:
+  Additional GHCJS bindings
+  .
+  This package must to be compiled with GHCJS.
+
+Data-Files: 
+
+Library
+  Hs-source-dirs:      .
+  Other-Modules:
+  Build-depends:       base >= 4.8 && < 5, async, text
+  Exposed-modules:     
+
+  if impl(ghcjs)
+    Build-depends:
+                       ghcjs-base,
+                       ghcjs-prim,
+                       ghcjs-dom             >= 0.9
+    Exposed-modules:     JavaScript.Web.Worker.Extras
+  else
+    Build-depends:     
+
+  Exposed:             True
+  Ghc-options:         -O2
