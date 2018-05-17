@@ -12,16 +12,7 @@
   </head>
   <body style="text-align: center">
       
-    <canvas id="screen" class="widescreen"></canvas>
-    <pre id="message" class="dropbox game">=== Compiling ===
-Output:
-[3 of 3] Compiling Main             ( Game.hs, Game.js_o )
-Linking ./tmp/gameworker/Game.jsexe (Engine,GameB,Main)
-
-Errors:
-
-Exit Code: 0
-=== Running ===</pre>
+    <canvas id="screen" class="fullscreen"></canvas>
     
     
     <img style="visibility: hidden;" id="graphics/bomb.bmp" src="../../graphics/bomb.bmp">
@@ -178,21 +169,12 @@ Exit Code: 0
     
     
     
+    
   </body>
   
   <script type="text/javascript">
     function reportRuntimeError(err, str) {
-      if (window.parent.addToMessage) {
-        var message = window.parent.addToMessage('\n' + str);
-        var msgelem = window.parent.document.getElementById('message');
-        msgelem.scrollTop = msgelem.scrollHeight;
-
-        if (err) {
-          msgelem.classList.add('error');
-        }
-      } else {
-        console.log(str);
-      }
+      console.log(str);
 
     }
   </script>
