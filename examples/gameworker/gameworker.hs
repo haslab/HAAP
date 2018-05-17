@@ -78,7 +78,7 @@ main = do
 
 exCodeWorld :: HasPlugin Hakyll t IO => Haap t IO CodeWorldArgs
 exCodeWorld = do
-    cwImgs <- runBaseSh $ shFindGlob "graphics/*.bmp"
+    cwImgs <- runBaseSh $ shFindWhen (hasExtension ".bmp") "graphics"
     hakyllRules $ forM_ cwImgs $ \cwImg -> do
         match (fromGlob cwImg) $ do
             route idRoute

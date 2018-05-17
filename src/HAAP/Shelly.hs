@@ -285,6 +285,13 @@ shFindGlob path = do
   where
     (dir,exec) = splitFileName path      
 
+shFindWhen :: (FilePath -> Sh Bool) -> FilePath -> Sh [FilePath]
+shFindWhen p path = do
+    xs <- Sh.findWhen (p . shToFilePath) (shFromFilePath dir)
+    return $ map shToFilePath xs
+  where
+    (dir,exec) = splitFileName path      
+
 equalPathSh :: FilePath -> FilePath -> Sh Bool
 equalPathSh x y = do
     x' <- shCanonalize x
