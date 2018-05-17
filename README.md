@@ -68,6 +68,19 @@ cabal exec -- ghc xterm.hs
 
 Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
 
+## gameworker
+
+An example that showcases a [CodeWorld](https://github.com/google/codeworld) game using JavaScript Web Workers:
+
+```
+cd examples/gameworker
+cp ../../cabal.sandbox.config .
+cabal exec -- ghc gameworker.hs
+./gameworker
+```
+
+Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
+
 ## plab
 
 A mockup of the [Laboratórios de Informática I](https://haslab.github.io/Teaching/LI1/) class feedback page.

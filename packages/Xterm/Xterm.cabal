@@ -4,7 +4,7 @@ Synopsis:            GHCJS bindings for the Xterm.js library
 License:             BSD3
 Author:              Hugo Pacheco
 Maintainer:          Hugo Pacheco <hpacheco@gmail.com>
-Copyright:           (c) 2017, The CodeWorld Authors
+Copyright:           (c) 2018, Hugo Pacheco
 Build-type:          Simple
 Cabal-version:       >=1.8
 

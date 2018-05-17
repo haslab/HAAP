@@ -14,14 +14,24 @@ import HAAP.Core
 import HAAP.Plugin
 import HAAP.Shelly
 import HAAP.IO
+import HAAP.Web.Hakyll
+import HAAP.Pretty
+import HAAP.Log
+import HAAP.Utils
 
 import Data.Default
 import Data.Proxy
+import Data.String
 
 import Control.Monad.Reader as Reader
+import Control.Monad.Except
 
 import Shelly (Sh(..))
 import qualified Shelly as Sh
+
+import System.FilePath
+import System.Directory
+import System.Process
 
 data GHCJS
 
@@ -81,3 +91,41 @@ ioGhcjsWith ghc ins = do
     addSafe True cmds = "-XSafe" : cmds
     addSafe False cmds = cmds
     addArgs xs ys = ys ++ xs
+    
+runGhcjs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin GHCJS t m) => FilePath -> FilePath -> Haap t m FilePath
+runGhcjs hsFile hmtlPath = do
+    hp <- getHakyllP
+    ghcjs <- liftHaap $ liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
+    do
+        tmp <- getProjectTmpPath
+        -- compile files with ghcjs
+        let io = ghcjsIO ghcjs
+        (destdir,destfolder) <- do
+                let exec = takeFileName hsFile
+                let destdir = dropExtension (hmtlPath </> exec)
+                let destfolder = addExtension destdir "jsexe"
+                return (destdir,destfolder)
+        
+        res <- orIOResult $ runBaseShWith (io) $ do
+                let (dir,exec) = splitFileName hsFile
+                let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
+                Sh.mkdir_p (fromString $ tmp </> destfolder)
+                shCd dir
+                shGhcjsWith ghcjs' [exec]
+        
+        if resOk res
+            then addMessageToError (pretty res) $ do
+                hakyllRules $ do 
+                    match (fromGlob $ tmp </> destfolder </> "*.html") $ do
+                        route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                        compile $ getResourceString >>= hakyllCompile hp
+                    let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
+                                   .||. fromGlob (tmp </> destfolder </> "*.externs")
+                                   .||. fromGlob (tmp </> destfolder </> "*.webapp")
+                                   .||. fromGlob (tmp </> destfolder </> "*.stats")
+                    match auxFiles $ do
+                        route   $ relativeRoute tmp
+                        compile copyFileCompiler
+                    
+                return (hakyllRoute hp $ destfolder </> "all.js")
+            else throwError $ HaapException $ pretty res

@@ -1,7 +1,7 @@
 {-
 HAAP: Haskell Automated Assessment Platform
 
-This module provides the @Xterm@ plugin to compile _Xterm_ animations (<https://github.com/google/Xterm>) to HTML webpages.
+This module provides the @Xterm@ plugin to compile _Xterm_ terminal interactions (<https://xtermjs.org/>) to HTML webpages.
 -}
 
 
