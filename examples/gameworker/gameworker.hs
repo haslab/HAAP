@@ -3,6 +3,7 @@
 module Main where
 
 import HAAP
+import HAAP.Utils
 
 import Data.Default
 import Data.Binary
@@ -52,7 +53,7 @@ main = do
     runHaap example $ useHakyll cfg $ do
         
         logEvent "Compiling Workers"
-        js <- usePlugin (return $ GHCJSArgs False ["-ili1g100:li1g147:li1g175"] def) $ do
+        js <- usePlugin_ (return $ GHCJSArgs False ["-ili1g100:li1g147:li1g175"] def) $ do
             js2 <- runGhcjs "Worker2.hs" "gameworker"
             js3 <- runGhcjs "Worker3.hs" "gameworker"
             js4 <- runGhcjs "Worker4.hs" "gameworker"
@@ -63,7 +64,7 @@ main = do
             writeFile ("Game.hs") $
                 "module Main where\n"++
                 "import GameB\n"++
-                "main = mainGameB "++show (map (\js -> dirToRoot "gameworker/Game.jsexe" js) js) ++ "\n"
+                "main = mainGameB "++show (map (\js -> dirToRoot "gameworker/Game.jsexe" </> js) js) ++ "\n"
         
         cw <- exCodeWorld >>= useAndRunCodeWorld
         
