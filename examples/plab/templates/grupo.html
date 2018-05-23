@@ -11,50 +11,50 @@
 
 <body>
 <div id="demo">
-<h1>Feedback por Grupo - $group$</h1>
+<h1>Feedback for Group $group$</h1>  
+<p>SVN revision: 45</p>
+<p>Time of last commit: $date$</p>
 
-<p>Data da última actualização: $date$</p>
+<p><b>If this site is not updated, if it does not show the last SVN revision, or if it shows errors, please do commit a new revision in SVN to "force" it to update.</b></p>
 
-<p><b>No caso de esta página não ser actualizada periodicamente, não reportar a versão do SVN mais recente ou apresentar erros, por favor fazer um novo commit no SVN de forma a "forçar" a sua actualização.</b></p>
+<h2>Tasks</h2>
 
-<h2>Tarefas</h2>
+<p>This section presents the feedback for each task.</p>
 
-<p>Esta secção apresenta feedback discriminado por tarefa.</p>
+<h3>Task 1</h3>
 
-<h3>Tarefa 1</h3>
+<p><a href="$specT1path$">Tests</a></p>
+<p><a href="$hpcT1path$">Test coverage (HPC)</a></p>
+<p><a href="$mapviewerpath$">Visualiser of Paths (Ideal)</a></p>
 
-<p><a href="$specT1path$">Testes</a></p>
-<p><a href="$hpcT1path$">Cobertura dos Testes (HPC)</a></p>
-<p><a href="$mapviewerpath$">Visualizador de Caminhos (Ideal)</a></p>
+<h3>Task 2</h3>
 
-<h3>Tarefa 2</h3>
+<p><a href="$specT2path$">Tests</a></p>
+<p><a href="$hpcT2path$">Test coverage (HPC)</a></p>
+<p><a href="$mapviewerpath$">Visualiser of Maps (Ideal)</a></p>
 
-<p><a href="$specT2path$">Testes</a></p>
-<p><a href="$hpcT2path$">Cobertura dos Testes (HPC)</a></p>
-<p><a href="$mapviewerpath$">Visualizador de Mapas (Ideal)</a></p>
+<h3>Task 3</h3>
 
-<h3>Tarefa 3</h3>
+<p><a href="$specT3path$">Tests</a></p>
+<p><a href="$hpcT3path$">Test coverage (HPC)</a></p>
+<p><a href="$collisionsimulatorpath$">Colision simulator (Group)</a></p>
+<p><a href="$collisionviewerpath$">Visualiser of Colisions (Ideal)</a></p>
 
-<p><a href="$specT3path$">Testes</a></p>
-<p><a href="$hpcT3path$">Cobertura dos Testes (HPC)</a></p>
-<p><a href="$collisionsimulatorpath$">Simulador de Colisões (Grupo)</a></p>
-<p><a href="$collisionviewerpath$">Visualizador de Colisões (Ideal)</a></p>
+<h3>Task 4</h3>
 
-<h3>Tarefa 4</h3>
+<p><a href="$specT4path$">Tests</a></p>
+<p><a href="$hpcT4path$">Test coverage (HPC)</a></p>
+<p><a href="$moveviewerpath$">Visualiser of Movements (Ideal)</a></p>
 
-<p><a href="$specT4path$">Testes</a></p>
-<p><a href="$hpcT4path$">Cobertura dos Testes (HPC)</a></p>
-<p><a href="$moveviewerpath$">Visualizador de Movimentos (Ideal)</a></p>
+<h2>Code quality</h2>
 
-<h2>Qualidade</h2>
-
-<p>Esta secção disponibiliza relatórios de ferramentas automáticas que podem conter sugestões úteis para melhorar a qualidade global do trabalho do grupo.</p>
+<p>This section shows the automatically generated reports by external tools, with hints and suggestions to help you improve the overall quality of your assignment.</p>
 
 $for(haddocks)$
-<p><a href="$haddock$">Documentação (Haddock)</a></p>
+<p><a href="$haddock$">Documentation (Haddock)</a></p>
 $endfor$
-<p><a href="$hlint$">Estilo de Programação (HLint)</a></p>
-<p><a href="$homplexity$">Complexidade do Código (Homplexity)</a></p>
+<p><a href="$hlint$">Programming style (HLint)</a></p>
+<p><a href="$homplexity$">Code complexity (Homplexity)</a></p>
 
 </div>
 </body>
