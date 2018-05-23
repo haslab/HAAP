@@ -37,9 +37,10 @@ RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal hlint homplexi
 RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 
 WORKDIR $HOME/ghcjs-0.2.1.9007019
+ADD ghcjs.config $HOME/ghcjs-0.2.1.9007019/cabal.config
 RUN ghcjs-boot
 
-WORKDIR /
+WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
 
 RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
