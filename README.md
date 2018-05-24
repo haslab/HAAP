@@ -23,6 +23,10 @@ To try HAAP in a new Docker container, simply run:
 ```
 docker run -i -t hugopacheco/haap:latest /bin/bash
 ```
+It is often useful to bind a directory in your host system, say `~/Desktop`, to a path inside your container, say `/Desktop`, by running the container with the additional argument:
+```
+docker run -v ~/Desktop:/Desktop -i -t hugopacheco/haap:latest /bin/bash
+```
 
 # Examples
 
