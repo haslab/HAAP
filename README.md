@@ -6,15 +6,16 @@
 To install HAAP in a new sandbox, simply run:
 ```
 cabal sandbox init
+cabal sandbox add-source packages/*
 cabal install HAAP.cabal
 ```
 
-For [CodeWorld](https://github.com/google/codeworld) animations you need to have [ghcjs](https://github.com/ghcjs/ghcjs) installed:
+For JavaScript animations you need to have [ghcjs](https://github.com/ghcjs/ghcjs) installed:
 1. install `ghcjs` from https://github.com/commercialhaskell/stack/blob/master/doc/ghcjs.md
 2. add `ghcjs` to your path
-3. install the codeworld packages
+3. install the HAAP ghcjs packages
 ```
-cabal install --ghcjs packages/codeworld-haap-api
+cabal install --ghcjs packages/codeworld-haap-api packages/ghcjs-extras packages/Xterm
 ```
 
 ## Docker
