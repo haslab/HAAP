@@ -90,8 +90,8 @@ main = do
             return ()
 
         -- load and run the @CodeWorld@ plugin over two visualizations            
-        cw1 <- useAndRunCodeWorld exCodeWorldDraw
-        cw2 <- useAndRunCodeWorld exCodeWorldGame
+        cw1 <- useAndRunCodeWorld codeworldDrawArgs
+        cw2 <- useAndRunCodeWorld codeworldGameArgs
         
         -- create an @index.html@ webpage using the @Hakyll@ plugin and connect to other artifacts
         hakyllRules $ do
@@ -170,15 +170,21 @@ exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney 
         players' <- runBaseIO' $ shuffleM players
         return (zip players' [1..],"link")
 
-exCodeWorldDraw :: CodeWorldArgs
-exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw CWDrawButton "[Avanca,Avanca]") ghcjs def "codeworld" imgs []
+{-|
+Arguments for the @CodeWorld@ plugin to draw maps.
+-}
+codeworldDrawArgs :: CodeWorldArgs
+codeworldDrawArgs = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw CWDrawButton "[Avanca,Avanca]") ghcjs def "codeworld" imgs []
     where
     ghcjs = def { ghcjsSafe = False }
 --    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
     imgs = [("recta","recta.png"),("curva","curva.png"),("lava","lava.jpg"),("carro","carro.png")]
 
-exCodeWorldGame :: CodeWorldArgs
-exCodeWorldGame = CodeWorldArgs (Left "MMGame.hs") "Game" (CWGame CWGameConsole) ghcjs def "codeworld" [] []
+{-|
+Arguments for the @CodeWorld@ plugin to play a game.
+-}
+codeworldGameArgs :: CodeWorldArgs
+codeworldGameArgs = CodeWorldArgs (Left "MMGame.hs") "Game" (CWGame CWGameConsole) ghcjs def "codeworld" [] []
     where
     ghcjs = def { ghcjsSafe = False }
 --    db = ["../.cabal-sandbox/x86_64-osx-ghcjs-0.2.1.9007019-ghc8_0_1-packages.conf.d/"]
