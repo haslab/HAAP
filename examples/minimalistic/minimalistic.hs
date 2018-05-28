@@ -48,32 +48,21 @@ lnsTourney = DBLens
     (BinaryDBQuery exTourneyDB)
     (\st -> BinaryDBUpdate $ \db -> ((),db { exTourneyDB = st }) )
 
-exSpec :: HaapSpec
-exSpec = bounded "x" [97,98,3,4] $ \x ->
-           bounded "y" "abcd" $ \y -> 
-             testEqual x (ord y)
-          
-exRankSpec :: Int -> HaapSpec
-exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual x i    
-
-exRankScore :: HaapTestRes -> FloatScore
-exRankScore HaapTestOk = FloatScore 1
-exRankScore _ = FloatScore 0
-
-exRank :: HaapStack t m => HaapSpecRank t m Int FloatScore
-exRank = HaapSpecRank "ranks.html" "Ranks" "Group" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
-
 {-|
 An HAAP script that runs tests with the @HSpec@ plugin, runs several code analysis plugins, generates
 feedback with the @ranking@ and @tournament@ plugins, provides visualization with the @CodeWorld@ plugin
 and uses the @Hakyll@ plugin to generate a webpage that connects all artifacts.
 -}
 main = do
-    let cfg = HakyllArgs defaultConfiguration False True def
-    let exDBArgs = BinaryDBArgs "db" emptyLi1DB def
+    let hakyllArgs = HakyllArgs defaultConfiguration False True def
+    let dbArgs = BinaryDBArgs "db" emptyLi1DB def
     let specArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
+    let haddockArgs = HaddockArgs (Sandbox Nothing) "mininalistic" [] "." ["minimalistic.hs"] "doc"
+    let hlintArgs = HLintArgs (Sandbox Nothing) [] "." ["minimalistic.hs"] "hlint.html"
+    let homplexityArgs = HomplexityArgs (Sandbox Nothing) [] "." ["../../src/"] "homplexity.html"
+    let hpcArgs = HpcArgs "HPCTest" def def (Just "hpc") False
     -- load the @Hakyll@ and database @DB@ plugins
-    runHaap example $ useHakyll cfg $ useBinaryDB exDBArgs $ do
+    runHaap example $ useHakyll hakyllArgs $ useBinaryDB dbArgs $ do
         -- load the @HSpec@ plugin
         (spec,rank,tour) <- useSpec specArgs $ do
             -- run @HSpec@ and render the results in @spec.html@
@@ -86,16 +75,16 @@ main = do
             return (spec,rank,tour)
         
         -- load and run the @Haddock@ plugin
-        hadcks <- useAndRunHaddock exHaddock
+        hadcks <- useAndRunHaddock haddockArgs
         
         -- load and run the @HLint@ plugin
-        hlint <- useAndRunHLint exHLint
+        hlint <- useAndRunHLint hlintArgs
         
         -- load and run the @Homplexity@ plugin
-        homplexity <- useAndRunHomplexity exHomplexity
+        homplexity <- useAndRunHomplexity homplexityArgs
         
         -- load and run the @HPC@ plugin
-        (_,hpc) <- useAndRunHpc exHpc () $ const $ do
+        (_,hpc) <- useAndRunHpc hpcArgs () $ const $ do
             runBaseIO $ system "./HPCTest < ints"
             runBaseIO $ system "./HPCTest < ints"
             return ()
@@ -131,6 +120,34 @@ main = do
         
         return ()
 
+
+{-|
+A concrete specification to be tested.
+-}
+exSpec :: HaapSpec
+exSpec = bounded "x" [97,98,3,4] $ \x ->
+           bounded "y" "abcd" $ \y -> 
+             testEqual x (ord y)
+          
+{-|
+A specification to be used in a ranking, will be run for each group.
+-}          
+exRankSpec :: Int -> HaapSpec
+exRankSpec i = bounded "x" [1,2,3,4,5] $ \x -> testEqual x i    
+
+{-|
+Calculates a quantitative score from the results of the tests.
+-}
+exRankScore :: HaapTestRes -> FloatScore
+exRankScore HaapTestOk = FloatScore 1
+exRankScore _ = FloatScore 0
+
+{-|
+Builds a global ranking according to the result of @exRankSpec@ for each group, normalized according to @exRankScore@.
+-}
+exRank :: HaapStack t m => HaapSpecRank t m Int FloatScore
+exRank = HaapSpecRank "ranks.html" "Ranks" "Group" "Ranking" [1..10::Int] (exRankSpec) (return . exRankScore)
+
 data ExPlayer = ExPlayer (String,Bool)
     deriving (Eq,Ord,Show,Generic)
 instance Binary ExPlayer
@@ -152,13 +169,6 @@ exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney 
     match tno rno mno players = do
         players' <- runBaseIO' $ shuffleM players
         return (zip players' [1..],"link")
-
-exHaddock = HaddockArgs (Sandbox Nothing) "mininalistic" [] "." ["minimalistic.hs"] "doc"
-exHLint = HLintArgs (Sandbox Nothing) [] "." ["minimalistic.hs"] "hlint.html"
-exHomplexity = HomplexityArgs (Sandbox Nothing) [] "." ["../../src/"] "homplexity.html"
-
-exHpc :: HpcArgs
-exHpc = HpcArgs "HPCTest" def def (Just "hpc") False
 
 exCodeWorldDraw :: CodeWorldArgs
 exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw CWDrawButton "[Avanca,Avanca]") ghcjs def "codeworld" imgs []
