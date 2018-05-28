@@ -594,7 +594,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         let gpath = sourcePath source
                         let gsrcpath = gpath </> "src"
-                        let ghcioargs = ioargs { ioSandbox = Just $ dirToRoot gsrcpath </> sandboxcfg }
+                        let ghcioargs = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot gsrcpath </> sandboxcfg }
                         let ghcargs = def { ghcIO = ghcioargs }
                         let ghtml = "grupos" </> show (plabGroupId g)
                         --let gdate = fmap svnDate info
@@ -759,7 +759,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- haddock
                         haddockpaths <- withHakyllP hp $ do
-                                let haddock = HaddockArgs (Just sandboxcfg) (projname ++ " - Group Documentation " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
+                                let haddock = HaddockArgs (Sandbox $ Just sandboxcfg) (projname ++ " - Group Documentation " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
                                 useAndRunHaddock haddock
                         
                         -- hlint
@@ -769,7 +769,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- homplexity
                         homplexitypath <- withHakyllP hp $ do
-                                let homplexity = HomplexityArgs (Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
+                                let homplexity = HomplexityArgs (Sandbox $ Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
                                 useAndRunHomplexity homplexity
                         
                         -- T3 ranking
