@@ -137,7 +137,7 @@ exHLint = HLintArgs Nothing [] "." ["minimalistic.hs"] "hlint.html"
 exHomplexity = HomplexityArgs Nothing [] "." ["../../src/"] "homplexity.html"
 
 exHpc :: HpcArgs
-exHpc = HpcArgs "HPCTest" def def Nothing (Just "hpc") False
+exHpc = HpcArgs "HPCTest" def def (Just "hpc") False
 
 exCodeWorldDraw :: CodeWorldArgs
 exCodeWorldDraw = CodeWorldArgs (Left "MMDraw.hs") "Draw" (CWDraw CWDrawButton "[Avanca,Avanca]") ghcjs def "codeworld" imgs []

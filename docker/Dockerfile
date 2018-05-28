@@ -45,4 +45,6 @@ RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/pack
 
 RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 
+WORKDIR $HOME/HAAP
+
 
