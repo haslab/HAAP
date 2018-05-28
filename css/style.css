@@ -18,7 +18,7 @@
     white-space: pre-wrap;
     color: red;
     /* width: 60%; /* to shrink error messages */
-    font-family: monospace; /* for ascii art */
+    /*font-family: monospace; /* for ascii art */
 }
 .datatext > a {
     text-decoration: none;  /* for ascii art */
