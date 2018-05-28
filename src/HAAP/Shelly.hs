@@ -141,8 +141,9 @@ shCommandWith_ ioargs name args  = do
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
 --    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    addSandbox NoSandbox cmds = cmds
+    addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+    addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
     
 shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
 shCommandToFileWith_ ioargs name args file = do
@@ -155,8 +156,9 @@ shCommandToFileWith_ ioargs name args file = do
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
 --    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    addSandbox NoSandbox cmds = cmds
+    addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+    addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
     handle h = do
         bs <- liftIO $ BS.hGetContents h
         liftIO $ BS.writeFile file bs
@@ -180,8 +182,9 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds
         addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
-        addSandbox Nothing cmds = cmds
-        addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+        addSandbox NoSandbox cmds = cmds
+        addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+        addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
 shPipeBinaryWith :: Binary a => IOArgs -> String -> [String] -> Sh a
 shPipeBinaryWith ioargs name args = shCommandHandleWith ioargs name args handle
@@ -201,8 +204,9 @@ shCommandHandleWith ioargs name args handle = do
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    addSandbox NoSandbox cmds = cmds
+    addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+    addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
 
 shPipeWith :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Sh b
 shPipeWith io n args x = shPipeWithType io n args x Proxy

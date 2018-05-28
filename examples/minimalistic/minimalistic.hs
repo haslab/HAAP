@@ -132,9 +132,9 @@ exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney 
 
 
 
-exHaddock = HaddockArgs Nothing "mininalistic" [] "." ["minimalistic.hs"] "doc"
-exHLint = HLintArgs Nothing [] "." ["minimalistic.hs"] "hlint.html"
-exHomplexity = HomplexityArgs Nothing [] "." ["../../src/"] "homplexity.html"
+exHaddock = HaddockArgs (Sandbox Nothing) "mininalistic" [] "." ["minimalistic.hs"] "doc"
+exHLint = HLintArgs (Sandbox Nothing) [] "." ["minimalistic.hs"] "hlint.html"
+exHomplexity = HomplexityArgs (Sandbox Nothing) [] "." ["../../src/"] "homplexity.html"
 
 exHpc :: HpcArgs
 exHpc = HpcArgs "HPCTest" def def (Just "hpc") False

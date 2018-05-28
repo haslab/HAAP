@@ -44,7 +44,7 @@ instance (HaapStack t2 m,HaapPluginT (ReaderT HomplexityArgs) m (t2 m)) => HasPl
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 data HomplexityArgs = HomplexityArgs
-    { homplexitySandbox :: Maybe FilePath
+    { homplexitySandbox :: Sandbox
     , homplexityArgs :: [String]
     , homplexityPath :: FilePath -- path relative to the project where to execute the homplexity command
     , homplexityFiles :: [FilePath] -- relative to the path where homplexity is executed
@@ -61,7 +61,7 @@ runHomplexity = do
     let homerrorpath = homplexityHtmlPath h
     orErrorHakyllPage homerrorpath homerrorpath $ do
         tmp <- getProjectTmpPath
-        let ioArgs = def { ioSandbox = fmap (dirToRoot (homplexityPath h) </>) (homplexitySandbox h) }
+        let ioArgs = def { ioSandbox = mapSandboxCfg (dirToRoot (homplexityPath h) </>) (homplexitySandbox h) }
         let extras = homplexityArgs h
         let files = homplexityFiles h
 --        let html = dirToRoot (homplexityPath h) </> tmp </> homplexityHtmlPath h

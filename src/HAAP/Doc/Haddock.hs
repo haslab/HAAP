@@ -50,7 +50,7 @@ instance HaapPlugin Haddock where
         return (x,())
 
 data HaddockArgs = HaddockArgs
-    { haddockSandbox :: Maybe FilePath
+    { haddockSandbox :: Sandbox
     , haddockTitle :: String
     , haddockArgs :: [String]
     , haddockPath :: FilePath -- path relative to the project where to execute the haddock command
@@ -90,7 +90,7 @@ runHaddock' files = do
     h <- liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.get
     hp <- getHakyllP
     tmp <- getProjectTmpPath
-    let ioArgs = def { ioSandbox = fmap (dirToRoot (haddockPath h) </>) (haddockSandbox h) }
+    let ioArgs = def { ioSandbox = mapSandboxCfg (dirToRoot (haddockPath h) </>) (haddockSandbox h) }
     let extras = haddockArgs h
     
     let html = dirToRoot (haddockPath h) </> tmp </> haddockHtmlPath h

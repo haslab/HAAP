@@ -58,8 +58,12 @@ class (Eq score,Ord score,Out score) => Score score where
     appendScores :: [score] -> score
 
 newtype FloatScore = FloatScore { unFloatScore :: Float }
-  deriving (Out,Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Show,Generic)
 $(deriveSafeCopy 0 'base ''FloatScore)
+
+instance Out FloatScore where
+    docPrec i x = doc x
+    doc (FloatScore f) = doc f
 
 instance Score FloatScore where
     okScore (FloatScore x) = x > 0

@@ -58,11 +58,19 @@ instance (MonadIO m,HaapStack t m) => MonadIO (Haap t m) where
     {-# INLINE liftIO #-}
     liftIO io = haapLiftIO $ runIOCore (def) io
 
+data Sandbox
+    = NoSandbox
+    | Sandbox (Maybe FilePath) -- optional config file
+
+mapSandboxCfg :: (FilePath -> FilePath) -> Sandbox -> Sandbox
+mapSandboxCfg f NoSandbox = NoSandbox
+mapSandboxCfg f (Sandbox mb) = Sandbox $ fmap f mb
+
 data IOArgs = IOArgs
     { ioTimeout :: Maybe Int -- in seconds
     , ioSilent :: Bool -- run silently without printing to stderr or stdout
     , ioStdin :: Maybe Text -- input file or handle for processes
-    , ioSandbox :: Maybe FilePath -- run inside a cabal sandbox (with given config file) or not; relative to the current path
+    , ioSandbox :: Sandbox -- run inside a cabal sandbox (with given config file) or not; relative to the current path
     , ioEscaping :: Bool -- escape shell characters or not
     , ioEnv :: [(String,FilePath)] -- additional environment variables
     , ioCmd :: Maybe String -- environment command (such as env, bash)
@@ -103,7 +111,7 @@ instance Out IOResult where
            $+$ text "Exit Code:" <+> doc (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 60) False Nothing Nothing True [] Nothing False
+defaultIOArgs = IOArgs (Just 60) False Nothing NoSandbox True [] Nothing False
 
 hiddenIOArgs :: IOArgs
 hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
@@ -180,8 +188,9 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addTimeout Nothing cmds = cmds
     addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
 --    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
-    addSandbox Nothing cmds = cmds
-    addSandbox (Just cfg) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    addSandbox NoSandbox cmds = cmds
+    addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+    addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
     addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
 
 haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
