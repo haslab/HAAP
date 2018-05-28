@@ -60,6 +60,8 @@ cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ```
 
+The resulting page is generated at `site/index.html`.
+
 Check the pre-generated result of this [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
 ## xterm
