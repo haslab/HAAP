@@ -43,7 +43,7 @@ instance (HaapStack t2 m,HaapPluginT (ReaderT HLintArgs) m (t2 m)) => HasPlugin 
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 data HLintArgs = HLintArgs
-    { hlintSandbox :: Maybe FilePath
+    { hlintSandbox :: Sandbox
     , hlintArgs :: [String]
     , hlintPath :: FilePath -- path relative to the project where to execute the hlint command
     , hlintFiles :: [FilePath] -- relative to the path where hlint is executed
@@ -60,7 +60,7 @@ runHLint = do
     let hlinterrorpath = addExtension (hlintHtmlPath h) "html"
     orErrorHakyllPage hlinterrorpath hlinterrorpath $ do
         tmp <- getProjectTmpPath
-        let ioArgs = def { ioSandbox = fmap (dirToRoot (hlintPath h) </>) (hlintSandbox h) }
+        let ioArgs = def { ioSandbox = mapSandboxCfg (dirToRoot (hlintPath h) </>) (hlintSandbox h) }
         let extras = hlintArgs h
         let files = hlintFiles h
         let html = dirToRoot (hlintPath h) </> tmp </> hlintHtmlPath h

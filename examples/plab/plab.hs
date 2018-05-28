@@ -399,7 +399,7 @@ script = do
                 -- T6 pre-processing
                 tourneyplayers <- runHakyll False False hp0 $ forM groups $ \(p,_) -> orDo (\e -> return $ TourneyGroup (Left p,Just $ pretty e)) $ do
                     let modu = (groupModule p)
-                    let tourneyioargs folder = ioargs { ioSandbox = Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 120 }
+                    let tourneyioargs folder = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 120 }
                     let ghcargs folder = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs folder }
                     let (dir,path) = splitFileName (groupFile p)
                     iores <- orIOResult $ runBaseShWith (tourneyioargs dir) $ do
@@ -429,7 +429,7 @@ script = do
                         t6bestof 16 = 3
                         t6bestof 4 = 5
                     let match tno rno mno ps@[p1,p2,p3,p4] = do
-                        let tourneyioargs folder = ioargs { ioSandbox = Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 240 }
+                        let tourneyioargs folder = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 240 }
                         let rts = ["+RTS","-K800m","-M800m","-RTS"] :: [String]
                         let tpath = "tourney" ++ pretty tno </> "round" ++ pretty rno </> "match" ++ pretty mno
                         let folder = projtmp </> "t6" </> tpath
@@ -594,7 +594,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         let gpath = sourcePath source
                         let gsrcpath = gpath </> "src"
-                        let ghcioargs = ioargs { ioSandbox = Just $ dirToRoot gsrcpath </> sandboxcfg }
+                        let ghcioargs = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot gsrcpath </> sandboxcfg }
                         let ghcargs = def { ghcIO = ghcioargs }
                         let ghtml = "grupos" </> show (plabGroupId g)
                         --let gdate = fmap svnDate info
@@ -759,17 +759,17 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- haddock
                         haddockpaths <- withHakyllP hp $ do
-                                let haddock = HaddockArgs (Just sandboxcfg) (projname ++ " - Group Documentation " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
+                                let haddock = HaddockArgs (Sandbox $ Just sandboxcfg) (projname ++ " - Group Documentation " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
                                 useAndRunHaddock haddock
                         
                         -- hlint
                         hlintpath <-  withHakyllP hp $ do
-                                let hlint = HLintArgs (Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "hlint.html")
+                                let hlint = HLintArgs (Sandbox $ Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "hlint.html")
                                 useAndRunHLint hlint
                         
                         -- homplexity
                         homplexitypath <- withHakyllP hp $ do
-                                let homplexity = HomplexityArgs (Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
+                                let homplexity = HomplexityArgs (Sandbox $ Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "homplexity.html")
                                 useAndRunHomplexity homplexity
                         
                         -- T3 ranking

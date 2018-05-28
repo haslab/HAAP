@@ -44,7 +44,9 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-Check the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
 
 ## minimalistic
 
@@ -53,12 +55,14 @@ A minimal example that showcases code analysis tools and [CodeWorld](https://git
 ```
 cd examples/minimalistic
 cp ../../cabal.sandbox.config .
-cabal exec -- ghc minimalistics.hs
+cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ./minimalistic
 ```
 
-Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
 ## xterm
 
@@ -71,7 +75,9 @@ cabal exec -- ghc xterm.hs
 ./xterm
 ```
 
-Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
 
 ## gameworker
 
@@ -84,7 +90,9 @@ cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
 
-Check the generated [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
 
 ## plab
 
@@ -98,7 +106,9 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-Check the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
 
 
 
