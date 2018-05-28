@@ -4,10 +4,9 @@
 Module      : Main
 Description : The @helloworld@ HAAP example
 
-This module presents a basic example of the usage of HAAP, consisting on the testing an @HSpec@
+This module presents a basic example of the usage of HAAP, consisting on testing an @HSpec@
 specification and generating a webpage with the results with @Hakyll@.
 -}
-
 module Main where
 
 import HAAP hiding (applyTemplate)
@@ -40,7 +39,7 @@ main = do
               testEqual x (ord y)
         -- run @HSpec@ and render the results in @spec.html@
         spec <- useSpec defaultHaapSpecArgs $ renderHaapSpec "spec.html" "" "ordtest" ordSpec
-        -- create an @index.md@ webpage
+        -- create an @index.md@ webpage using the @Hakyll@ plugin
         hakyllRules $ do
             create ["index.md"] $ do
                 route (setExtension "html")
