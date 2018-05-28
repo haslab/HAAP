@@ -192,12 +192,12 @@ plab_Tasks = [t1,t2,t3,t4,t5,t6]
     mkRel1 = HaapFile "oracle/relatorio/calvin.jpg" "relatorio/calvin.jpg" HaapBinaryFile
     mkRel2 = HaapFile "oracle/relatorio/relatorio.tex" "relatorio/relatorio.tex" HaapBinaryFile
     mkOracle f = HaapFile ("oracle" </> f) ("src" </> f) HaapOracleFile
-    t1 = Task "Tarefa 1" [mkTarefa 1,mkLib,mkOracle "RunT1.hs"]
-    t2 = Task "Tarefa 2" [mkTarefa 2,mkLib,mkOracle "RunT2.hs"]
-    t3 = Task "Tarefa 3" [mkTarefa 3,mkLib,mkOracle "RunT3.hs",mkOracle "CollisionSimulator.hs"]
-    t4 = Task "Tarefa 4" [mkTarefa 4,mkLib,mkOracle "RunT4.hs"]
-    t5 = Task "Tarefa 5" [mkTarefa 5,mkLib]
-    t6 = Task "Tarefa 6" [mkTarefa 6,mkLib,mkMapas,mkRel1,mkRel2]
+    t1 = Task "Task 1" [mkTarefa 1,mkLib,mkOracle "RunT1.hs"]
+    t2 = Task "Task 2" [mkTarefa 2,mkLib,mkOracle "RunT2.hs"]
+    t3 = Task "Task 3" [mkTarefa 3,mkLib,mkOracle "RunT3.hs",mkOracle "CollisionSimulator.hs"]
+    t4 = Task "Task 4" [mkTarefa 4,mkLib,mkOracle "RunT4.hs"]
+    t5 = Task "Task 5" [mkTarefa 5,mkLib]
+    t6 = Task "Task 6" [mkTarefa 6,mkLib,mkMapas,mkRel1,mkRel2]
 
 plab_ProjectDB :: IO (Project,PLab_DB)
 plab_ProjectDB = do
@@ -368,19 +368,19 @@ script = do
             -- T1 map viewer
             mapviewerpath <- runHakyll True True hp0 $ do
                 let tip = "Mapa ((1,0),Este) [[Peca (Curva Norte) 2,Peca Recta 2,Peca (Curva Este) 2],[Peca (Curva Oeste) 2,Peca Recta 2,Peca (Curva Sul) 2]]"
-                let mapviewer = CodeWorldArgs (Left "oracle/MapViewer.hs") "Visualizador de Caminhos/Mapas" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "mapviewer" cwImgs []
+                let mapviewer = CodeWorldArgs (Left "oracle/MapViewer.hs") "Visualiser of Paths/Maps" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "mapviewer" cwImgs []
                 useAndRunCodeWorld mapviewer
                 
             -- T3 collision viewer
             collisionviewerpath <- runHakyll False False hp0 $ do
                 let tip = "(3,Carro {posicao = (6.8,3.3), direcao = 45, velocidade = (0.5,1)})"
-                let collisionviewer = CodeWorldArgs (Left "oracle/CollisionViewer.hs") "Visualizador de Colisões" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "collisionviewer" cwImgs []
+                let collisionviewer = CodeWorldArgs (Left "oracle/CollisionViewer.hs") "Colision Visualiser" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "collisionviewer" cwImgs []
                 useAndRunCodeWorld collisionviewer
             
             -- T4 move viewer
             moveviewerpath <- runHakyll False False hp0 $ do
                 let tip = "(0.4, Jogo {mapa = Mapa ((2,1),Este) [[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0],[Peca Lava 0,Peca (Curva Norte) 0,Peca (Curva Este) 0,Peca Lava 0],[Peca Lava 0,Peca (Curva Oeste) 0,Peca (Curva Sul) 0,Peca Lava 0],[Peca Lava 0,Peca Lava 0,Peca Lava 0,Peca Lava 0]], pista = (Propriedades {k_atrito = 2, k_pneus = 1, k_acel = 4, k_peso = 2, k_nitro = 5, k_roda = 90}), carros = [Carro {posicao = (1.7,2.3), direcao = 5, velocidade = (1,0)}], nitros = [5], historico = [[(1,2)]]}, Acao {acelerar = True, travar = False, esquerda = True, direita = False, nitro = Nothing})"
-                let moveviewer = CodeWorldArgs (Left "oracle/MoveViewer.hs") "Visualizador de Movimentos" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "moveviewer" cwImgs []
+                let moveviewer = CodeWorldArgs (Left "oracle/MoveViewer.hs") "Visualiser of Movements" (CWDraw CWDrawButton tip) (ghcjsargs) (cwioargs) "moveviewer" cwImgs []
                 useAndRunCodeWorld moveviewer
             
             -- run for each group
@@ -518,7 +518,7 @@ script = do
                         route $ customRoute (const $ haapRemoteFile libfile)
                         compile copyFileCompiler
                 
-                let title = "PLab"
+                let title = "PLab 2017/18"
                 create ["nothing.html"] $ do
                     route $ idRoute `composeRoutes` funRoute (hakyllRoute hp0)
                     compile $ do
@@ -627,7 +627,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                                         shCd $ gsrcpath
                                         exec <- shExec "RunT1"
                                         liftM PrettyMapa $ shPipeWith testioargs exec ("constroi":rts) c
-                                useSpec feedbackmode $ renderHaapSpec gt1html "Tarefa 1" (pretty ghcT1res) specT1
+                                useSpec feedbackmode $ renderHaapSpec gt1html "Task 1" (pretty ghcT1res) specT1
                             return (specT1path,hpcT1path)
                             
                         -- T2
@@ -658,7 +658,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                                                     shCd $ gsrcpath
                                                     exec <- shExec "RunT2"
                                                     shPipeWith testioargs exec ("valida":rts) m
-                                useSpec feedbackmode $ renderHaapSpec gt2html "Tarefa 2" (pretty ghcT2res) specT2
+                                useSpec feedbackmode $ renderHaapSpec gt2html "Task 2" (pretty ghcT2res) specT2
                             return (specT2path,hpcT2path)
                             
                         -- T3
@@ -707,7 +707,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                                             let (idealsol,idealrank) = headNote "no solution" $ sortBy (flip compareSnd) idealranks
                                             let msg = "precision: " ++ printDouble idealrank 2 ++ "%\n"++"oracle: "++pretty idealsol++"\nsolution: "++ pretty groupsol
                                             return msg
-                                useSpec feedbackmode $ renderHaapSpec gt3html "Tarefa 3" (pretty ghcT3res) specT3
+                                useSpec feedbackmode $ renderHaapSpec gt3html "Task 3" (pretty ghcT3res) specT3
                             return (specT3path,hpcT3path)
                         
                         -- T4
@@ -740,12 +740,12 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                                                                shCd $ gsrcpath
                                                                exec <- shExec "RunT4"
                                                                shPipeWith testioargs exec ("atualiza":rts) (tempo,jogo,jogador,acao)
-                                                    else testMessage $ "teste inválido: " ++ pretty (tempo,jogo,acao) ++ "\njogador: " ++ pretty jogador
-                                let nota1 = "<b>Nota: O visualizador aplica a mesma ação a todos os jogadores.</b><br>"
-                                    nota2 = "<b>Nota: O sistema de feedback testa a ação individualmente para cada jogador.</b><br>"
-                                    nota3 = "<b>Nota: O sistema de feedback considera apenas os primeiros 100 testes de cada grupo. </b><br>"
-                                let notes = unlines [nota1,nota2,nota3,pretty ghcT4res]
-                                useSpec feedbackmodeT4 $ renderHaapSpec gt4html "Tarefa 4" notes specT4
+                                                    else testMessage $ "invalid test: " ++ pretty (tempo,jogo,acao) ++ "\nplayer: " ++ pretty jogador
+                                -- let nota1 = "<b>Nota: O visualizador aplica a mesma ação a todos os jogadores.</b><br>"
+                                --     nota2 = "<b>Nota: O sistema de feedback testa a ação individualmente para cada jogador.</b><br>"
+                                --     nota3 = "<b>Nota: O sistema de feedback considera apenas os primeiros 100 testes de cada grupo. </b><br>"
+                                let notes = unlines [pretty ghcT4res]
+                                useSpec feedbackmodeT4 $ renderHaapSpec gt4html "Task 4" notes specT4
                             return (specT4path,hpcT4path)
                             
                         -- T3 collision simulator
@@ -759,7 +759,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- haddock
                         haddockpaths <- withHakyllP hp $ do
-                                let haddock = HaddockArgs (Just sandboxcfg) (projname ++ " - Documentação do Grupo " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
+                                let haddock = HaddockArgs (Just sandboxcfg) (projname ++ " - Group Documentation " ++ show (plabGroupId g)) [] (gsrcpath) gsrcfiles (ghtml </> "doc")
                                 useAndRunHaddock haddock
                         
                         -- hlint
@@ -830,8 +830,8 @@ groupsPage groupsfeed = do
     projname <- getProjectName
     let makeRow (g,path) = [show (plabGroupId g),pretty $ H.a ! A.href (fromString path) $ "ver"]
     let groupstable = HaapTable
-                        (projname ++ " - Feedback por Grupo")
-                        ["Grupo","Feedback"]
+                        (projname ++ " - Feedback by Grupo")
+                        ["Group","Feedback"]
                         (map makeRow groupsfeed)
                         "grupos.html"
     renderHaapTable groupstable

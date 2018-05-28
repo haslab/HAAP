@@ -6,15 +6,16 @@
 To install HAAP in a new sandbox, simply run:
 ```
 cabal sandbox init
+cabal sandbox add-source packages/*
 cabal install HAAP.cabal
 ```
 
-For [CodeWorld](https://github.com/google/codeworld) animations you need to have [ghcjs](https://github.com/ghcjs/ghcjs) installed:
+For JavaScript animations you need to have [ghcjs](https://github.com/ghcjs/ghcjs) installed:
 1. install `ghcjs` from https://github.com/commercialhaskell/stack/blob/master/doc/ghcjs.md
 2. add `ghcjs` to your path
-3. install the codeworld packages
+3. install the HAAP ghcjs packages
 ```
-cabal install --ghcjs packages/codeworld-haap-api
+cabal install --ghcjs packages/codeworld-haap-api packages/ghcjs-extras packages/Xterm
 ```
 
 ## Docker
@@ -22,6 +23,10 @@ cabal install --ghcjs packages/codeworld-haap-api
 To try HAAP in a new Docker container, simply run:
 ```
 docker run -i -t hugopacheco/haap:latest /bin/bash
+```
+Since this container has no X window system, it is often useful to bind a directory in your host system, say `~/Desktop`, to a path inside your container, say `/Desktop`, by running the container with the additional argument:
+```
+docker run -v ~/Desktop:/Desktop -i -t hugopacheco/haap:latest /bin/bash
 ```
 
 # Examples
@@ -39,7 +44,9 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-Check the generated [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
+The resulting page is generated at `site/index.html`.
+
+Check the pre-generated result of this [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
 
 ## minimalistic
 
@@ -48,12 +55,12 @@ A minimal example that showcases code analysis tools and [CodeWorld](https://git
 ```
 cd examples/minimalistic
 cp ../../cabal.sandbox.config .
-cabal exec -- ghc minimalistics.hs
+cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ./minimalistic
 ```
 
-Check the generated [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
+Check the pre-generated result of this [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
 ## xterm
 
@@ -66,7 +73,7 @@ cabal exec -- ghc xterm.hs
 ./xterm
 ```
 
-Check the generated [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
+Check the pre-generated result of this [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
 
 ## gameworker
 
@@ -79,7 +86,7 @@ cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
 
-Check the generated [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
+Check the pre-generated result of this [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
 
 ## plab
 
@@ -93,7 +100,7 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-Check the generated [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
+Check the pre-generated result of this [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
 
 
 
