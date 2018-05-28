@@ -75,6 +75,8 @@ cabal exec -- ghc xterm.hs
 ./xterm
 ```
 
+The resulting page is generated at `site/index.html`.
+
 Check the pre-generated result of this [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
 
 ## gameworker
@@ -87,6 +89,8 @@ cp ../../cabal.sandbox.config .
 cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
+
+The resulting page is generated at `site/index.html`.
 
 Check the pre-generated result of this [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
 
@@ -101,6 +105,8 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ./plab
 ```
+
+The resulting page is generated at `site/index.html`.
 
 Check the pre-generated result of this [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
 
