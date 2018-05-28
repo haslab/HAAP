@@ -764,7 +764,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                         
                         -- hlint
                         hlintpath <-  withHakyllP hp $ do
-                                let hlint = HLintArgs (Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "hlint.html")
+                                let hlint = HLintArgs (Sandbox $ Just sandboxcfg) [] gsrcpath gsrcfiles (ghtml </> "hlint.html")
                                 useAndRunHLint hlint
                         
                         -- homplexity
