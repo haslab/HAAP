@@ -28,7 +28,7 @@ RUN cabal update
 WORKDIR $HOME
 RUN wget http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 RUN tar -xvf ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
-RUN git clone https://github.com/hpacheco/HAAP
+RUN git clone --branch ICFP18 https://github.com/haslab/HAAP
 
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
