@@ -43,7 +43,12 @@ RUN ghcjs-boot
 WORKDIR $HOME/ghcjs-0.2.1.9007019
 RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
 
-RUN cp $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/helloworld/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/minimalistic/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/xterm/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/gameworker/cabal.sandbox.config
+RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/plab/cabal.sandbox.config
 
 WORKDIR $HOME/HAAP
 
