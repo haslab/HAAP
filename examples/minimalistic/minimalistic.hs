@@ -18,6 +18,7 @@ import Data.Binary
 import Data.Char
 import Data.Monoid hiding ((<>))
 import qualified Data.Map as Map
+import Data.Unique
 
 import Control.DeepSeq
 import Control.Monad.IO.Class
@@ -159,7 +160,9 @@ instance Out ExPlayer where
 
 instance TourneyPlayer ExPlayer where
     isDefaultPlayer (ExPlayer (_,b)) = b
-    defaultPlayer = return $ ExPlayer ("random",True)
+    defaultPlayer = do
+        i <- newUnique
+        return $ ExPlayer ("random" ++ show (hashUnique i),True)
 
 exTourney :: MonadIO m => HaapTourney t m (BinaryDB Example_DB) ExPlayer Link
 exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney match (return) (const $ return ())

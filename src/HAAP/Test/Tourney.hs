@@ -73,6 +73,7 @@ instance HaapMonad m => HasPlugin Tourney (ReaderT TourneyArgs) m where
 instance (HaapStack t2 m,HaapPluginT (ReaderT TourneyArgs) m (t2 m)) => HasPlugin Tourney (ComposeT (ReaderT TourneyArgs) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
+-- | Player names need to be unique
 class (Ord a,Out a) => TourneyPlayer a where
     defaultPlayer :: IO a -- players should be unique
     isDefaultPlayer :: a -> Bool
