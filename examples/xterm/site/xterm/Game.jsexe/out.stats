@@ -11,7 +11,7 @@ ghcjs-base-0.2.0.0-GiGsdYOoO5CISyJ2m7ax9F:3296
 ghcjs-dom-jsffi-0.9.2.0-3TYxh8ZLmiQ561qJCRIiZo:10709
 ghcjs-prim-0.1.0.0-IFhsWclGfLr1HfhUvIVylA:11085
 integer-gmp:             79899
-main:                    571206
+main:                    573330
 primitive-0.6.1.0-PBvNfnj6B81wEvI5CBk0H:360
 random-1.1-4yODkowlqmVH67qh6sFaKw:25007
 safe-0.3.17-CbXiTpVbPmKHtjLVU2iVpi:4112
@@ -145,7 +145,7 @@ integer-gmp
 main
     Anima:                              7882
     Haskassonne:                        210493
-    Main:                               318267
+    Main:                               320391
     Next:                               34564
 
 primitive-0.6.1.0-PBvNfnj6B81wEvI5CBk0H
