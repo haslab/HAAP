@@ -179,7 +179,7 @@ Why not<br/>
 </div>
 
 <div class="hint3 file0">
-minimalistic.hs:40:1: Suggestion: Use camelCase<br/>
+minimalistic.hs:42:1: Suggestion: Use camelCase<br/>
 Found<br/>
 <pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                 <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
@@ -190,7 +190,7 @@ Why not<br/>
 </div>
 
 <div class="hint4 file0">
-minimalistic.hs:40:1: Suggestion: Use newtype instead of data<br/>
+minimalistic.hs:42:1: Suggestion: Use newtype instead of data<br/>
 Found<br/>
 <pre><span class='hs-keyword'>data</span> <span class='hs-conid'>Example_DB</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Example_DB</span><span class='hs-layout'>{</span><span class='hs-varid'>exTourneyDB</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>HaapTourneyDB</span> <span class='hs-conid'>ExPlayer</span><span class='hs-layout'>}</span>
                 <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
@@ -202,16 +202,7 @@ Why not<br/>
 </div>
 
 <div class="hint1 file0">
-minimalistic.hs:56:75: Warning: Redundant bracket<br/>
-Found<br/>
-<pre><span class='hs-layout'>(</span><span class='hs-varid'>exRankSpec</span><span class='hs-layout'>)</span></pre>
-Why not<br/>
-<pre><span class='hs-definition'>exRankSpec</span></pre>
-
-</div>
-
-<div class="hint1 file0">
-minimalistic.hs:86:29: Warning: Redundant bracket<br/>
+minimalistic.hs:99:29: Warning: Redundant bracket<br/>
 Found<br/>
 <pre><span class='hs-layout'>(</span><span class='hs-str'>"*.png"</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
@@ -220,7 +211,7 @@ Why not<br/>
 </div>
 
 <div class="hint1 file0">
-minimalistic.hs:89:29: Warning: Redundant bracket<br/>
+minimalistic.hs:102:29: Warning: Redundant bracket<br/>
 Found<br/>
 <pre><span class='hs-layout'>(</span><span class='hs-str'>"*.jpg"</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
@@ -229,7 +220,7 @@ Why not<br/>
 </div>
 
 <div class="hint1 file0">
-minimalistic.hs:92:29: Warning: Redundant bracket<br/>
+minimalistic.hs:105:29: Warning: Redundant bracket<br/>
 Found<br/>
 <pre><span class='hs-layout'>(</span><span class='hs-str'>"templates/minimalistic.html"</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
@@ -237,8 +228,17 @@ Why not<br/>
 
 </div>
 
+<div class="hint1 file0">
+minimalistic.hs:150:75: Warning: Redundant bracket<br/>
+Found<br/>
+<pre><span class='hs-layout'>(</span><span class='hs-varid'>exRankSpec</span><span class='hs-layout'>)</span></pre>
+Why not<br/>
+<pre><span class='hs-definition'>exRankSpec</span></pre>
+
+</div>
+
 <div class="hint4 file0">
-minimalistic.hs:111:1: Suggestion: Use newtype instead of data<br/>
+minimalistic.hs:152:1: Suggestion: Use newtype instead of data<br/>
 Found<br/>
 <pre><span class='hs-keyword'>data</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>ExPlayer</span> <span class='hs-layout'>(</span><span class='hs-conid'>String</span><span class='hs-layout'>,</span> <span class='hs-conid'>Bool</span><span class='hs-layout'>)</span>
               <span class='hs-keyword'>deriving</span> <span class='hs-layout'>(</span><span class='hs-conid'>Eq</span><span class='hs-layout'>,</span> <span class='hs-conid'>Ord</span><span class='hs-layout'>,</span> <span class='hs-conid'>Show</span><span class='hs-layout'>,</span> <span class='hs-conid'>Generic</span><span class='hs-layout'>)</span></pre>
@@ -249,7 +249,7 @@ Why not<br/>
 </div>
 
 <div class="hint0 file0">
-minimalistic.hs:117:5: Warning: Eta reduce<br/>
+minimalistic.hs:158:5: Warning: Eta reduce<br/>
 Found<br/>
 <pre><span class='hs-definition'>docPrec</span> <span class='hs-varid'>i</span> <span class='hs-varid'>x</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>doc</span> <span class='hs-varid'>x</span></pre>
 Why not<br/>
@@ -258,7 +258,7 @@ Why not<br/>
 </div>
 
 <div class="hint1 file0">
-minimalistic.hs:125:87: Warning: Redundant bracket<br/>
+minimalistic.hs:168:87: Warning: Redundant bracket<br/>
 Found<br/>
 <pre><span class='hs-layout'>(</span><span class='hs-varid'>return</span><span class='hs-layout'>)</span></pre>
 Why not<br/>
