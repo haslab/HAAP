@@ -168,7 +168,7 @@ exTourney :: MonadIO m => HaapTourney t m (BinaryDB Example_DB) ExPlayer Link
 exTourney = HaapTourney 10 "Tourney" bestof "Group" grupos "torneio" lnsTourney match (return) (const $ return ())
     where
     bestof = const 1
-    grupos = Left $ map (ExPlayer . mapFst show) $ zip [1..] (replicate 90 False ++ replicate 10 True)
+    grupos = Left $ map (ExPlayer . mapFst show) $ zip [1..] (replicate 4 False ++ replicate 10 True)
     match tno rno mno players = do
         players' <- runBaseIO' $ shuffleM players
         return (zip players' [1..],"link")
