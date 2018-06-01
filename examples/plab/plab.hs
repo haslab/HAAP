@@ -425,9 +425,9 @@ script = do
                 runHakyll False False hp0 $ do
                     let t6bestof :: Int -> Int
                         t6bestof 128 = 1
-                        t6bestof 64 = 3
-                        t6bestof 16 = 3
-                        t6bestof 4 = 5
+                        t6bestof 64 = 1
+                        t6bestof 16 = 1
+                        t6bestof 4 = 3
                     let match tno rno mno ps@[p1,p2,p3,p4] = do
                         let tourneyioargs folder = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 240 }
                         let rts = ["+RTS","-K800m","-M800m","-RTS"] :: [String]
