@@ -113,8 +113,10 @@ tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do
         H.title $ fromString title
         H.link ! A.rel "stylesheet" ! A.href (fromString $ pathtocss </> "tourney.css")
     H.body $ do
-        header
-        roundsHTML tsize Nothing (r:rs)
+        let bigsmall = if tsize >= 64 then "big" else "small"
+        H.div ! A.class_ (fromString bigsmall) $ do
+            header
+            roundsHTML tsize Nothing (r:rs)
 
 roundsHTML :: TourneyPlayer a => Int -> Maybe Int -> [Round a Link] -> Html
 roundsHTML fstround _ [] = return ()
