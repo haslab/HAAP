@@ -1,324 +1,475 @@
-
 #battle {
-    margin-left: 140px;
-    display: inline;
-    float: left;
-    margin-top: -70px;
-    margin-right: 15px;
-    position: relative;
-    z-index: 99;
+  margin-left:140px;
+  display:inline;
+  float:left;
+  margin-top:-70px;
+  margin-right:15px;
+  position:relative;
+  z-index:99
+}
+
+body {
+  font-family:'RobotoDraft','Roboto','Helvetica Neue, Helvetica, Arial',sans-serif;
+  font-style:normal;
+  font-size:1rem;
+  color:#212121;
+  background-color:#f5f5f5;
+}
+
+.icon {
+  height: 12px;
 }
 
 .round {
-  float: left;
-}
-.round.r-of-256 {
-  
-}
-.round.r-of-128 {
-  
-}
-.round.r-of-256-64 {
-  margin-top: 46px;
-  margin-left: -100px;
-}
-.round.r-of-128-64 {
-  margin-top: 45px;
-  margin-left: -100px;
+  float:left
 }
 
-.round.r-of-64-16 {
-  margin-top: 150px;
-  margin-left: -100px;
+.round.r-of-256 {
+
 }
-.round.r-of-16-4 {
-  margin-top: -2441px;
-  margin-left: -100px;
+
+.round.r-of-128 {
+
 }
-.round.r-of-4-1 {
-  margin-top: -2440px;
-  margin-left: -54px;
+
+.round.r-of-256-64 {
+  margin-top:46px;
+  margin-left:-100px
+}
+
+.round.r-of-128-64 {
+  margin-top:45px;
+  margin-left:-100px
+}
+
+.small .round.r-of-64-16 {
+  margin-top:150px;
+  margin-left:-100px
+}
+
+.big .round.r-of-64-16 {
+  margin-top:300px; /* +150 */
+  margin-left:-100px
+}
+
+.small .round.r-of-16-4 {
+  margin-top:0px;
+  margin-left:-100px
+}
+
+.big .round.r-of-16-4 {
+  margin-top:1206px; /* +1206 */
+  margin-left:-100px
+}
+
+.small .round.r-of-4-1 {
+  margin-top:0px;
+  margin-left:-54px
+}
+
+.big .round.r-of-4-1 {
+  margin-top:1206px; /* +1206 */
+  margin-left:-54px
 }
 
 .bracket-game-256 {
-  max-width: 50px;
-  margin: 10px 0;
+  max-width:50px;
+  margin:10px 0
 }
+
 .bracket-game-256-first {
-  max-width: 50px;
-  margin: 10px 0;
+  max-width:50px;
+  margin:10px 0
 }
+
 .bracket-game-128 {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 10px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:10px
 }
+
 .bracket-game-128-first {
-  max-width: 50px;
-  margin: 9px 0;
+  max-width:50px;
+  margin:9px 0
 }
+
 .bracket-game-64-first {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 9px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:9px
 }
+
 .bracket-game-64 {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 100px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:100px
 }
+
 .bracket-game-16-first {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 176px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:26px
 }
-.bracket-game-16 {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 640px;
+
+.small .bracket-game-16 {
+  max-width:50px;
+  margin:10px 0;
+  margin-top:40px
 }
+
+.big .bracket-game-16 {
+  max-width:50px;
+  margin:10px 0;
+  margin-top:640px /* +600 */
+}
+
 .bracket-game-4-first {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 3848px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:200px
 }
+
 .bracket-game-4 {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 2060px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:2060px
 }
+
 .bracket-game-1-first {
-  max-width: 50px;
-  margin: 10px 0;
-  margin-top: 3876px;
-  margin-left: 41px;
+  max-width:50px;
+  margin:10px 0;
+  margin-top:230px;
+  margin-left:45px
 }
+
 .player {
-  min-width: 100px;
-  border: 1px solid #AAA;
-  padding-left: 10px;
-  margin-left: 10px;
+  min-width:120px;
+  border:1px solid #AAA;
+  padding-left:2px;
+  margin-left:10px;
 }
+
 .player.top {
+
 }
+
 .player.bot {
+
 }
+
 .player .score {
-  display: inline;
-  float: right;
-  border-left: 1px solid #AAA;
-  padding-left: 10px;
-  padding-right: 10px;
-  background: #EEE;
+  display:inline;
+  float:right;
+  border-left:1px solid #AAA;
+  padding-left:10px;
+  padding-right:10px;
+  background:#EEE;
 }
+
+.standing {
+  border:1px solid #AAA;
+  border-left:1px solid #AAA;
+  padding-left:10px;
+  padding-right:10px;
+  background:#EEE;
+  width:70px;
+}
+
 .player.win {
-  background-color: #B8F2B8;
+  background-color:#B8F2B8
 }
+
 .player.loss {
-  background-color: #F2B8B8;
+  background-color:#F2B8B8
 }
+
 .player.bot {
-  background-color: #BFC9CA;
+  background-color:#BFC9CA
 }
+
 .connectors {
-  float: left;
-  min-width: 35px;
-  margin-top: 42.5px;
-  margin-right: 24px;
+  float:left;
+  min-width:35px;
+  margin-top:42.5px;
+  margin-right:24px
 }
+
 .connectors.r-of-256-64 .top-line {
-  position: relative;
-  top: 6px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:6px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-256-64 .mid-line1 {
-  position: relative;
-  top: 94px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:94px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-256-64 .mid-line2 {
-  position: relative;
-  top: 182px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:182px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-256-64 .bottom-line {
-  position: relative;
-  top: 270px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:270px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-256-64 .vert-line {
-  position: relative;
-  top: 0px;
-  left: -82px;
-  height: 268px;
-  border-right: 2px solid #AAA;
+  position:relative;
+  top:0px;
+  left:-88px;
+  height:268px;
+  border-right:2px solid #AAA
 }
+
 .connectors.r-of-256-64 .next-line {
-  position: relative;
-  top: -134px;
-  left: 0px;
-  width: 60px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:-134px;
+  left:0px;
+  width:60px;
+  border:1px solid #AAA
 }
 
 .connectors.r-of-128-64 .top-line {
-  position: relative;
-  top: 6px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:6px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-128-64 .mid-line1 {
-visibility:hidden;
-  position: relative;
-  top: 94px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  visibility:hidden;
+  position:relative;
+  top:94px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-128-64 .mid-line2 {
-visibility:hidden;
-  position: relative;
-  top: 182px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  visibility:hidden;
+  position:relative;
+  top:182px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-128-64 .bottom-line {
-  position: relative;
-  top: 90px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:90px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-128-64 .vert-line {
-  position: relative;
-  top: 0px;
-  left: -82px;
-  height: 88px;
-  border-right: 2px solid #AAA;
+  position:relative;
+  top:0px;
+  left:-88px;
+  height:88px;
+  border-right:2px solid #AAA
 }
+
 .connectors.r-of-128-64 .next-line {
-  position: relative;
-  top: -45px;
-  left: 0px;
-  width: 60px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:-45px;
+  left:-8px;
+  width:60px;
+  border:1px solid #AAA
 }
 
 .connectors.r-of-64-16 .top-line {
-  position: relative;
-  top: 51px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:51px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-64-16 .mid-line1 {
-  position: relative;
-  top: 229px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:229px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-64-16 .mid-line2 {
-  position: relative;
-  top: 407px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:407px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-64-16 .bottom-line {
-  position: relative;
-  top: 585px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:585px;
+  width:80px;
+  left:-88px;
+  border:1px solid #AAA
 }
+
 .connectors.r-of-64-16 .vert-line {
-  position: relative;
-  top: 43px;
-  left: -82px;
-  height: 540px;
-  border-right: 2px solid #AAA;
+  position:relative;
+  top:43px;
+  left:-88px;
+  height:540px;
+  border-right:2px solid #AAA
 }
+
 .connectors.r-of-64-16 .next-line {
-  position: relative;
-  top: -225px;
-  left: 0px;
-  width: 60px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:-225px;
+  left:-8px;
+  width:60px;
+  border:1px solid #AAA
 }
 
 
-.connectors.r-of-16-4 .top-line {
-  position: relative;
-  top: 323px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+.small .connectors.r-of-16-4 .top-line {
+  position:relative;
+  top:23px;
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
-.connectors.r-of-16-4 .mid-line1 {
-  position: relative;
-  top: 1041px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+
+.big .connectors.r-of-16-4 .top-line {
+  position:relative;
+  top:323px; /* +300 */
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
-.connectors.r-of-16-4 .mid-line2 {
-  position: relative;
-  top: 1759px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+
+.small .connectors.r-of-16-4 .mid-line1 {
+  position:relative;
+  top:141px;
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
-.connectors.r-of-16-4 .bottom-line {
-  position: relative;
-  top: 2477px;
-  width: 80px;
-  left: -82px;
-  border: 1px solid #AAA;
+
+.big .connectors.r-of-16-4 .mid-line1 {
+  position:relative;
+  top:1041px; /* +1000 */
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
-.connectors.r-of-16-4 .vert-line {
-  position: relative;
-  top: 315px;
-  left: -82px;
-  height: 2161px;
-  border-right: 2px solid #AAA;
+
+.small .connectors.r-of-16-4 .mid-line2 {
+  position:relative;
+  top:259px;
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
-.connectors.r-of-16-4 .next-line {
-  position: relative;
-  top: -765px;
-  left: 0px;
-  width: 60px;
-  border: 1px solid #AAA;
+
+.big .connectors.r-of-16-4 .mid-line2 {
+  position:relative;
+  top:1759px; /* +1500 */
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
 }
+
+.small .connectors.r-of-16-4 .bottom-line {
+  position:relative;
+  top:377px;
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
+}
+
+.big .connectors.r-of-16-4 .bottom-line {
+  position:relative;
+  top:2477px; /* +2100 */
+  width:98px;
+  left:-92px;
+  border:1px solid #AAA
+}
+
+.small .connectors.r-of-16-4 .vert-line {
+  position:relative;
+  top:17px;
+  left:-92px;
+  height:360px;
+  border-right:2px solid #AAA
+}
+
+.big .connectors.r-of-16-4 .vert-line {
+  position:relative;
+  top:317px; /* +300 */
+  left:-92px;
+  height:2160px; /* +1800 */
+  border-right:2px solid #AAA
+}
+
+.small .connectors.r-of-16-4 .next-line {
+  position:relative;
+  top:-171px;
+  left:8px;
+  width:60px;
+  border:1px solid #AAA
+}
+
+.big .connectors.r-of-16-4 .next-line {
+  position:relative;
+  top:-765px; /* -594 */
+  left:8px;
+  width:60px;
+  border:1px solid #AAA
+}
+
 .connectors.r-of-4-1 .next-line {
-  position: relative;
-  top: 3844px;
-  left: -20px;
-  width: 70px;
-  border: 1px solid #AAA;
+  position:relative;
+  top:196.5px;
+  left:0px;
+  width:54px;
+  border:1px solid #AAA
+}
+
+.connectors.r-of-1-4 .next-line {
+  position:relative;
+  top:196.5px;
+  left:-18px;
+  width:176px;
+  border:1px solid #AAA
 }
 
 .clear {
-  clear: both;
+  clear:both
 }
+
 .space-256 {
+
 }
+
 .space-128 {
+
 }
+
 .space-64 {
-  margin-top: 82px;
+  margin-top:82px
 }
+
 .space-16 {
-  margin-top: 170px;
+  margin-top:170px
 }
 
