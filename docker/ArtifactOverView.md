@@ -18,6 +18,19 @@ We provide a series of incrementally more complex HAAP scripts that highlight HA
 
 You can then try our examples. These rely on different HAAP plugins and were collected from parts of concrete HAAP instantiations throughout the years. Some were used as examples in the ICFP18 paper, and are identified as so.
 
+Each example `[example]` can be installed and run with the following instructions:
+
+```
+cd examples/[example]
+cabal exec -- ghc [example].hs
+./[example]
+./[example]
+```
+
+This will compile a concrete HAAP instantiation described in `[example].hs` and then execute it. All examples generate a webpage with the feedback at `[example]/_site/index.html`. Pre-generated versions of the webpage are also available at `[example]/site/index.html`.
+
+Certain plugins (e.g., the `tournament` one) preserve history between executions; executing `[example]` twice exercises this functionality (e.g., two tournaments in the leader board). 
+
 ### helloworld
 
 A simple hello world example with a simple [Hspec](https://hspec.github.io/) specification and [Hakyll](https://jaspervdj.be/hakyll/) webpage generation:
