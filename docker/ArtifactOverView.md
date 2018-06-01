@@ -16,7 +16,7 @@ We provide a series of incrementally more complex HAAP scripts that highlight HA
 
 ## Examples
 
-You can then try our examples. These rely on different HAAP plugins, and some were used as examples in the ICFP18 paper.
+You can then try our examples. These rely on different HAAP plugins and were collected from parts of concrete HAAP instantiations throughout the years. Some were used as examples in the ICFP18 paper, and are identified as so.
 
 ### helloworld
 
@@ -45,7 +45,7 @@ cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ```
 
-The resulting page is generated at `_site/index.html`. 
+Tournament history is preserved between executions; executing `minimalist` twice will result in two tournaments. The resulting page is generated at `_site/index.html`. 
 
 Check the pre-generated result of this [minimalistic](https://haslab.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
@@ -92,7 +92,7 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-The resulting page is generated at `_site/index.html`.
+Tournament history is preserved between executions; executing `plab` twice will result in two tournaments. The resulting page is generated at `_site/index.html`.
 
 Check the pre-generated result of this [plab](https://haslab.github.io/HAAP/examples/plab/site/index.html) example.
 
