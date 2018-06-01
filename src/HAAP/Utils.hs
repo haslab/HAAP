@@ -171,3 +171,5 @@ canonicalFilePath fp = do
 
 canonicalFilePath' :: FilePath -> FilePath
 canonicalFilePath' = unsafePerformIO . canonicalFilePath
+
+singleton x = [x]
