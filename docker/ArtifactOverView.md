@@ -24,7 +24,6 @@ A simple hello world example with a simple [Hspec](https://hspec.github.io/) spe
 
 ```
 cd examples/helloworld
-cp ../../cabal.sandbox.config .
 cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
@@ -39,7 +38,6 @@ A minimal example that showcases code analysis tools and [CodeWorld](https://git
 
 ```
 cd examples/minimalistic
-cp ../../cabal.sandbox.config .
 cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ./minimalistic
@@ -70,7 +68,6 @@ An example that showcases a [CodeWorld](https://github.com/google/codeworld) gam
 
 ```
 cd examples/gameworker
-cp ../../cabal.sandbox.config .
 cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
@@ -86,7 +83,6 @@ A mockup of the [Laboratórios de Informática I](https://haslab.github.io/Teach
 
 ```
 cd examples/plab
-cp ../../cabal.sandbox.config .
 cabal exec -- ghc plab.hs -ioracle
 ./plab
 ./plab
