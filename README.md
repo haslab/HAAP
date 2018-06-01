@@ -44,9 +44,9 @@ cabal exec -- ghc helloworld.hs
 ./helloworld
 ```
 
-The resulting page is generated at `site/index.html`.
+The resulting page is generated at `_site/index.html`.
 
-Check the pre-generated result of this [helloworld](https://hpacheco.github.io/HAAP/examples/helloworld/site/index.html) example.
+Check the pre-generated result of this [helloworld](https://haslab.github.io/HAAP/examples/helloworld/site/index.html) example.
 
 ## minimalistic
 
@@ -60,9 +60,9 @@ cabal exec -- ghc minimalistic.hs
 ./minimalistic
 ```
 
-The resulting page is generated at `site/index.html`.
+The resulting page is generated at `_site/index.html`.
 
-Check the pre-generated result of this [minimalistic](https://hpacheco.github.io/HAAP/examples/minimalistic/site/index.html) example.
+Check the pre-generated result of this [minimalistic](https://haslab.github.io/HAAP/examples/minimalistic/site/index.html) example.
 
 ## xterm
 
@@ -75,9 +75,9 @@ cabal exec -- ghc xterm.hs
 ./xterm
 ```
 
-The resulting page is generated at `site/index.html`.
+The resulting page is generated at `_site/index.html`.
 
-Check the pre-generated result of this [xterm](https://hpacheco.github.io/HAAP/examples/xterm/site/index.html) example.
+Check the pre-generated result of this [xterm](https://haslab.github.io/HAAP/examples/xterm/site/index.html) example.
 
 ## gameworker
 
@@ -90,9 +90,10 @@ cabal exec -- ghc gameworker.hs
 ./gameworker
 ```
 
-The resulting page is generated at `site/index.html`.
+The resulting page is generated at `_site/index.html`.
+Note that, by default, some browsers (such as Google Chrome) may block local JavaScript Web Workers for security reasons.
 
-Check the pre-generated result of this [gameworker](https://hpacheco.github.io/HAAP/examples/gameworker/site/index.html) example.
+Check the pre-generated result of this [gameworker](https://haslab.github.io/HAAP/examples/gameworker/site/index.html) example.
 
 ## plab
 
@@ -106,9 +107,9 @@ cabal exec -- ghc plab.hs -ioracle
 ./plab
 ```
 
-The resulting page is generated at `site/index.html`.
+The resulting page is generated at `_site/index.html`.
 
-Check the pre-generated result of this [plab](https://hpacheco.github.io/HAAP/examples/plab/site/index.html) example.
+Check the pre-generated result of this [plab](https://haslab.github.io/HAAP/examples/plab/site/index.html) example.
 
 
 
