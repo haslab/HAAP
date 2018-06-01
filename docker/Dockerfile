@@ -51,5 +51,6 @@ RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/gameworker/cabal.sandbo
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/plab/cabal.sandbox.config
 
 WORKDIR $HOME/HAAP
+RUN cp $HOME/HAAP/docker/README.md $HOME/HAAP/ArtifactOverview.md
 
 
