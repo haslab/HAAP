@@ -35,11 +35,11 @@ module CodeWorld.Driver (
     animationOf,
     simulationOf,
     interactionOf,
-    trace,
+    trace,traceIO,traceError,
     getSizeOf,
     getTextContent,
     loadImageById, loadImage, loadSizedImageById,
-    say, playAudioById
+    say, playAudioById,
 --    loadImage, loadImage', makeImage
     ) where
 
@@ -172,7 +172,7 @@ interactionOf :: world
 -- | Prints a debug message to the CodeWorld console when a value is forced.
 -- This is equivalent to the similarly named function in `Debug.Trace`, except
 -- that it uses the CodeWorld console instead of standard output.
-trace :: Text -> a -> a
+trace :: String -> a -> a
 
 orError str m = m >>= \x -> case x of
     Nothing -> Prelude.error $ str
@@ -1414,8 +1414,12 @@ simulationOf simInitial framerate simStep simDraw =
 foreign import javascript unsafe "window.reportRuntimeError($1, $2);"
     js_reportRuntimeError :: Bool -> JSString -> IO ()
 
+traceIO msg = do
+    js_reportRuntimeError False (textToJSString $ T.pack msg)
+    return ()
+
 trace msg x = unsafePerformIO $ do
-    js_reportRuntimeError False (textToJSString msg)
+    js_reportRuntimeError False (textToJSString $ T.pack msg)
     return x
 
 reportError :: SomeException -> IO ()
@@ -1431,9 +1435,12 @@ getDeployHash = pFromJSVal <$> js_deployHash
 --- Stand-alone implementation of tracing and error handling
 #else
 
-trace = Debug.Trace.trace . T.unpack
+trace = Debug.Trace.trace
 
 reportError :: SomeException -> IO ()
 reportError = hPrint stderr
 
 #endif
+
+traceError :: IO () -> IO ()
+traceError m = catch m $ \(e::SomeException) -> trace (displayException e) $ throw e

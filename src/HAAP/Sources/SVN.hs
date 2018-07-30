@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides the @SVN@ plugin that provides support for _subversion_ @HaapSource@s.
 -}
 
-{-# LANGUAGE TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
+{-# LANGUAGE DeriveDataTypeable, TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.SVN where
 
@@ -15,6 +15,8 @@ import HAAP.Plugin
 import HAAP.Shelly
 import HAAP.Log
 
+import Data.Data
+import Data.Typeable
 import Data.Default
 import Data.List.Split
 import Data.List
@@ -64,6 +66,8 @@ data SVNSource = SVNSource
     , svnPath :: FilePath -- path on disk
     , svnRepository :: FilePath -- repository url
     }
+  deriving (Data,Typeable)
+    
 $(deriveSafeCopy 0 'base ''SVNSource)
 
 instance Show SVNSource where
@@ -74,7 +78,7 @@ data SVNSourceInfo = SVNSourceInfo
     , svnAuthor  :: String
     , svnDate     :: ZonedTime
     }
-  deriving Show
+  deriving (Show,Data,Typeable)
 $(deriveSafeCopy 0 'base ''SVNSourceInfo)
 
 instance Eq SVNSourceInfo where
@@ -89,7 +93,7 @@ data SVNSourceArgs = SVNSourceArgs
     , svnDay :: Maybe Day
     , svnHidden :: Bool
     }
-  deriving Show
+  deriving (Show,Data,Typeable)
 
 instance HaapPlugin SVN where
     type PluginI SVN = SVNSourceArgs

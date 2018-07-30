@@ -36,6 +36,7 @@ import Control.Monad.Signatures
 import Control.DeepSeq
 
 import Data.DList as DList
+import Data.List as List
 import Data.Typeable
 import Data.Data
 import Data.SafeCopy
@@ -79,10 +80,13 @@ instance Out Group where
 instance NFData Group
 
 data HaapFileType
-    = HaapTemplateFile -- student files with a given template
-    | HaapBinaryFile -- student files without a given template
-    | HaapLibraryFile  -- common libraries for both students and instructors
-    | HaapOracleFile -- instructor code that students can't see
+    = HaapFileType { isStudent :: Bool, isTemplate :: Bool, isInstructor :: Bool }
+    
+    -- = HaapTemplateFile -- student files with a given template
+    -- -- | HaapBinaryFile -- student files without a given template
+    -- | HaapLibraryFile  -- common libraries for both students and instructors
+    -- | HaapOracleFile -- instructor code that students can't see and is not copied into the student's directory
+    -- | HaapOracleTemplateFile -- instructor code that students can't see with a given template aand is copied into the student's directory
   deriving (Data,Typeable,Eq,Show,Ord)
 
 data HaapFile = HaapFile
@@ -211,6 +215,11 @@ getProjectTmpPath = liftM projectTmpPath getProject
 
 getProjectGroups :: HaapStack t m => Haap t m [Group]
 getProjectGroups = liftM projectGroups getProject
+
+getProjectGroup :: HaapStack t m => String -> Haap t m (Maybe Group)
+getProjectGroup gname = do
+    gs <- getProjectGroups
+    return $ List.find ((==gname) . groupId) gs
 
 getProjectTasks :: HaapStack t m => Haap t m [Task]
 getProjectTasks = liftM projectTasks getProject

@@ -55,6 +55,7 @@ import HAAP.Core
 import HAAP.CmdArgs
 import HAAP.Code.Analysis.Haddock
 import HAAP.Code.Haskell
+import HAAP.Code.Literate.Haskell
 import HAAP.DB
 import HAAP.Shelly
 import HAAP.DB.State

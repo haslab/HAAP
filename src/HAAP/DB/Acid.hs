@@ -85,5 +85,8 @@ instance HaapMonad m => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m w
 instance (HaapStack t2 m,HaapPluginT (StateT (IOArgs, AcidState st)) m (t2 m)) => HasPlugin (AcidDB st) (ComposeT (StateT (IOArgs,AcidState st)) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
     
-    
+readAcidState :: HasPlugin (AcidDB st) t m => Haap t m (AcidState st)
+readAcidState = do
+    (ioargs,st) <- liftHaap $ liftPluginProxy (Proxy::Proxy (AcidDB st)) $ State.get
+    return st
     

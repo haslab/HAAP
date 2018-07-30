@@ -45,6 +45,7 @@ import System.Environment
 import System.FilePath
 import System.IO.Unsafe
 
+import Data.Maybe
 import Data.Traversable
 import Data.Typeable
 import Data.Knob as Knob
@@ -122,10 +123,10 @@ unbounded = HaapSpecUnbounded
 testBool :: Bool -> HaapSpec
 testBool x = testBoolIO (return x)
 
-testEqual :: (NFData a,Eq a,Out a,Show a) => a -> a -> HaapSpec
+testEqual :: (NFData a,Eq a,OutIO a) => a -> a -> HaapSpec
 testEqual x y = testEqualIO (return x) (return y)
 
-testEqualWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> a -> a -> HaapSpec
+testEqualWith :: (NFData a,OutIO a) => (a -> a -> Bool) -> a -> a -> HaapSpec
 testEqualWith eq x y = testEqualIOWith eq (return x) (return y)
 
 testMessage :: String -> HaapSpec
@@ -134,10 +135,13 @@ testMessage x = testMessageIO (return x)
 testBoolIO :: IO Bool -> HaapSpec
 testBoolIO = HaapSpecTestBool
 
-testEqualIO :: (NFData a,Eq a,Out a,Show a) => IO a -> IO a -> HaapSpec
+testMaybeIO :: (NFData a,OutIO a) => IO (Maybe a) -> HaapSpec
+testMaybeIO = HaapSpecTestMaybe
+
+testEqualIO :: (NFData a,Eq a,OutIO a) => IO a -> IO a -> HaapSpec
 testEqualIO = HaapSpecTestEqual (==)
 
-testEqualIOWith :: (NFData a,Out a,Show a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+testEqualIOWith :: (NFData a,OutIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
 testEqualIOWith eq iox ioy = HaapSpecTestEqual eq iox ioy
 
 testMessageIO :: IO String -> HaapSpec
@@ -147,7 +151,8 @@ data HaapSpec where
      HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
      HaapSpecUnbounded :: (Show a,Out a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
      HaapSpecTestBool :: IO Bool -> HaapSpec
-     HaapSpecTestEqual :: (NFData a,Show a,Out a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+     HaapSpecTestMaybe :: (NFData a,OutIO a) => IO (Maybe a) -> HaapSpec
+     HaapSpecTestEqual :: (NFData a,OutIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
      HaapSpecTestMessage :: IO String -> HaapSpec
 
 data HaapTestTable a = HaapTestTable
@@ -256,12 +261,18 @@ haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
             b <- runSpecIO ioargs "test" io
             assertBool "Boolean assertion failed" b
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
+    haapSpec' mode (HaapSpecTestMaybe io) = do
+        ex <- haapNewExample
+        let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
+            b <- runSpecIO ioargs "test" io
+            assertMaybe "Boolean assertion failed" b
+        return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
     haapSpec' mode (HaapSpecTestEqual eq iox ioy) = do
         ex <- haapNewExample
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
             x <- runSpecIO ioargs "oracle" iox
             y <- runSpecIO ioargs "solution" ioy
-            assertEqualWith ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y) eq x y
+            assertEqualWith ("Equality assertion failed: ") eq x y
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
     haapSpec' mode (HaapSpecTestMessage io) = do
         ex <- haapNewExample
@@ -292,6 +303,7 @@ haapSpecNames (HaapSpecUnbounded n _ g f) = do
     ns <- haapSpecNames $ f x
     return (n:ns)
 haapSpecNames (HaapSpecTestBool io) = return []
+haapSpecNames (HaapSpecTestMaybe io) = return []
 haapSpecNames (HaapSpecTestEqual eq iox ioy) = return []
 haapSpecNames (HaapSpecTestMessage io) = return []
 
@@ -301,10 +313,15 @@ haapSpecProperty ioargs (HaapSpecUnbounded n _ g f) = forAll g f
 haapSpecProperty ioargs (HaapSpecTestBool io) = counterexample "Boolean assertion failed" $ monadicIO $ do
     b <- run $ runSpecIO ioargs "test" io
     QuickCheck.assert b
+haapSpecProperty ioargs (HaapSpecTestMaybe io) = counterexample "Boolean assertion failed" $ monadicIO $ do
+    b <- run $ runSpecIO ioargs "test" io
+    QuickCheck.assert (isNothing b)
 haapSpecProperty ioargs (HaapSpecTestEqual eq iox ioy) = monadicIO $ do
     x <- run $ runSpecIO ioargs "oracle" iox
     y <- run $ runSpecIO ioargs "solution" ioy
-    unless (x `eq` y) $ fail ("Equality assertion failed: expected...\n"++pretty x ++ "\n...but got...\n"++ pretty y)
+    px <- run $ runSpecIO ioargs "oracle" $ prettyIO x
+    py <- run $ runSpecIO ioargs "solution" $ prettyIO y
+    unless (x `eq` y) $ fail ("Equality assertion failed: expected...\n"++px ++ "\n...but got...\n"++ py)
     QuickCheck.assert (x `eq` y)
 haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
     msg <- run $ runSpecIO ioargs "test" io
@@ -318,18 +335,25 @@ location = case reverse callStack of
   (_, loc) : _ -> Just loc
   [] -> Nothing
 
-assertEqualWith :: (HasCallStack, Show a)
+assertMaybe :: (HasCallStack, OutIO a)
+                              => String -- ^ The message prefix
+                              -> (Maybe a)      -- ^ The result with maybe the unexpected result
+                              -> Assertion
+assertMaybe preface gotten = case gotten of
+    Nothing -> return ()
+    Just actual -> do
+        prefaceMsg <- if null preface then return Nothing else return $ Just preface
+        actualMsg <- prettyIO actual
+        throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg "" actualMsg
+
+assertEqualWith :: (HasCallStack, OutIO a)
                               => String -- ^ The message prefix
                               -> (a -> a -> Bool)
                               -> a      -- ^ The expected value
                               -> a      -- ^ The actual value
                               -> Assertion
-assertEqualWith preface eq expected actual =
-  unless (actual `eq` expected) $ do
-    (prefaceMsg `deepseq` expectedMsg `deepseq` actualMsg `deepseq` throwIO (HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg expectedMsg actualMsg))
-  where
-    prefaceMsg
-      | null preface = Nothing
-      | otherwise = Just preface
-    expectedMsg = show expected
-    actualMsg = show actual
+assertEqualWith preface eq expected actual = unless (actual `eq` expected) $ do
+    prefaceMsg <- if null preface then return Nothing else return $ Just preface
+    expectedMsg <- prettyIO expected
+    actualMsg <- prettyIO actual
+    throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg expectedMsg actualMsg

@@ -85,7 +85,7 @@ data HaapTourney t m db a r = HaapTourney
     , tourneyTitle :: String
     , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
     , tourneyPlayerTag :: String
-    , tourneyPlayers :: Either [a] [[a]] -- must be unique
+    , tourneyPlayers :: Either [a] [[a]] -- must be unique (left = unpaiared players, right = paired players)
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
     , tourneyMatch :: HasDB db t m => Int -- tourneyno
@@ -106,7 +106,7 @@ data HaapTourneyDB a = HaapTourneyDB
     { tourneyNo :: Int
     , tourneyDB :: [(Int,HaapTourneySt a)]
     }
-  deriving (Generic,Typeable)
+  deriving (Show,Eq,Ord,Data,Generic,Typeable)
 instance Binary a => Binary (HaapTourneyDB a)
 
 insertHaapTourneySt :: HasDB db t m => HaapTourney t m db a r -> Int -> HaapTourneySt a -> HaapTourneyDB a -> Haap t m (HaapTourneyDB a)

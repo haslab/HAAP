@@ -1,0 +1,48 @@
+name:                snap-exports
+version:             1.1.1.0
+synopsis:            Re-export some hidden snap functionality
+description:         Re-export some hidden snap functionality.
+                     Just copied from snap and more liberal exports
+
+homepage:            
+license:             BSD3
+author:              Snap Team
+maintainer:          hpacheco@gmail.com
+copyright:           Snap Team
+category:            Language, Tools
+build-type:          Simple
+cabal-version:       >=1.10
+
+Library
+  exposed-modules:
+    Snap.Snaplet.Auth.AuthManager.Exts
+    Snap.Snaplet.Auth.Backends.JsonFile.Exts
+    Snap.Snaplet.Auth.Types.Exts
+    Snap.Snaplet.Auth.Exts
+  Hs-source-dirs:   .
+  Other-Modules:
+
+  build-depends:       base             
+                       , snap-core
+                       , aeson
+                       , snap
+                       , text
+                       , hashmap
+                       , hashable
+                       , time
+                       , unordered-containers
+                       , bytestring
+                       , configurator
+                       , pwstore-fast
+                       , mtl
+                       , clientsession
+                       , directory
+                       , containers
+                       , attoparsec
+                       , stm
+                       , transformers
+
+
+
+
+

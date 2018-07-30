@@ -39,6 +39,7 @@ import System.Process
 import System.Directory
 import System.Environment
 import System.FilePath.GlobPattern
+import qualified System.IO.Strict as Strict
 
 import Data.Default
 import Data.Text (Text(..))
@@ -52,6 +53,7 @@ import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 import Data.Maybe
 import Text.Read
+import Control.DeepSeq
 
 import System.IO
 
@@ -60,12 +62,19 @@ import GHC.Stack
 runBaseSh :: (MonadIO m,HaapStack t m) => Sh a -> Haap t m a
 runBaseSh = runBaseShWith def
 
+runBaseSh' :: (MonadIO m,HaapStack t m,NFData a) => Sh a -> Haap t m a
+runBaseSh' = runBaseShWith' def
+
 runSh :: (MonadIO m,HaapPureLiftT (Haap t) m Sh,HaapPureRestoreT (Haap t) m) => Haap t Sh a -> Haap t m a
 runSh = runShWith def
 
 runBaseShWith :: (MonadIO m,HaapStack t m) => IOArgs -> Sh a -> Haap t m a
 runBaseShWith ioargs msh = do
     haapLiftIO $ runShCoreIO ioargs msh
+
+runBaseShWith' :: (MonadIO m,HaapStack t m,NFData a) => IOArgs -> Sh a -> Haap t m a
+runBaseShWith' ioargs msh = do
+    haapLiftIO $ forceM $ runShCoreIO ioargs msh
 
 runShWith :: (MonadIO m,HaapPureLiftT (Haap t) m Sh,HaapPureRestoreT (Haap t) m) => IOArgs -> Haap t Sh a -> Haap t m a
 runShWith ioargs msh = do
@@ -110,11 +119,11 @@ orErrorWritePage :: (HaapStack t m,Out a,MonadIO m) => FilePath -> a -> Haap t m
 orErrorWritePage path def m = orDo go $ do
     x <- m
     ok <- orLogDefault False $ runBaseIO $ doesFileExist path
-    unless ok $ orLogDefault () $ runBaseSh $ shWriteFile path $ pretty x
+    unless ok $ orLogDefault () $ runBaseSh $ shWriteFile' path $ pretty x
     return x
   where
     go e = do
-        runBaseIO $ writeFile path $ pretty e
+        runBaseIO $ Strict.run $ Strict.writeFile path $ pretty e
         return def
 
 shExec :: String -> Sh FilePath
@@ -177,7 +186,7 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
         stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
         stderr <- if ioHidden ioargs then return (Text.pack "hidden") else Sh.lastStderr
         exit <- Sh.lastExitCode
-        return $ IOResult exit stdout stderr
+        return $ force $ IOResult exit stdout stderr
       where
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds
@@ -232,6 +241,27 @@ shWriteFile path ct = do
     Sh.mkdir_p $ shFromFilePath $ takeDirectory path
     Sh.writefile (shFromFilePath path) (Text.pack ct)
 
+shAppendFile :: FilePath -> String -> Sh ()
+shAppendFile path ct = do
+    Sh.appendfile (shFromFilePath path) (Text.pack ct)
+
+shReadFile :: FilePath -> Sh String
+shReadFile path = do
+    ct <- Sh.readfile (shFromFilePath path)
+    return (Text.unpack ct)
+
+shReadFile' :: FilePath -> Sh String
+shReadFile' path = do
+    path' <- Sh.absPath (shFromFilePath path)
+    ct <- liftIO $ Strict.run $ Strict.readFile (shToFilePath path')
+    return ct
+
+shWriteFile' :: FilePath -> String -> Sh ()
+shWriteFile' path ct = do
+    Sh.mkdir_p $ shFromFilePath $ takeDirectory path
+    path' <- Sh.absPath (shFromFilePath path)
+    liftIO $ Strict.run $ Strict.writeFile (shToFilePath path') ct
+
 shFromFilePath :: FilePath -> Sh.FilePath
 shFromFilePath = Sh.fromText . Text.pack
 
@@ -275,7 +305,7 @@ shRecursive op from to = do
             istodir <- shDoesDirectoryExist to
             unless (istodir) $ shMkDir to
             froms <- shLs from
-            forM_ froms $ \x -> shRecursive op (from </> x) to       
+            forM_ froms $ \x -> shRecursive op (from </> makeRelative from x) (to </> makeRelative from x)       
         else op from to
 
 infix ~~~

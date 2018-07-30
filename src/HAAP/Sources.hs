@@ -52,34 +52,31 @@ populateGroupSource ctx overwriteStudentFiles g s = do
     files <- getProjectTaskFiles
     remotefiles <- runBaseSh $ forM files $ \file -> do
         --Sh.liftIO $ putStrLn $ "populating file " ++ show file
-        let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles
+        --let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles
         let localfile = haapLocalFile file
         let remotefile = applyTemplate (makeTemplate $ haapRemoteFile file) ctx
         let shCopy ctx from to = do
-            docopy <- case haapFileType file of
-                HaapTemplateFile -> do
+            docopy <- if isInstructor (haapFileType file) && (isTemplate (haapFileType file) || isStudent (haapFileType file))
+                then do
                     isto <- shDoesFileExist to
-                    return $ if isto then overwriteStudentFiles else True
-                otherwise -> return True
-            case haapFileType file of
-                HaapBinaryFile -> when docopy $ shCp from to
-                otherwise -> when docopy $ shLoadApplyAndCopyTemplate ctx from to
+                    return $ if isto && isStudent (haapFileType file) then overwriteStudentFiles else True
+                else return False
+            if isTemplate (haapFileType file)
+                then when docopy $ shLoadApplyAndCopyTemplate ctx from to
+                else when docopy $ shCp from to
         shRecursive (shCopy ctx) (ppath </> localfile) (spath </> remotefile)
-        case haapFileType file of
-            HaapOracleFile -> return []
-            otherwise -> return [remotefile]
+        if isStudent (haapFileType file)
+            then return [remotefile]
+            else return []
     return $ concat remotefiles
 
 listGroupSourceFiles :: (MonadIO m,HasPlugin s t m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
 listGroupSourceFiles ctx ignoreLibrary g s = do
     let spath = sourcePath s
     hfiles <- getProjectTaskFiles
-    let isIgnored HaapLibraryFile = ignoreLibrary
-        isIgnored HaapOracleFile = True
-        isIgnored HaapTemplateFile = False
-        isIgnored HaapBinaryFile = False
     let mkIgnore f = applyTemplate (makeTemplate $ haapRemoteFile f) ctx
-    ignorefiles <- runBaseIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnored . haapFileType) hfiles
+    let isIgnore t = not (isStudent t) && (if isInstructor t then ignoreLibrary else True)
+    ignorefiles <- runBaseIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnore . haapFileType) hfiles
 --    runIO $ putStrLn $ "listing " ++ show ignorefiles
     let notIgnored :: FindClause Bool
         notIgnored = do

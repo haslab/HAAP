@@ -1,3 +1,10 @@
+*.hpc
+*.dyn_o
+*.dyn_hi
+*.tix
+*.js_hi
+*.js_o
+*.svn
 dist/
 *.sci
 *.dyn_o

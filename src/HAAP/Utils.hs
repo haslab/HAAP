@@ -26,6 +26,7 @@ import System.IO.Unsafe
 import Control.Monad
 
 import Text.Printf
+import Text.Parsec as Parsec
 
 addPrefixHeader :: String -> Header -> Header
 addPrefixHeader n xs = Vector.map (ByteString.append (fromString n)) xs
@@ -173,3 +174,11 @@ canonicalFilePath' :: FilePath -> FilePath
 canonicalFilePath' = unsafePerformIO . canonicalFilePath
 
 singleton x = [x]
+
+appendMaybe :: Maybe a -> Maybe a -> Maybe a
+appendMaybe Nothing y = y
+appendMaybe x y = x
+
+infixl 0 <||>
+x <||> y = Parsec.try x <|> y
+

@@ -123,7 +123,7 @@ module CodeWorld (
     pattern PointerMovement,
 
     -- * Debugging
-    trace
+    trace,traceIO,traceError
     ) where
 
 import CodeWorld.Color

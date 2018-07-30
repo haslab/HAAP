@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides the @Rank@ plugin to generate rankings.
 -}
 
-{-# LANGUAGE TypeOperators, DeriveGeneric, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, DeriveFunctor, DeriveAnyClass, TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeOperators, DeriveDataTypeable, DeriveGeneric, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, DeriveFunctor, DeriveAnyClass, TemplateHaskell, RankNTypes, OverloadedStrings, GeneralizedNewtypeDeriving #-}
 
 module HAAP.Test.Rank where
 
@@ -16,11 +16,14 @@ import HAAP.Web.Hakyll
 import HAAP.IO
 import HAAP.Plugin
 
+import Data.Either
 import Data.Traversable
 import Data.List
 import Data.Maybe
 import Data.SafeCopy
 import Data.Default
+import Data.Typeable
+import Data.Data
 
 import Control.Monad.Trans
 import Control.Monad.Catch
@@ -58,7 +61,7 @@ class (Eq score,Ord score,Out score) => Score score where
     appendScores :: [score] -> score
 
 newtype FloatScore = FloatScore { unFloatScore :: Float }
-  deriving (Eq,Ord,Show,Generic)
+  deriving (Eq,Ord,Show,Generic,Data,Typeable,Num,Fractional)
 $(deriveSafeCopy 0 'base ''FloatScore)
 
 instance Out FloatScore where
@@ -70,7 +73,7 @@ instance Score FloatScore where
     appendScores = FloatScore . averageList . map unFloatScore
 
 newtype PercentageScore = PercentageScore { unPercentageScore :: Double }
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic,Data,Typeable,Num,Fractional)
 $(deriveSafeCopy 0 'base ''PercentageScore)
 
 instance Out PercentageScore where
@@ -80,9 +83,22 @@ instance Out PercentageScore where
 instance Score PercentageScore where
     okScore (PercentageScore x) = x > 50
     appendScores = PercentageScore . averageList . map unPercentageScore
+    
+newtype PercentageMsgScore = PercentageMsgScore { unPercentageMsgScore :: Either String Double }
+  deriving (Eq,Ord,Show,Generic,Data,Typeable)
+$(deriveSafeCopy 0 'base ''PercentageMsgScore)
+
+instance Out PercentageMsgScore where
+    docPrec i  = doc
+    doc (PercentageMsgScore (Left x)) = text x
+    doc (PercentageMsgScore (Right x)) = text (printDouble x 2) <> text "%"
+
+instance Score PercentageMsgScore where
+    okScore (PercentageMsgScore x) = isRight x
+    appendScores = PercentageMsgScore . Right . averageList . map (either (const 0) id . unPercentageMsgScore)
 
 newtype MaybeFloatScore = MaybeFloatScore { unMaybeFloatScore :: Maybe Float }
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Generic,Data,Typeable)
 $(deriveSafeCopy 0 'base ''MaybeFloatScore)
 
 instance Score MaybeFloatScore where

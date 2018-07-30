@@ -5,7 +5,7 @@ This module provides documentation analysis functions by resorting to the _Sourc
 
 -}
 
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns, ScopedTypeVariables, DeriveGeneric #-}
 
 module HAAP.Code.Analysis.SourceGraph where
 
@@ -17,17 +17,26 @@ import HAAP.Log
 import Data.Default
 import qualified Data.Text as Text
 import Data.Traversable
+import Data.List
 import Data.Csv
 import Data.Maybe
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
+import Data.Graph.Inductive.Query.BCC
+import Data.Graph.Inductive.Query.DFS
+import Data.Graph.Inductive.Basic
 import Data.Graph.Analysis
+import Data.Graph.Analysis.Algorithms
+import Data.Graph.Analysis.Utils
 import Data.Graph.Analysis.Types (graph)
 
 import Control.Monad.IO.Class
 import Control.DeepSeq
 import Control.Monad
 import Control.Exception
+import Control.Arrow(first)
+
+import Language.Haskell.Exts as H
 
 import System.FilePath
 
@@ -39,7 +48,7 @@ import GHC.Generics (Generic)
 import Analyse.Module
 import Analyse.Everything
 import Parsing
-import Parsing.Types
+import Parsing.Types as SG
 import Analyse.GraphRepr
 import Analyse.Utils
 
@@ -102,6 +111,13 @@ cycleCompModule m = cc
     (_,(n,_,fd)) = moduleToGraph m
     cc = cyclomaticComplexity . graphData $ collapsedHData fd
 
+cyclomaticComplexityGr :: DynGraph gr => gr a b -> Int
+cyclomaticComplexityGr gd = e - n + 2*p
+    where
+      p = length $ componentsOf gd
+      n = noNodes gd
+      e = length $ labEdges gd
+
 moduleCalls :: ParsedModules -> Int
 moduleCalls ms = length es
     where
@@ -112,10 +128,51 @@ moduleCalls ms = length es
         (Just x',Just y') -> inModule x' /= inModule y'
         otherwise -> False
     
+-- * slicing
 
+runSlice :: (MonadIO m,HaapStack t m) => [FilePath] -> (String -> Bool) -> (String -> Bool) -> Haap t m ([Decl SrcSpanInfo],Int,Int)
+runSlice file = runSliceWith file Nothing (Just [])
 
+runSliceWith :: (MonadIO m,HaapStack t m) => [FilePath] -> Maybe [Extension] -> Maybe [H.Fixity] -> (String -> Bool) -> (String -> Bool) -> Haap t m ([Decl SrcSpanInfo],Int,Int)
+runSliceWith files ext fix isSlice excludeSlice = orLogDefault (def,-1,-1) $ do
 
+    -- sourcegraph
+    (_,ms) <- liftIO $ parseHaskellFiles files
+    let (map SG.name -> slicednames,cc,noloops) = sliceEntities ms (isSlice . SG.name) (excludeSlice . SG.name)
+    
+    -- haskell-src-exts
+    modules <- mapM (\f -> parseHaskellFileWith f ext fix) files
+    let slices = sliceModules modules slicednames
+    return (slices,cc,noloops)
+    
+sliceModules :: [H.Module SrcSpanInfo] -> [String] -> [H.Decl SrcSpanInfo]
+sliceModules modules slicednames = decls'
+    where
+    decls = getTopDecls modules
+    getDecl d = case getTopName d of
+                      { Nothing -> Nothing
+                      ; Just n -> if elem (nameString n) slicednames then Just d else Nothing
+                      }
+    decls' = catMaybes $ map getDecl decls
 
+sliceEntities :: ParsedModules -> (Entity -> Bool) -> (Entity -> Bool) -> ([Entity],Int,Int)
+sliceEntities ms isSlice excludeSlice = (map snd lslice,cc,length loops)
+    where
+    start_lnodes = filter (isSlice . snd) lnodes
+    mns = Map.keys ms
+    g::AGr Entity CallType = efilter (\(_,_,e) -> e == NormalCall) $ graph $ graphData $ collapsedHData $ codeToGraph mns ms
+    lnodes = labNodes g
+    slice = accessibleFrom g (map fst start_lnodes)
+    lslice = filter (not . excludeSlice . snd) $ map (\i -> (i,fromJust $ lab g i)) slice
+    subg = subgraph (map fst lslice) g
+    cc = cyclomaticComplexityGr subg
+    loops = subloops subg
 
+subloops :: DynGraph gr => gr a b -> [gr a b]
+subloops g = cycs
+    where
+    sccs = scc g
+    cycs = filter hasCycle $ map (flip subgraph g) sccs
+    hasCycle g = if noNodes g == 1 then hasLoop g else True
 
 

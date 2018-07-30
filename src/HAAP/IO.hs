@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides basic IO functionalities.
 -}
 
-{-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts, DeriveGeneric, ScopedTypeVariables #-}
 
 module HAAP.IO where
 
@@ -88,7 +88,8 @@ data IOResult = IOResult
     { resExitCode :: Int
     , resStdout :: Text
     , resStderr :: Text
-    }
+    } deriving (Generic)
+instance NFData IOResult where
 
 resOk :: IOResult -> Bool
 resOk = (==0) . resExitCode
@@ -168,6 +169,9 @@ ioExit m = catch (m >> exitSuccess) catchExit
 haapRetry :: (MonadIO m,HaapStack t m) => Int -> Haap t m a -> Haap t m a
 haapRetry 0 m = m
 haapRetry i m = orDo (\e -> logError e >> haapRetry (pred i) m) m
+
+ioCommand_ :: String -> [String] -> IO ()
+ioCommand_ name args = ioCommandWith def name args >> return ()
 
 ioCommandWith_ :: IOArgs -> String -> [String] -> IO ()
 ioCommandWith_ ioargs name args = ioCommandWith ioargs name args >> return ()

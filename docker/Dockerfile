@@ -28,12 +28,12 @@ RUN cabal update
 WORKDIR $HOME
 RUN wget http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 RUN tar -xvf ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
-RUN git clone --branch ICFP18 https://github.com/haslab/HAAP
+RUN git clone https://github.com/haslab/HAAP
 
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
 ADD cabal.config $HOME/cabal.config
-RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal hlint homplexity --disable-documentation
+RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state hlint homplexity --disable-documentation
 RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 
 WORKDIR $HOME/ghcjs-0.2.1.9007019
@@ -41,7 +41,7 @@ ADD ghcjs.config $HOME/ghcjs-0.2.1.9007019/cabal.config
 RUN ghcjs-boot
 
 WORKDIR $HOME/ghcjs-0.2.1.9007019
-RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
+RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
 
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/helloworld/cabal.sandbox.config
@@ -51,6 +51,5 @@ RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/gameworker/cabal.sandbo
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/plab/cabal.sandbox.config
 
 WORKDIR $HOME/HAAP
-RUN cp $HOME/HAAP/docker/README.md $HOME/HAAP/ArtifactOverview.md
 
 
