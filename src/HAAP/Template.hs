@@ -45,9 +45,9 @@ instance Binary HaapContext
 unHaapConText :: HaapContext -> (Text.Text -> Text.Text)
 unHaapConText (HaapContext f) = Text.pack . mapFun f . Text.unpack
 
-mapFun :: Ord a => Map a b -> (a -> b)
+mapFun :: (Show a,Ord a) => Map a b -> (a -> b)
 mapFun m x = case Map.lookup x m of
-    Nothing -> error "map element not found"
+    Nothing -> error $ "HAAP template context field" ++ show x ++ " not found"
     Just y -> y
 
 mapComp :: (Ord a,Eq b) => Map a b -> Map b c -> Map a c
@@ -55,7 +55,7 @@ mapComp (Map.toList -> xs) (Map.toList -> ys) = Map.fromList [ (a,c) | (a,b) <- 
 
 instance Monoid HaapContext where
     mempty = HaapContext Map.empty
-    mappend (HaapContext f) (HaapContext g) = HaapContext (mapComp f g)
+    mappend (HaapContext f) (HaapContext g) = HaapContext (Map.unionWith (++) f g)
 
 makeTemplate :: String -> HaapTemplate
 makeTemplate str = T.template $ fromString str
