@@ -33,7 +33,7 @@ RUN git clone https://github.com/haslab/HAAP
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
 ADD cabal.config $HOME/cabal.config
-RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal hlint homplexity $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 --disable-documentation
+RUN cabal install ghcjs-0.2.1.9007019/ghcjs.cabal HAAP/HAAP.cabal hlint homplexity $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 --disable-documentation
 RUN rm -rf $HOME/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 
 WORKDIR $HOME/ghcjs-0.2.1.9007019

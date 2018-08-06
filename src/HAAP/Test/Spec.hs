@@ -45,6 +45,7 @@ import System.Environment
 import System.FilePath
 import System.IO.Unsafe
 
+import Data.List
 import Data.Maybe
 import Data.Traversable
 import Data.Typeable
@@ -166,6 +167,12 @@ haapTableResOksPercentage t = (fromIntegral (length oks) / fromIntegral (length 
     where
     rows = haapTestTableRows t
     oks = filter ((==HaapTestOk) . snd) rows
+
+haapTableResOKsKOs :: HaapTestTableRes -> (Int,Int)
+haapTableResOKsKOs t = (length oks,length kos)
+    where
+    rows = haapTestTableRows t
+    (oks,kos) = partition ((==HaapTestOk) . snd) rows
 
 haapTableResPercentage :: HaapTestTableRes -> Float
 haapTableResPercentage t = oks

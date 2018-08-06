@@ -13,7 +13,7 @@ Cabal-Version:      >=1.6
 Tested-with:        GHC==8.0.1
 Synopsis:           Haskell Automatic Assessment Platform
 
-Extra-Source-Files: README.txt
+Extra-Source-Files: README.md
 Data-Files: templates/*.html, templates/*.php, css/*.css, js/*.js
   
 Library
