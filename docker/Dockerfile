@@ -13,8 +13,7 @@ RUN cp ../ghcjs/cabal.sandbox.config cabal.sandbox.config
 
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
-# ADD cabal.config $HOME/cabal.config
-RUN cabal install $HOME/HAAP/packages/debug-0.1.2 $HOME/HAAP/packages/Hoed-extras brittany haddock hlint homplexity HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 --disable-documentation
+RUN cabal install $HOME/HAAP/packages/Hoed-extras brittany haddock hlint homplexity $HOME/HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 --disable-documentation
 
 WORKDIR $HOME
 RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation

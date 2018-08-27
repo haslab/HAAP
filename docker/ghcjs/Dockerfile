@@ -35,9 +35,9 @@ RUN git checkout ghc-8.4
 RUN git submodule update --init --recursive
 RUN ./utils/makePackages.sh -j8
 RUN ./utils/makeSandbox.sh -j8
+RUN cabal update
 RUN cabal install --disable-documentation
 RUN ghcjs-boot -s ./lib/boot
-
 
 
 
