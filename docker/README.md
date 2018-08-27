@@ -1,12 +1,6 @@
 # Getting Started Guide
 
-The ICFP18 artifact for paper #42 is bundled as a pre-built Docker image that contains a working installation of the Haskell Platform, GHCJS, and the _Haskell Automated Assessment Platform_ (HAAP) that supported the grading and feedback of students of the _Programming Laboratories I_ course unit described in the experience report.
-
-Reviewers can load the artifact into Docker with the command:
-
-```
-docker load -i artifact52.tar.gz
-```
+We have prepared a pre-built Docker image that contains a working installation of the Haskell Platform, GHCJS, and the _Haskell Automated Assessment Platform_ (HAAP) that supported the grading and feedback of students of the _Programming Laboratories I_ course unit described in the [ICFP18 experience report](https://dl.acm.org/citation.cfm?id=3236777).
 
 Our [repository](https://github.com/haslab/HAAP) contains the complete HAAP sources (including its core plugins, HTML templates, OpenGL/JavaScript bindings, etc) and the Dockerfile used to build this image.
 

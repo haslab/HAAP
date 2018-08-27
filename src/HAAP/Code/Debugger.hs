@@ -72,7 +72,7 @@ runDebugger = do
     hp <- getHakyllP
     tmp <- getProjectTmpPath
     let htmldatapath::String = "debug"
-    hoeddatapath <- debuggerHoedDataPath h
+    hoeddatapath <- liftIO $ debuggerHoedDataPath h
 --    hoeddatapath <- liftIO $ hoedExtrasDataPath
     
     let extras = debuggerArgs h
