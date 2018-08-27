@@ -11,7 +11,7 @@ module HAAP.Code.Haskell where
 
 import HAAP.Core
 import HAAP.IO
-import HAAP.Pretty
+import HAAP.Pretty as PP
 import HAAP.Plugin
 import HAAP.Utils
 
