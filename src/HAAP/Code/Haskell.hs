@@ -38,6 +38,18 @@ instance Show a => Out (ParseResult a) where
     doc (ParseOk x) = text "parsing ok:" <+> text (show x)
     doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) <> char ':' <+> text s
 
+parseHaskellWith :: (Parseable a,MonadIO m,HaapStack t m) => String -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m a
+parseHaskellWith str arg_exts arg_fix = do
+    let mb = readExtensions str
+    let mblang = join $ fmap fst mb
+    let exts = maybe (maybe [] snd mb) id arg_exts
+    let mode' = defaultParseMode { extensions = exts, fixities = arg_fix }
+    let mode'' = case mblang of { Nothing -> mode'; Just lang -> mode' {baseLanguage = lang } }
+    let res = parseWithMode mode'' str
+    case res of
+        ParseOk m -> return m
+        (ParseFailed loc err) -> throwError $ HaapException $ show loc ++ ": " ++ pretty err
+
 parseHaskellFileWith :: (MonadIO m,HaapStack t m) => FilePath -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m (Module SrcSpanInfo)
 parseHaskellFileWith file arg_exts arg_fix = do
     str <- runBaseIO' $ readFile file
@@ -50,6 +62,9 @@ parseHaskellFileWith file arg_exts arg_fix = do
     case res of
         ParseOk m -> return m
         err -> throwError $ HaapException $ pretty err
+
+parseHaskell :: (Parseable a,MonadIO m,HaapStack t m) => String -> Haap t m a
+parseHaskell str = parseHaskellWith str Nothing Nothing
 
 parseHaskellFile :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Module SrcSpanInfo)
 parseHaskellFile file = parseHaskellFileWith file Nothing Nothing
