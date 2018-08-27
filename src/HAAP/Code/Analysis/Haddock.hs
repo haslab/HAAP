@@ -6,7 +6,7 @@ This module provides documentation analysis functions by resorting to the _Haddo
 -}
 
 
-{-# LANGUAGE OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
 
 module HAAP.Code.Analysis.Haddock where
 
