@@ -40,7 +40,9 @@ instance Out Message where
 asPandocHTML :: (Pandoc -> Pandoc) -> String -> String
 asPandocHTML f str = case runPure (readHtml def (T.pack str)) of
     Left err -> error $ pretty err
-    Right pandoc -> writeHtml5String def (f pandoc)
+    Right pandoc -> case runPure (writeHtml5String def (f pandoc)) of
+        Left err -> error $ pretty err
+        Right txt -> T.unpack txt
     
 pandocChangeLinkUrls :: (String -> String) -> Pandoc -> Pandoc
 pandocChangeLinkUrls furl = everywhere (mkT flink)
