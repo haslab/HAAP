@@ -100,7 +100,7 @@ exitCode (ExitFailure i) = i
 exitCode (ExitSuccess) = 0
 
 instance Semigroup IOResult where
-    <> = mappend
+    (<>) = mappend
 
 instance Monoid IOResult where
     mempty = IOResult 0 Text.empty Text.empty
