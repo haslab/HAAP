@@ -1,5 +1,5 @@
 Name:                codeworld-haap-api
-Version:             0.2.2.0
+Version:             0.2.2.1
 Synopsis:            Graphics library for CodeWorld
 License:             Apache
 License-file:        LICENSE
@@ -55,7 +55,6 @@ Library
 
   if impl(ghcjs)
     Build-depends:
-                       ghcjs-base,
                        ghcjs-prim,
                        ghcjs-dom             >= 0.9
   else
