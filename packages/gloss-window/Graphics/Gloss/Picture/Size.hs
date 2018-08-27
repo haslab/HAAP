@@ -159,7 +159,7 @@ norm (Image w h _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
 #else
 #if MIN_VERSION_gloss(1,13,0)
 norm (Bitmap dta) = [Gloss.rectangleWire w h]
-  where (w,h) = bitmapSize dta
+  where (w,h) = Gloss.bitmapSize dta
 #else
 norm (Bitmap w h _ _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
 #endif
