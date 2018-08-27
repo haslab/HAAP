@@ -158,7 +158,7 @@ norm Blank = []
 norm (Image w h _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
 #else
 #if MIN_VERSION_gloss(1,13,0)
-norm (Bitmap dta) = [Gloss.rectangleWire w h]
+norm (Bitmap dta) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
   where (w,h) = Gloss.bitmapSize dta
 #else
 norm (Bitmap w h _ _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
