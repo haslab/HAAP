@@ -15,6 +15,7 @@ import Text.Parsec.Error
 
 import Data.Default
 import Data.Generics
+import qualified Data.Text as T
 
 import Debug.Trace
 
@@ -37,9 +38,9 @@ instance Out Message where
     doc (Message x) = text x
 
 asPandocHTML :: (Pandoc -> Pandoc) -> String -> String
-asPandocHTML f str = case readHtml def str of
+asPandocHTML f str = case runPure (readHtml def (T.pack str)) of
     Left err -> error $ pretty err
-    Right pandoc -> writeHtmlString def (f pandoc)
+    Right pandoc -> writeHtml5String def (f pandoc)
     
 pandocChangeLinkUrls :: (String -> String) -> Pandoc -> Pandoc
 pandocChangeLinkUrls furl = everywhere (mkT flink)
