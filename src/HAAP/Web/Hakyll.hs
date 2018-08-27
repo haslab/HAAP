@@ -13,7 +13,7 @@ module HAAP.Web.Hakyll
         
 import HAAP.Core
 import HAAP.IO
-import HAAP.Pretty
+import HAAP.Pretty as PP
 import HAAP.Plugin
 import HAAP.Shelly
 import HAAP.Utils
@@ -44,6 +44,7 @@ import Control.Monad.Trans
 import Data.Functor.Contravariant
 import Data.Default
 import Data.Proxy
+import Data.Semigroup
 
 import Hakyll
 
@@ -79,6 +80,9 @@ instance HaapPlugin Hakyll where
 
 useHakyll :: (HaapStack t m,PluginK Hakyll t m) => (PluginI Hakyll) -> Haap (PluginT Hakyll :..: t) m a -> Haap t m a
 useHakyll args = usePlugin_ (return args)
+
+instance Semigroup (Rules ()) where
+    (<>) = mappend
 
 instance Monoid (Rules ()) where
     mempty = return ()
@@ -230,6 +234,9 @@ dataRoute datapath = customRoute (\iden -> makeRelative datapath $ toFilePath id
 -- * Hakyll pre-processor
 
 data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
+
+instance Semigroup HakyllP where
+    (<>) = mappend
 
 instance Monoid HakyllP where
     mempty = defaultHakyllP
