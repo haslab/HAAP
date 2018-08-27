@@ -20,8 +20,9 @@ import Debug.Trace
 
 instance Out PandocError where
     docPrec i x = doc x
-    doc (ParseFailure str) = text "parsing failure:" <+> text str
-    doc (ParsecError _ err) = text "parsing failure:" <+> doc err
+    doc = text . show
+    --doc (ParseFailure str) = text "parsing failure:" <+> text str
+    --doc (ParsecError _ err) = text "parsing failure:" <+> doc err
 
 instance Out ParseError where
     docPrec i x = doc x
