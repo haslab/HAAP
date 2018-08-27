@@ -116,7 +116,7 @@ runHaddockComments files = orLogDefault def $ do
     return $ Fraction (Set.size $ specialDocs docs) (sum $ map length strs)
 
 #if MIN_VERSION_haddock_library(1,6,0)
-parseParasGeneric = parseParas . Just
+parseParasGeneric = parseParas Nothing
 #else 
 parseParasGeneric = parseParas
 #endif
