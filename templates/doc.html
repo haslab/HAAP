@@ -13,14 +13,19 @@
 <body>
     <h1>$title$ - Haddock report</h1>
     
-    <h2>Haddock output</h2>
-    <pre><code>$stdout$</code></pre>
+    $for(haddocks)$
+        <h2>$name$</h2>
     
-    <h2>Haddock errors</h2>
-    <pre><code>$stderr$</code></pre>
+        <h3>Haddock output</h3>
+        <pre><code>$stdout$</code></pre>
     
-    <h2>Haddock documentation</h2>
-    <p><a href=$link$>haddock</a></p>
+        <h3>Haddock errors</h3>
+        <pre><code>$stderr$</code></pre>
+    
+        <h3>Haddock documentation</h3>
+        <p><a href=$link$>haddock</a></p>
+    $endfor$
+
 </body>
 
 </html>

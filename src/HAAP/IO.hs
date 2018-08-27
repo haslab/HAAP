@@ -230,6 +230,9 @@ orLogMaybe m = orDo (\e -> logEvent (pretty e) >> return Nothing) (liftM Just m)
 orDo :: HaapStack t m => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
 orDo ex m = catchError m ex
 
+orLogDo :: (MonadIO m,HaapStack t m) => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
+orLogDo f m = orDo (\e -> logEvent (pretty e) >> f e) m
+
 orDoIO :: (SomeException -> IO a) -> IO a -> IO a
 orDoIO ex m = catch m ex
 

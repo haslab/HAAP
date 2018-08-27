@@ -63,30 +63,29 @@ instance HaapMonad m => HasPlugin Haddock (StateT HaddockArgs) m where
 instance (HaapStack t2 m,HaapPluginT (StateT HaddockArgs) m (t2 m)) => HasPlugin Haddock (ComposeT (StateT HaddockArgs) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
-useAndRunHaddock :: (MonadIO m,HasPlugin Hakyll t m) => HaddockArgs -> Haap t m [FilePath]
+useAndRunHaddock :: (MonadIO m,HasPlugin Hakyll t m) => HaddockArgs -> Haap t m FilePath
 useAndRunHaddock args = usePlugin_ (return args) $ runHaddock
 
-runHaddock :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => Haap t m [FilePath]
+runHaddock :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => Haap t m FilePath
 runHaddock = do
     h <- liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.get
     let files = haddockFiles h
     files' <- forM files $ \f -> do
         mb <- orEither $ parseModuleFileName $ haddockPath h </> f
         let isMain = either (const False) (=="Main") mb
-        --runIO $ putStrLn $ "module " ++ show mb
-        --runIO $ putStrLn $ "haddock " ++ show f ++ " " ++ show isMain
+        --liftIO $ putStrLn $ "module " ++ show mb
+        --liftIO $ putStrLn $ "haddock " ++ show f ++ " " ++ show isMain
         return (f,isMain)
     let (mains,others) = partition (snd) files'
     
-    haddockpath <- runHaddock' (map fst others)
-    mainpaths <- forM (zip [1..] $ nub $ map fst mains) $ \(i,f) -> do
-        let h' = h { haddockHtmlPath = haddockHtmlPath h ++ show i }
-        liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.put h'
-        runHaddock' [f]
-    return $ haddockpath : mainpaths
+    let haddock = map fst others
+    mains <- forM (nub $ map fst mains) $ \f -> do
+        return [f]
+    let haddocks = haddock : mains
+    runHaddocks haddocks
 
-runHaddock' :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => [FilePath] -> Haap t m FilePath
-runHaddock' files = do
+runHaddocks :: (MonadIO m,HasPlugin Haddock t m,HasPlugin Hakyll t m) => [[FilePath]] -> Haap t m FilePath
+runHaddocks allfiles = do
     h <- liftHaap $ liftPluginProxy (Proxy::Proxy Haddock) $ State.get
     hp <- getHakyllP
     tmp <- getProjectTmpPath
@@ -95,32 +94,37 @@ runHaddock' files = do
     
     let html = dirToRoot (haddockPath h) </> tmp </> haddockHtmlPath h
     let indexhtml = addExtension (haddockHtmlPath h) "html"
-    res <- orErrorWritePage (tmp </> indexhtml) mempty $ runBaseSh $ do
+    
+    allres <- forM (zip [0..] allfiles) $ \(i,files) -> do
+        orErrorWritePage (addExtension (tmp </> show i) "html") mempty $ runBaseSh $ do
         shCd $ haddockPath h
         shCommandWith ioArgs "haddock" (extras++["-h","-o",html]++files)
---    runIO $ putStrLn $ show $ resStderr res
---    runIO $ putStrLn $ show $ resStdout res
     hakyllRules $ do
-        -- copy the haddock generated documentation
-        match (fromGlob $ (tmp </> haddockHtmlPath h) </> "*.html") $ do
-            route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
-            compile $ getResourceString >>= liftCompiler (asTagSoupHTML $ tagSoupChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
-        let auxFiles = fromGlob (tmp </> haddockHtmlPath h </> "*.js")
-                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.png")
-                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.gif")
-                       .||. fromGlob (tmp </> haddockHtmlPath h </> "*.css")
-        match auxFiles $ do
-            route   $ relativeRoute tmp
-            compile $ copyFileCompiler
+        forM_ (zip [0..] allres) $ \(i,_) -> do
+            -- copy the haddock generated documentation
+            match (fromGlob $ (tmp </> haddockHtmlPath h </> show i) </> "*.html") $ do
+                route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                compile $ getResourceString >>= liftCompiler (asTagSoupHTML $ tagSoupChangeLinkUrls $ hakyllRoute hp) >>= hakyllCompile hp
+            let auxFiles = fromGlob (tmp </> haddockHtmlPath h </> show i </> "*.js")
+                           .||. fromGlob (tmp </> haddockHtmlPath h </> show i </> "*.png")
+                           .||. fromGlob (tmp </> haddockHtmlPath h </> show i </> "*.gif")
+                           .||. fromGlob (tmp </> haddockHtmlPath h </> show i </> "*.css")
+            match auxFiles $ do
+                route   $ relativeRoute tmp
+                compile $ copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
+        let mkName (_,files,_) = sepByStr " " files
+            mkName (_,files,_) = sepByStr " " files
         create [fromFilePath indexhtml] $ do
             route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
             compile $ do
+                let haddockCtx = field "name" (return . mkName . itemBody)
+                       `mappend` field "stdout" (return . Text.unpack . resStdout . thr3 . itemBody)
+                       `mappend` field "stderr" (return . Text.unpack . resStderr . thr3 . itemBody)
+                       `mappend` field "link" (\item -> return $ hakyllRoute hp $ addExtension (takeFileName (haddockHtmlPath h) </> (show $ fst3 $ itemBody item)) "html")
                 let docCtx = constField "title" (haddockTitle h)
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
-                           `mappend` constField "stdout" (Text.unpack $ resStdout res)
-                           `mappend` constField "stderr" (Text.unpack $ resStderr res)
-                           `mappend` constField "link" (hakyllRoute hp $ takeFileName (haddockHtmlPath h) </> "index.html")
+                           `mappend` listField "haddocks" haddockCtx (mapM makeItem $ zip3 [0..] allfiles allres)      
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/doc.html" docCtx >>= hakyllCompile hp
     return $ hakyllRoute hp indexhtml
         

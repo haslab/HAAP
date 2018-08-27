@@ -1,3 +1,8 @@
+{-# LANGUAGE CPP #-}
+#if !defined(MIN_VERSION_Cabal)
+# define MIN_VERSION_Cabal(a,b,c) 0
+#endif
+
 {-
 Copyright (C) 2009 Ivan Lazar Miljenovic <Ivan.Miljenovic@gmail.com>
 
@@ -34,7 +39,11 @@ import Distribution.ModuleName                       (toFilePath)
 import Distribution.Package
 import Distribution.PackageDescription               hiding (author)
 import Distribution.PackageDescription.Configuration
+#if MIN_VERSION_Cabal(2,0,0)
+import Distribution.PackageDescription.Parsec
+#else
 import Distribution.PackageDescription.Parse
+#endif
 import Distribution.Simple.Compiler                  (compilerInfo)
 import Distribution.Simple.GHC                       (configure)
 import Distribution.Simple.Program                   (defaultProgramConfiguration)
@@ -49,6 +58,19 @@ import System.FilePath   (dropExtension)
 
 -- -----------------------------------------------------------------------------
 
+emptyFlagAssignment :: FlagAssignment
+#if MIN_VERSION_Cabal(2,0,0)
+emptyFlagAssignment = mkFlagAssignment []
+#else
+emptyFlagAssignment = []
+#endif
+
+#if MIN_VERSION_Cabal(2,0,0)
+readDescription = readGenericPackageDescription
+#else
+readDescription = readPackageDescription
+#endif
+
 ghcID :: IO CompilerInfo
 ghcID = liftM (compilerInfo . getCompiler)
         $ configure silent Nothing Nothing defaultProgramConfiguration
@@ -61,10 +83,10 @@ parseCabal fp = do cID <- ghcID
     where
       -- Need to specify the Exception type
       getDesc :: FilePath -> IO (Either SomeException GenericPackageDescription)
-      getDesc = try . readPackageDescription silent
+      getDesc = try . readDescription silent
       parseDesc cID = fmap parse . compactEithers . fmap (unGeneric cID)
       unGeneric cID = fmap fst
-                      . finalizePackageDescription [] -- flags, use later
+                      . finalizePackageDescription emptyFlagAssignment -- flags, use later
                                                    (const True) -- ignore
                                                                 -- deps
                                                    buildPlatform

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" >
+
+<head>
+  <meta charset="UTF-8">
+  <title>$pageTitle$</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel='stylesheet' href='http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.css'>
+<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/octicons/3.5.0/octicons.min.css'>
+
+      <link rel="stylesheet" href="$projectpath$/css/diff.css">
+
+  
+</head>
+
+<body>
+
+  <div id="ng-app" ng-app="diffDemo">
+  <div layout="column" flex ng-controller="diffCtrl">
+    <md-content flex layout-padding>
+      <div flex layout="column">
+        
+        $for(diffFiles)$
+        <div flex layout="column" layout-gt-md="row">
+          <md-card flex>
+            <md-card-content>
+              <div layout="row">
+                <h2>$diffFile$</h2>
+                <span flex></span>
+                
+                <md-input-container>
+                    <md-checkbox ng-model="source" ng-click="setClickedSource()" aria-label = "Source">Show Source</md-checkbox>
+                </md-input-container>
+                
+                <md-input-container>
+                    <md-checkbox ng-model="target" ng-click="setClickedTarget()" aria-label = "Target">Show Target</md-checkbox>
+                </md-input-container>
+                
+                <md-input-container>
+                    <md-checkbox ng-model="diff" ng-click="setClickedDiff()" aria-label = "Diff">Show Diff</md-checkbox>
+                </md-input-container>
+                
+                <md-input-container>
+                  <md-checkbox name="interLineDiff" ng-model="options.interLineDiff">interLineDiff</md-checkbox>
+                </md-input-container>
+                <md-input-container>
+                  <md-checkbox name="ignoreTrailingNewLines" ng-model="options.ignoreTrailingNewLines">ignoreTrailingNewLines</md-checkbox>
+                </md-input-container>
+              </div>
+              
+              <pre class="textdiff ng-isolate-scope" style="display:none;" id="sourceTxt" layout-fill class="inputBox" ng-model="left">$diffSource$</pre>
+              
+              <pre class="textdiff ng-isolate-scope" style="display:none;" id="targetTxt" layout-fill class="inputBox" ng-model="right">$diffTarget$</pre>
+              
+              <pre id="diffTxt" class="textdiff" line-diff left-obj="left" right-obj="right" options="options"></pre>
+            </md-card-content>
+          </md-card>
+        </div>
+        $endfor$
+        
+      </div>
+    </md-content>
+  </div>
+</div>
+  <script src='http://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.8/angular.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.8/angular-animate.min.js'></script>
+<script src='http://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.8/angular-aria.min.js'></script>
+<script src='http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0-rc4/angular-material.min.js'></script>
+<script src='https://rawgit.com/google/diff-match-patch/master/javascript/diff_match_patch.js'></script>
+<script src='https://rawgit.com/amweiss/angular-diff-match-patch/v0.6.14/angular-diff-match-patch.js'></script>
+
+  
+
+    <script  src="$projectpath$/js/diff.js"></script>
+
+
+
+
+</body>
+
+</html>

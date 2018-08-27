@@ -63,15 +63,18 @@ makeTemplate str = T.template $ fromString str
 applyTemplate :: HaapTemplate -> HaapContext -> String
 applyTemplate t c = TextL.unpack $ T.render t (unHaapConText c)
 
-shLoadApplyAndCopyTemplate :: HaapContext -> FilePath -> FilePath -> Sh ()
-shLoadApplyAndCopyTemplate ctx from to = do
---    Sh.liftIO $ putStrLn $ "shFrom " ++ show from
---    Sh.liftIO $ putStrLn $ "shTo " ++ show to
+shLoadAndApplyTemplate :: HaapContext -> FilePath -> Sh Text.Text
+shLoadAndApplyTemplate ctx from = do
     txt::Text.Text <- Sh.readfile (shFromFilePath from)
     let tplt::T.Template = T.template txt
     let ctx' :: T.Context = unHaapConText ctx
     let txt'::TextL.Text = T.render tplt ctx'
-    Sh.writefile (shFromFilePath to) (TextL.toStrict txt')
+    return (TextL.toStrict txt')
+
+shLoadApplyAndCopyTemplate :: HaapContext -> FilePath -> FilePath -> Sh ()
+shLoadApplyAndCopyTemplate ctx from to = do
+    totxt <- shLoadAndApplyTemplate ctx from
+    Sh.writefile (shFromFilePath to) totxt
 
 fieldContext :: String -> String -> HaapContext
 fieldContext k v = HaapContext $ Map.singleton k v

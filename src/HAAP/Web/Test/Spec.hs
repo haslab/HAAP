@@ -25,10 +25,10 @@ renderHaapSpec path title notes spec = do
     test <- runSpec spec
     renderHaapTest path title notes test
 
-renderHaapSpecs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> [(String,HaapSpec)] -> Haap t m FilePath
-renderHaapSpecs path title specs = do
+renderHaapSpecs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> String -> [(String,HaapSpec)] -> Haap t m FilePath
+renderHaapSpecs path title notes specs = do
     tests <- forM specs $ mapSndM (runSpec)
-    renderHaapTests path title tests
+    renderHaapTests path title notes tests
 
 renderHaapTest :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> String -> HaapTestTableRes -> Haap t m FilePath
 renderHaapTest path title notes spec = do
@@ -52,8 +52,8 @@ renderHaapTest path title notes spec = do
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx >>= hakyllCompile hp
     return (hakyllRoute hp path)
 
-renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> [(String,HaapTestTableRes)] -> Haap t m FilePath
-renderHaapTests path title specs = do
+renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> String -> [(String,HaapTestTableRes)] -> Haap t m FilePath
+renderHaapTests path title notes specs = do
     hp <- getHakyllP
     hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
@@ -72,6 +72,7 @@ renderHaapTests path title specs = do
             let pageCtx = constField "title" title
                         `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
+                        `mappend` constField "notes" notes                 
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx >>= hakyllCompile hp
     return (hakyllRoute hp path)
 

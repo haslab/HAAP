@@ -41,6 +41,7 @@ module HAAP
     , module HAAP.Code.Haskell
     , module HAAP.Code.Analysis.Haddock
     , module HAAP.Code.Git
+    , module HAAP.Code.GHC
     , module HAAP.Code.Analysis.Modularity
     , module HAAP.Code.Analysis.SourceGraph
     , module HAAP.Code.Analysis.Usage
@@ -49,12 +50,16 @@ module HAAP
     , module HAAP.Graphics.Gloss.Capture
     , module HAAP.CmdArgs
     , module HAAP.Web.Graphics.Xterm
+    , module HAAP.Web.Diff
+    , module HAAP.Code.Brittany
+    , module HAAP.Code.Debugger
     ) where
 
 import HAAP.Core
 import HAAP.CmdArgs
 import HAAP.Code.Analysis.Haddock
 import HAAP.Code.Haskell
+import HAAP.Code.GHC
 import HAAP.Code.Literate.Haskell
 import HAAP.DB
 import HAAP.Shelly
@@ -96,6 +101,8 @@ import HAAP.Code.Analysis.Usage
 import HAAP.Plugin
 import HAAP.Graphics.Gloss.Capture
 import HAAP.Web.Graphics.Xterm
-
+import HAAP.Web.Diff
+import HAAP.Code.Brittany
+import HAAP.Code.Debugger
 
 

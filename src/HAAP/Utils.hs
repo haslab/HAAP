@@ -12,6 +12,7 @@ import Data.Time.LocalTime
 import Data.Time.Calendar
 import Data.Time.Format
 import Data.Csv
+import Data.Char
 import Data.List
 import Data.String
 import qualified Data.Vector as Vector
@@ -182,3 +183,10 @@ appendMaybe x y = x
 infixl 0 <||>
 x <||> y = Parsec.try x <|> y
 
+isEmptyLine :: String -> Bool
+isEmptyLine = all isSpace
+
+sepByStr :: String -> [String] -> String
+sepByStr s [] = []
+sepByStr s [x] = x
+sepByStr s (x:xs) = x ++ s ++ sepByStr s xs

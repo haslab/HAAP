@@ -201,6 +201,9 @@ loadAndApplyHTMLTemplate iden ctx item = do
 relativeRoute :: FilePath -> Routes
 relativeRoute prefix = customRoute $ \iden -> makeRelative (prefix) (toFilePath iden)
 
+addToRoute :: FilePath -> Routes
+addToRoute prefix = customRoute $ \iden -> prefix </> (toFilePath iden)
+
 liftCompiler :: (String -> String) -> Item String -> Compiler (Item String)
 liftCompiler f i = return $ fmap f i
 

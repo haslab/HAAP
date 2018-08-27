@@ -59,7 +59,7 @@ populateGroupSource ctx overwriteStudentFiles g s = do
             docopy <- if isInstructor (haapFileType file) && (isTemplate (haapFileType file) || isStudent (haapFileType file))
                 then do
                     isto <- shDoesFileExist to
-                    return $ if isto && isStudent (haapFileType file) then overwriteStudentFiles else True
+                    return $ if isto && isStudent (haapFileType file) && isTemplate (haapFileType file) then overwriteStudentFiles else True
                 else return False
             if isTemplate (haapFileType file)
                 then when docopy $ shLoadApplyAndCopyTemplate ctx from to
