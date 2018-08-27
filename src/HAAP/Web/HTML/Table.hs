@@ -9,7 +9,7 @@ This module provides functions for rendering HTML tables.
 module HAAP.Web.HTML.Table where
 
 import HAAP.Core
-import HAAP.Pretty
+import HAAP.Pretty as PP
 import HAAP.Test.Spec
 import HAAP.Test.Rank
 import HAAP.Utils
@@ -29,7 +29,7 @@ instance Show a => Show (Url a) where
 
 instance Out a => Out (Url a) where
     docPrec i x = doc x
-    doc (Url url x) = text "<a href=" <> text (show url) <> text ">" <> doc x <> text "</a>"
+    doc (Url url x) = text "<a href=" PP.<> text (show url) PP.<> text ">" PP.<> doc x PP.<> text "</a>"
 
 data HaapTable = HaapTable
     { haapTableTitle :: String
