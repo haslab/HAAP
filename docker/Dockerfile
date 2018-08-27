@@ -9,7 +9,7 @@ WORKDIR $HOME
 RUN git clone https://github.com/haslab/HAAP
 WORKDIR $HOME/HAAP
 RUN cabal update
-RUN cp ../ghcjs/cabal.sandbox.config cabal.sandbox.config
+# RUN cp ../ghcjs/cabal.sandbox.config cabal.sandbox.config
 
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
