@@ -6,7 +6,7 @@ This module provides wrappers to the _pandoc_ library (<https://hackage.haskell.
 
 module HAAP.Web.HTML.Pandoc where
 
-import HAAP.Pretty
+import HAAP.Pretty as PP
 
 import Text.Pandoc.Readers.HTML
 import Text.Pandoc.Writers.HTML
@@ -25,7 +25,7 @@ instance Out PandocError where
 
 instance Out ParseError where
     docPrec i x = doc x
-    doc e = text "parsec failed at" <+> text (show $ errorPos e) <> char ':' $+$ nest 4 (vcat $ map doc msgs)
+    doc e = text "parsec failed at" <+> text (show $ errorPos e) PP.<> char ':' $+$ nest 4 (vcat $ map doc msgs)
         where msgs = errorMessages e
 
 instance Out Message where
