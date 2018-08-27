@@ -30,7 +30,7 @@ RUN wget http://ghcjs.tolysz.org/ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 RUN tar -xvf ghc-8.0-2017-02-05-lts-7.19-9007019.tar.gz
 RUN git clone https://github.com/haslab/HAAP
 
-RUN cabal install brittany haddock hlint homplexity --disable-documentation
+RUN cabal install $HOME/HAAP/packages/debug-0.1.2 $HOME/HAAP/packages/Hoed-extras brittany haddock hlint homplexity --disable-documentation
 
 RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*

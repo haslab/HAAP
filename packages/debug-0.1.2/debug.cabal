@@ -41,7 +41,7 @@ library
         bytestring,
         clock,
         containers,
-        aeson,
+        aeson >= 1.0.0,
         containers,
         ghc-prim,
         Hoed == 0.5.1,
@@ -75,7 +75,7 @@ executable debug-pp
   hs-source-dirs:
       src
   build-depends:
-      aeson
+      aeson >= 1.0.0
     , base >=4.7 && <5
     , directory
     , filepath
@@ -95,7 +95,7 @@ test-suite debug-test
         base == 4.*,
         directory,
         extra,
-        aeson,
+        aeson >= 1.0.0,
         bytestring,
         containers,
         filepath,
