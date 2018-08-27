@@ -38,6 +38,7 @@ RUN ./utils/makeSandbox.sh -j8
 RUN cabal update
 RUN cabal install --disable-documentation
 RUN ghcjs-boot -s ./lib/boot
+RUN find . -not \( -name 'cabal.sandbox.config' -or -name '.cabal-sandbox' -or -path './.cabal-sandbox/*' \) -delete
 
 
 
