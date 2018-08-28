@@ -57,7 +57,7 @@ writeHtmlStringGeneric = writeHtmlString
 #endif
 
 pandocHtml :: PandocDocument
-pandocHtml = pd { writer        = writeHtmlString
+pandocHtml = pd { writer        = writeHtmlStringGeneric
                 , extension     = "html"
                 , templateName  = "html"
                 , extGraphProps = Just VProps { grSize = DefaultSize
