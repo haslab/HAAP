@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Exception (evaluate)
 
 import Data.Default
+import Data.Semigroup
 import Data.Text (Text(..))
 import qualified Data.Text as Text
 import Data.Foldable
@@ -97,6 +98,9 @@ resOk = (==0) . resExitCode
 exitCode :: ExitCode -> Int
 exitCode (ExitFailure i) = i
 exitCode (ExitSuccess) = 0
+
+instance Semigroup IOResult where
+    (<>) = mappend
 
 instance Monoid IOResult where
     mempty = IOResult 0 Text.empty Text.empty

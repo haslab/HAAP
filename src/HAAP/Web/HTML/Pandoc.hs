@@ -6,7 +6,7 @@ This module provides wrappers to the _pandoc_ library (<https://hackage.haskell.
 
 module HAAP.Web.HTML.Pandoc where
 
-import HAAP.Pretty
+import HAAP.Pretty as PP
 
 import Text.Pandoc.Readers.HTML
 import Text.Pandoc.Writers.HTML
@@ -15,17 +15,19 @@ import Text.Parsec.Error
 
 import Data.Default
 import Data.Generics
+import qualified Data.Text as T
 
 import Debug.Trace
 
 instance Out PandocError where
     docPrec i x = doc x
-    doc (ParseFailure str) = text "parsing failure:" <+> text str
-    doc (ParsecError _ err) = text "parsing failure:" <+> doc err
+    doc = text . show
+    --doc (ParseFailure str) = text "parsing failure:" <+> text str
+    --doc (ParsecError _ err) = text "parsing failure:" <+> doc err
 
 instance Out ParseError where
     docPrec i x = doc x
-    doc e = text "parsec failed at" <+> text (show $ errorPos e) <> char ':' $+$ nest 4 (vcat $ map doc msgs)
+    doc e = text "parsec failed at" <+> text (show $ errorPos e) PP.<> char ':' $+$ nest 4 (vcat $ map doc msgs)
         where msgs = errorMessages e
 
 instance Out Message where
@@ -36,9 +38,11 @@ instance Out Message where
     doc (Message x) = text x
 
 asPandocHTML :: (Pandoc -> Pandoc) -> String -> String
-asPandocHTML f str = case readHtml def str of
+asPandocHTML f str = case runPure (readHtml def (T.pack str)) of
     Left err -> error $ pretty err
-    Right pandoc -> writeHtmlString def (f pandoc)
+    Right pandoc -> case runPure (writeHtml5String def (f pandoc)) of
+        Left err -> error $ pretty err
+        Right txt -> T.unpack txt
     
 pandocChangeLinkUrls :: (String -> String) -> Pandoc -> Pandoc
 pandocChangeLinkUrls furl = everywhere (mkT flink)

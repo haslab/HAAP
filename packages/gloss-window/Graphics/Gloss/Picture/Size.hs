@@ -157,7 +157,12 @@ norm Blank = []
 #if defined(ghcjs_HOST_OS)
 norm (Image w h _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
 #else
+#if MIN_VERSION_gloss(1,13,0)
+norm (Bitmap dta) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
+  where (w,h) = Gloss.bitmapSize dta
+#else
 norm (Bitmap w h _ _) = [Gloss.rectangleWire (fromIntegral w) (fromIntegral h)]
+#endif
 #endif
 --norm (Circle 0) = [] --degenerated circle
 norm pic = [pic] -- Polygon, Line, Circle

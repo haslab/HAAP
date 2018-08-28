@@ -16,6 +16,7 @@ import qualified Data.Text.Template as T
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
 import Data.String
+import Data.Semigroup
 import Data.Typeable
 import Data.Binary
 import qualified Data.Map as Map
@@ -52,6 +53,9 @@ mapFun m x = case Map.lookup x m of
 
 mapComp :: (Ord a,Eq b) => Map a b -> Map b c -> Map a c
 mapComp (Map.toList -> xs) (Map.toList -> ys) = Map.fromList [ (a,c) | (a,b) <- xs, (b',c) <- ys, b == b' ]
+
+instance Semigroup HaapContext where
+    (<>) = mappend
 
 instance Monoid HaapContext where
     mempty = HaapContext Map.empty

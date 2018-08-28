@@ -1,0 +1,18 @@
+TODO for Graphalyze
+===================
+
+* Report framework
+    * Extend the report framework
+    * Explore options for generating multiple files
+    * Differentiate between "large" and "small" images
+    * The pandoc code (especially elements) is a bit of a mess... can it be cleaned up?
+
+* Analysis stuff
+    * Default graph -> alg -> report element stuff
+
+* Write a README
+
+* For Reporting, have a Document -> IO Document function that
+  generates all the visualisations and replaces all GraphImage
+  DocElement values with DocImage, etc. (and then the Document ->
+  Pandoc conversion can be pure).

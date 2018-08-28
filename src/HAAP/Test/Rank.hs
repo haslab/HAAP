@@ -9,7 +9,7 @@ This module provides the @Rank@ plugin to generate rankings.
 module HAAP.Test.Rank where
 
 import HAAP.Core
-import HAAP.Pretty
+import HAAP.Pretty as PP
 import HAAP.Test.Spec
 import HAAP.Utils
 import HAAP.Web.Hakyll
@@ -78,7 +78,7 @@ $(deriveSafeCopy 0 'base ''PercentageScore)
 
 instance Out PercentageScore where
     docPrec i  = doc
-    doc (PercentageScore x) = text (printDouble x 2) <> text "%"
+    doc (PercentageScore x) = text (printDouble x 2) PP.<> text "%"
 
 instance Score PercentageScore where
     okScore (PercentageScore x) = x > 50
@@ -91,7 +91,7 @@ $(deriveSafeCopy 0 'base ''PercentageMsgScore)
 instance Out PercentageMsgScore where
     docPrec i  = doc
     doc (PercentageMsgScore (Left x)) = text x
-    doc (PercentageMsgScore (Right x)) = text (printDouble x 2) <> text "%"
+    doc (PercentageMsgScore (Right x)) = text (printDouble x 2) PP.<> text "%"
 
 instance Score PercentageMsgScore where
     okScore (PercentageMsgScore x) = isRight x

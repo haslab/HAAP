@@ -47,7 +47,7 @@ import GHC.Generics
 
 import System.Directory
 
-import Text.PrettyPrint
+import Text.PrettyPrint as PP
 import Text.PrettyPrint.GenericPretty
 
 -- General static project information
@@ -196,7 +196,7 @@ data HaapEvent = HaapEvent CallStack String
   
 instance Out HaapEvent where
     docPrec i x = doc x
-    doc (HaapEvent c s) = text (prettyCallStack c) <> char ':' $+$ nest 4 (text s)
+    doc (HaapEvent c s) = text (prettyCallStack c) PP.<> char ':' $+$ nest 4 (text s)
 
 printLog :: HaapLog -> IO ()
 printLog l = forM_ l $ \e -> putStrLn $ pretty e

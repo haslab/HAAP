@@ -36,8 +36,18 @@ RUN git submodule update --init --recursive
 RUN ./utils/makePackages.sh -j8
 RUN ./utils/makeSandbox.sh -j8
 RUN cabal update
+ADD ghc.config cabal.config
 RUN cabal install --disable-documentation
+RUN rm cabal.config
 RUN ghcjs-boot -s ./lib/boot
+ADD ghcjs.config cabal.config
+RUN git clone https://github.com/ghcjs/ghcjs-base
+RUN cabal install --ghcjs ghcjs-base/ghcjs-base.cabal --disable-documentation
+RUN git clone https://github.com/ghcjs/ghcjs-dom
+RUN cabal install --ghcjs ghcjs-dom/ghcjs-dom-jsffi/ghcjs-dom-jsffi.cabal ghcjs-dom/ghcjs-dom/ghcjs-dom.cabal --disable-documentation
+RUN find . -not \( -name 'cabal.sandbox.config' -or -name '.cabal-sandbox' -or -path './.cabal-sandbox/*' \) -delete
+
+
 
 
 

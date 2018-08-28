@@ -1,9 +1,10 @@
 FROM hugopacheco/ghcjs:latest
 MAINTAINER Hugo Pacheco <hpacheco@gmail.com>
 
-ENV HOME /home
-RUN echo "export PATH=/home/.cabal/bin/:/home/.cabal-sandbox/bin:$PATH" >> /root/.profile
-RUN . /root/.profile
+# install essential packages
+RUN apt-get update
+RUN apt-get -qqy install pkg-config libpcre3-dev
+
 
 WORKDIR $HOME
 RUN git clone https://github.com/haslab/HAAP
@@ -11,7 +12,7 @@ WORKDIR $HOME/HAAP
 RUN cabal update
 RUN cp ../ghcjs/cabal.sandbox.config cabal.sandbox.config
 
-RUN cabal sandbox init
+# RUN cabal sandbox init
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
 RUN cabal install $HOME/HAAP/packages/Hoed-extras brittany haddock hlint homplexity $HOME/HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 --disable-documentation
 

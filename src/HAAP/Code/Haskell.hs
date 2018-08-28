@@ -11,7 +11,7 @@ module HAAP.Code.Haskell where
 
 import HAAP.Core
 import HAAP.IO
-import HAAP.Pretty
+import HAAP.Pretty as PP
 import HAAP.Plugin
 import HAAP.Utils
 
@@ -36,7 +36,7 @@ import Control.Monad.Except
 instance Show a => Out (ParseResult a) where
     docPrec i x = doc x
     doc (ParseOk x) = text "parsing ok:" <+> text (show x)
-    doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) <> char ':' <+> text s
+    doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) PP.<> char ':' <+> text s
 
 parseHaskellWith :: (Parseable a,MonadIO m,HaapStack t m) => String -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m a
 parseHaskellWith str arg_exts arg_fix = do

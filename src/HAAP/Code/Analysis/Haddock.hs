@@ -6,7 +6,7 @@ This module provides documentation analysis functions by resorting to the _Haddo
 -}
 
 
-{-# LANGUAGE OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, OverloadedStrings, StandaloneDeriving, DeriveGeneric, DeriveDataTypeable, ScopedTypeVariables #-}
 
 module HAAP.Code.Analysis.Haddock where
 
@@ -44,6 +44,12 @@ import System.FilePath
 import Safe
 
 import GHC.Generics (Generic)
+
+#if MIN_VERSION_haddock_library(1,6,0)
+deriving instance Data id => Data (Table id)
+deriving instance Data id => Data (TableRow id)
+deriving instance Data id => Data (TableCell id)
+#endif
 
 deriving instance Data Hyperlink
 deriving instance Data Example
@@ -106,8 +112,14 @@ runHaddockStats files = do
 runHaddockComments :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
 runHaddockComments files = orLogDefault def $ do
     strs <- liftM (concat . catMaybes) $ mapM (orLogMaybe . parseFileComments) files
-    let docs::[DocH Identifier Identifier] = map (_doc . parseParas) strs
+    let docs::[DocH Identifier Identifier] = map (_doc . parseParasGeneric) strs
     return $ Fraction (Set.size $ specialDocs docs) (sum $ map length strs)
+
+#if MIN_VERSION_haddock_library(1,6,0)
+parseParasGeneric = parseParas Nothing
+#else 
+parseParasGeneric = parseParas
+#endif
 
 specialDoc :: DocH mod id -> Maybe Int
 specialDoc (DocParagraph {}) = Just 1
