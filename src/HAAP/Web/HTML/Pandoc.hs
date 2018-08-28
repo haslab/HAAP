@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-
 HAAP: Haskell Automated Assessment Platform
 
@@ -38,11 +40,17 @@ instance Out Message where
     doc (Message x) = text x
 
 asPandocHTML :: (Pandoc -> Pandoc) -> String -> String
+#if MIN_VERSION_pandoc (2,0,0)
 asPandocHTML f str = case runPure (readHtml def (T.pack str)) of
     Left err -> error $ pretty err
     Right pandoc -> case runPure (writeHtml5String def (f pandoc)) of
         Left err -> error $ pretty err
         Right txt -> T.unpack txt
+#else
+asPandocHTML f str = case readHtml def str of
+    Left err -> error $ pretty err
+    Right pandoc -> writeHtmlString def (f pandoc) 
+#endif
     
 pandocChangeLinkUrls :: (String -> String) -> Pandoc -> Pandoc
 pandocChangeLinkUrls furl = everywhere (mkT flink)

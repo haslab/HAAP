@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- |
    Module      : Data.Graph.Analysis.Reporting.Pandoc
    Description : Graphalyze Types and Classes
@@ -48,8 +50,14 @@ import qualified Data.Text as T
    The actual exported writers.
  -}
 
+#if MIN_VERSION_pandoc (2,0,0)
+writeHtmlStringGeneric = writeHtml5String
+#else
+writeHtmlStringGeneric = writeHtmlString
+#endif
+
 pandocHtml :: PandocDocument
-pandocHtml = pd { writer        = writeHtml5String
+pandocHtml = pd { writer        = writeHtmlString
                 , extension     = "html"
                 , templateName  = "html"
                 , extGraphProps = Just VProps { grSize = DefaultSize
@@ -86,7 +94,11 @@ pandocMarkdown = pd { writer = writeMarkdown
 -- | Definition of a Pandoc Document.  Size measurements are in inches,
 --   and a 6:4 ratio is used for width:length.
 data PandocDocument = PD { -- | The Pandoc document style
+#if MIN_VERSION_pandoc (2,0,0)
                            writer        :: WriterOptions -> Pandoc -> PandocPure Text
+#else
+                           writer        :: WriterOptions -> Pandoc -> String
+#endif
                            -- | The file extension used
                          , extension     :: FilePath
                            -- | Which template to get.
@@ -159,7 +171,11 @@ createPandoc p d = do
         Just es -> do
           let es' = htmlAuthDt : es
               pnd = Pandoc meta es'
-              doc = runPure $ convert pnd
+#if MIN_VERSION_pandoc (2,0,0)
+          let doc = runPure $ convert pnd
+#else
+          doc <- tryWrite $ convert pnd
+#endif
           case doc of
             (Right _) -> success
             (Left _)  -> failDoc
