@@ -40,12 +40,17 @@ ADD ghc.config cabal.config
 RUN cabal install --disable-documentation
 RUN rm cabal.config
 RUN ghcjs-boot -s ./lib/boot
+RUN find . -not \( -name 'cabal.sandbox.config' -or -name '.cabal-sandbox' -or -path './.cabal-sandbox/*' \) -delete
+
+# install GHCJS extra packages
+WORKDIR $HOME
 ADD ghcjs.config cabal.config
 RUN git clone https://github.com/ghcjs/ghcjs-base
 RUN cabal install --ghcjs ghcjs-base/ghcjs-base.cabal --disable-documentation
 RUN git clone https://github.com/ghcjs/ghcjs-dom
 RUN cabal install --ghcjs ghcjs-dom/ghcjs-dom-jsffi/ghcjs-dom-jsffi.cabal ghcjs-dom/ghcjs-dom/ghcjs-dom.cabal --disable-documentation
-RUN find . -not \( -name 'cabal.sandbox.config' -or -name '.cabal-sandbox' -or -path './.cabal-sandbox/*' \) -delete
+RUN rm -rf cabal.config
+RUN rm -rf ghcjs-base ghcjs-dom
 
 
 
