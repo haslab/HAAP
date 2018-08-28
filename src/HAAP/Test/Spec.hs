@@ -5,7 +5,7 @@ This module provides the @Spec@ plugin to run test specifications.
 -}
 
 
-{-# LANGUAGE TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
+{-# LANGUAGE DeriveGeneric, StandaloneDeriving, TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where
 
@@ -17,7 +17,7 @@ import HAAP.Pretty
 import HAAP.Shelly
 import HAAP.Plugin
 
-import Test.QuickCheck.Property as QuickCheck
+import Test.QuickCheck.Property as QuickCheck hiding (Result)
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
 import Test.QuickCheck.Random as QuickCheck
@@ -63,6 +63,9 @@ import Safe
 
 data Spec
 
+instance NFData Result where
+    rnf = const () -- since this is a quickcheck result there is really no laziness issue, i.e., the test has been executed
+    
 instance HaapPlugin Spec where
     type PluginI Spec = HaapSpecArgs
     type PluginT Spec = ReaderT HaapSpecArgs
@@ -148,6 +151,12 @@ testEqualIOWith eq iox ioy = HaapSpecTestEqual eq iox ioy
 testMessageIO :: IO String -> HaapSpec
 testMessageIO = HaapSpecTestMessage
 
+testResult :: Result -> HaapSpec
+testResult = HaapSpecTestResult . return
+
+testResultIO :: IO Result -> HaapSpec
+testResultIO = HaapSpecTestResult
+
 data HaapSpec where
      HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
      HaapSpecUnbounded :: (Show a,Out a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
@@ -155,6 +164,7 @@ data HaapSpec where
      HaapSpecTestMaybe :: (NFData a,OutIO a) => IO (Maybe a) -> HaapSpec
      HaapSpecTestEqual :: (NFData a,OutIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
      HaapSpecTestMessage :: IO String -> HaapSpec
+     HaapSpecTestResult :: IO Result -> HaapSpec -- the result of running a quickCheck property
 
 data HaapTestTable a = HaapTestTable
     { haapTestTableHeader :: [String] -- table header
@@ -287,6 +297,12 @@ haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
             msg <- runSpecIO ioargs "test" io 
             throw $ HaapSpecMessage msg
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
+    haapSpec' mode (HaapSpecTestResult io) = do
+        ex <- haapNewExample
+        let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
+            res <- runSpecIO ioargs "test" io 
+            assertResult res
+        return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
 
 data HaapSpecMessage = HaapSpecMessage String
   deriving Show
@@ -313,6 +329,7 @@ haapSpecNames (HaapSpecTestBool io) = return []
 haapSpecNames (HaapSpecTestMaybe io) = return []
 haapSpecNames (HaapSpecTestEqual eq iox ioy) = return []
 haapSpecNames (HaapSpecTestMessage io) = return []
+haapSpecNames (HaapSpecTestResult io) = return []
 
 haapSpecProperty :: IOArgs -> HaapSpec -> Property
 haapSpecProperty ioargs (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty ioargs . f) xs
@@ -334,6 +351,10 @@ haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
     msg <- run $ runSpecIO ioargs "test" io
     throw $ HaapSpecMessage msg
     return ()
+haapSpecProperty ioargs (HaapSpecTestResult io) = monadicIO $ do
+    res <- run $ runSpecIO ioargs "test" io
+    unless (isSuccessResult res) $ fail $ show res
+    QuickCheck.assert (isSuccessResult res)
 
 -- HUnit code
 
@@ -364,3 +385,12 @@ assertEqualWith preface eq expected actual = unless (actual `eq` expected) $ do
     expectedMsg <- prettyIO expected
     actualMsg <- prettyIO actual
     throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg expectedMsg actualMsg
+
+assertResult :: (HasCallStack) => Result -> Assertion
+assertResult res = unless (isSuccessResult res) $ do
+    throwIO $ HUnit.HUnitFailure location $ HUnit.Reason $ show res
+    
+c (Success {}) = True
+isSuccessResult _ = False
+
+
