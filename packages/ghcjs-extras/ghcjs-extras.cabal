@@ -1,5 +1,5 @@
 Name:                ghcjs-extras
-Version:             0.0.2
+Version:             0.0.1
 Synopsis:            Additional GHCJS bindings
 License:             BSD3
 Author:              Hugo Pacheco
@@ -23,6 +23,7 @@ Library
 
   if impl(ghcjs)
     Build-depends:
+                       ghcjs-base,
                        ghcjs-prim,
                        ghcjs-dom             >= 0.9
     Exposed-modules:     JavaScript.Web.Worker.Extras
