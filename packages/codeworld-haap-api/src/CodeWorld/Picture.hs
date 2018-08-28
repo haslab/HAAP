@@ -20,6 +20,7 @@
 module CodeWorld.Picture where
 
 import CodeWorld.Color
+import Data.Semigroup
 import Data.Monoid ((<>))
 import Data.Text (Text, pack)
 import GHC.Stack
@@ -220,6 +221,9 @@ rotated = Rotate callStack
 -- A picture made by drawing these pictures, ordered from top to bottom.
 pictures :: HasCallStack => [Picture] -> Picture
 pictures = Pictures callStack
+
+instance Semigroup Picture where
+    (<>) = mappend
 
 instance Monoid Picture where
   mempty                   = blank
