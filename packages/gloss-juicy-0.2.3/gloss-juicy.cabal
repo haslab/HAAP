@@ -2,7 +2,6 @@ name:                gloss-juicy
 version:             0.2.3
 synopsis:            Load any image supported by Juicy.Pixels in your gloss application
 description:         Lets you convert any image supported by Juicy.Pixels in a gloss application by converting to gloss' Bitmap representation.
-		     .
                      Version 0.1.2 just enabled caching (from a frame to the next, and so on) of the images you load, so that they are not recomputed for each frame. Credits go to Jonathan Daugherty for the patch.
 homepage:            http://github.com/alpmestan/gloss-juicy
 license:             BSD3

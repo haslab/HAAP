@@ -29,7 +29,7 @@ import Control.Monad.Except
 
 import System.FilePath
 
---import Debug.Hoed.Utils
+import Debug.Hoed.Extras
 
 data Debugger
 
@@ -60,7 +60,6 @@ data DebuggerArgs = DebuggerArgs
     , debuggerModules :: [String]
     , debuggerProgram :: String
     , debuggerHtmlPath :: FilePath
-    , debuggerHoedDataPath :: IO FilePath
     }
 
 useAndRunDebugger :: (MonadIO m,HasPlugin Hakyll t m) => DebuggerArgs -> Haap t m (FilePath,FilePath,FilePath)
@@ -72,8 +71,8 @@ runDebugger = do
     hp <- getHakyllP
     tmp <- getProjectTmpPath
     let htmldatapath::String = "debug"
-    hoeddatapath <- liftIO $ debuggerHoedDataPath h
---    hoeddatapath <- liftIO $ hoedExtrasDataPath
+    --hoeddatapath <- liftIO $ debuggerHoedDataPath h
+    hoeddatapath <- liftIO $ hoedExtrasDataPath
     
     let extras = debuggerArgs h
     let ioargs = (ghcIO $ debuggerGHC h) { ioSandbox = debuggerSandbox h }

@@ -127,6 +127,9 @@ unbounded = HaapSpecUnbounded
 testBool :: Bool -> HaapSpec
 testBool x = testBoolIO (return x)
 
+testMaybe :: (NFData a,OutIO a) => Maybe a -> HaapSpec
+testMaybe x = testMaybeIO (return x)
+
 testEqual :: (NFData a,Eq a,OutIO a) => a -> a -> HaapSpec
 testEqual x y = testEqualIO (return x) (return y)
 
@@ -337,8 +340,11 @@ haapSpecProperty ioargs (HaapSpecUnbounded n _ g f) = forAll g f
 haapSpecProperty ioargs (HaapSpecTestBool io) = counterexample "Boolean assertion failed" $ monadicIO $ do
     b <- run $ runSpecIO ioargs "test" io
     QuickCheck.assert b
-haapSpecProperty ioargs (HaapSpecTestMaybe io) = counterexample "Boolean assertion failed" $ monadicIO $ do
+haapSpecProperty ioargs (HaapSpecTestMaybe io) = counterexample "Maybe assertion failed" $ monadicIO $ do
     b <- run $ runSpecIO ioargs "test" io
+    unless (isNothing b) $ do
+        pb <- run $ runSpecIO ioargs "solution" $ prettyIO (fromJust b)
+        fail ("Maybe assertion failed: got...\n"++pb)
     QuickCheck.assert (isNothing b)
 haapSpecProperty ioargs (HaapSpecTestEqual eq iox ioy) = monadicIO $ do
     x <- run $ runSpecIO ioargs "oracle" iox
@@ -348,7 +354,7 @@ haapSpecProperty ioargs (HaapSpecTestEqual eq iox ioy) = monadicIO $ do
     unless (x `eq` y) $ fail ("Equality assertion failed: expected...\n"++px ++ "\n...but got...\n"++ py)
     QuickCheck.assert (x `eq` y)
 haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
-    msg <- run $ runSpecIO ioargs "test" io
+    msg <- run $ runSpecIO ioargs "test" io 
     throw $ HaapSpecMessage msg
     return ()
 haapSpecProperty ioargs (HaapSpecTestResult io) = monadicIO $ do
