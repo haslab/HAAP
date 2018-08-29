@@ -31,6 +31,7 @@
 -}
 
 module CodeWorld.Driver (
+    Picture(..),
     drawingOf,
     animationOf,
     simulationOf,

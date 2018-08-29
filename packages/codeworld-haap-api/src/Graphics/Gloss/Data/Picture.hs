@@ -30,6 +30,14 @@ data Picture
     | Image Int Int CW.Img
   deriving (Eq,Show)
 
+instance Semigroup Picture where
+  x <> y = Pictures [x,y]
+instance Monoid Picture where
+  mempty = Blank
+  mappend x y = Pictures [x,y]
+  mconcat xs = Pictures xs  
+
+
 blank :: Picture
 blank = Blank
 

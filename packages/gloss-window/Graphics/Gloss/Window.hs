@@ -31,8 +31,8 @@ infix .-.
 -- a function that draws a picture for aa given window size
 type Window = Dimension -> Picture
 
-instance Semigroup Window where
-	(<>) = mappend
+--instance Semigroup Window where
+--	(<>) = mappend
 
 instance Monoid Window where
     mempty = empty
