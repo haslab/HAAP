@@ -6,6 +6,7 @@ import Graphics.Gloss.Picture.Size
 import Graphics.Gloss (Picture(..),Point(..),Display(..),Path(..))
 import qualified Graphics.Gloss as Gloss
 
+import Data.Semigroup
 import Data.Monoid
 
 type Dimension = (Int,Int)
@@ -29,6 +30,9 @@ infix .-.
 
 -- a function that draws a picture for aa given window size
 type Window = Dimension -> Picture
+
+instance Semigroup Window where
+	(<>) = mappend
 
 instance Monoid Window where
     mempty = empty
