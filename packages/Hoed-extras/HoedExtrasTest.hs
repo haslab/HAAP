@@ -12,22 +12,7 @@
 {-# LANGUAGE ViewPatterns, TupleSections #-}
 
 import qualified "debug" Debug.Hoed as Debug
-import "Hoed" Debug.Hoed
-import Debug.Hoed.JsHood as JsHood
-import Debug.Hoed.JsHoed
 import Debug.Hoed.Extras
-import Debug.Hoed.GHood
-import Debug.Hoed.GHoed
-import Debug.Hoed.CompTree.Exts
---import Debug.Observe
-import qualified Data.Text as T
-import Data.Aeson
-import Control.Monad
-import qualified Data.ByteString as B
-
-import Data.Serialize as S
-
-import qualified GHC.Generics
 
 Debug.debug' Debug.Config{Debug.generateGenericInstances=True,Debug.generateObservableInstances=True, Debug.excludeFromInstanceGeneration=[]} [d|
 
@@ -76,26 +61,19 @@ Debug.debug' Debug.Config{Debug.generateGenericInstances=True,Debug.generateObse
 --one = observe "one" one'
 --one' = 1
 
--- Java Hood Java interface
 main1 = do
-    runGHoodO (print $ isOddEven 5)
+    let args = defaultHoedExtrasArgs { jshood = View }
+    runHoedExtrasO args (print $ isOddEven 5)
 
--- Client-server Web Hoed interface
 main2 = do
-    runGHoedO (print $ isOddEven 5)
-    
--- Client Web Hoed interface
+    let args = defaultHoedExtrasArgs { ghood = View }
+    runHoedExtrasO args (print $ isOddEven 5)
+
 main3 = do
-    runJsHoedO (print $ isOddEven 5)
-
--- Client Web debug interaace
-main4 = Debug.debugRun (print $ isOddEven 5)
-
--- Client Web Hood interface
-main5 = do
-    runJsHoodO (print $ isOddEven 5)
+    let args = defaultHoedExtrasArgs { jshoed = View }
+    runHoedExtrasO args (print $ isOddEven 5)
     
--- analyse the program
-main6 = do
-    h <- runO' defaultHoedOptions (print $ isOddEven 5)
-    return ()
+main4 = do
+    let args = defaultHoedExtrasArgs { ghoed = View }
+    runHoedExtrasO args (print $ isOddEven 5)
+

@@ -29,11 +29,18 @@ defaultHoedExtrasArgs :: HoedExtrasArgs
 defaultHoedExtrasArgs = HoedExtrasArgs defaultHoedOptions Nothing None None None None None
 
 debugExtra :: HoedExtrasArgs -> HoedAnalysis -> IO ()
-debugExtra args h = do
-    let opts' = (options args) {Debug.prettyWidth = 160, Debug.verbose = Verbose}
-    let !compTree = hoedCompTree h
-    let trace = Debug.convert compTree
-    Debug.debugSaveTrace "debug.html" trace
+debugExtra args h = case debug args of
+    None -> return ()
+    View -> do
+        let opts' = (options args) {Debug.prettyWidth = 160, Debug.verbose = Verbose}
+        let !compTree = hoedCompTree h
+        let trace = Debug.convert compTree
+        Debug.debugViewTrace trace
+    Deploy -> do
+        let opts' = (options args) {Debug.prettyWidth = 160, Debug.verbose = Verbose}
+        let !compTree = hoedCompTree h
+        let trace = Debug.convert compTree
+        Debug.debugSaveTrace "debug.html" trace
      
 
 

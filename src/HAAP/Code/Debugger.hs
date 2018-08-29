@@ -28,6 +28,7 @@ import Control.Monad.Reader as Reader
 import Control.Monad.Except
 
 import System.FilePath
+import System.Directory
 
 import Debug.Hoed.Extras
 
@@ -70,9 +71,7 @@ runDebugger = do
     h <- liftHaap $ liftPluginProxy (Proxy::Proxy Debugger) $ Reader.ask
     hp <- getHakyllP
     tmp <- getProjectTmpPath
-    let htmldatapath::String = "debug"
-    --hoeddatapath <- liftIO $ debuggerHoedDataPath h
-    hoeddatapath <- liftIO $ hoedExtrasDataPath
+    let htmldatapath::String = dirToRoot (debuggerHtmlPath h) </> "debug"
     
     let extras = debuggerArgs h
     let ioargs = (ghcIO $ debuggerGHC h) { ioSandbox = debuggerSandbox h }
@@ -96,7 +95,7 @@ runDebugger = do
                         ++ "main = do" ++ "\n"
                         ++ "  let prog = " ++ debuggerProgram h ++ "\n"
                         ++ "  let args = defaultHoedExtrasArgs { jshood = Deploy, jshoed = Deploy, debug = Deploy, datapath = Just (return " ++ show htmldatapath ++ ")}" ++ "\n"
-                        ++ "  runHoedExtrasO args (return prog)" ++ "\n"
+                        ++ "  runHoedExtrasO args (print prog)" ++ "\n"
             
             shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") mainfile
             
@@ -109,16 +108,16 @@ runDebugger = do
             exec <- shExec "Main"
             shCommandWith_ ioArgs exec extras
         
-        let debugPath = tmp </> debuggerHtmlPath h </> "debug.html"
-        let jshoodPath = tmp </> debuggerHtmlPath h </> "jshood.html"
-        let jshoedPath = tmp </> debuggerHtmlPath h </> "jshoed.html"
+        let debugPath  = debuggerHtmlPath h </> "debug.html"
+        let jshoodPath = debuggerHtmlPath h </> "jshood.html"
+        let jshoedPath = debuggerHtmlPath h </> "jshoed.html"
         
         hakyllRules $ do
             -- copy the debugger data files
-            let globdata = (fromGlob $ hoeddatapath </> "img" </> "*.png")
-                      .||. (fromGlob $ hoeddatapath </> "web/JSHoed.jsexe" </> "*.js")
+            let globdata = (fromGlob $ "debug" </> "img" </> "*.png")
+                      .||. (fromGlob $ "debug" </> "web/JsHoed.jsexe" </> "*.js")
             match globdata $ do
-                route   $ relativeRoute tmp `composeRoutes` addToRoute htmldatapath `composeRoutes` funRoute (hakyllRoute hp)
+                route   $ idRoute`composeRoutes` funRoute (hakyllRoute hp)
                 compile $ copyFileCompiler
             
             -- copy the debugger generated documentation
@@ -127,6 +126,10 @@ runDebugger = do
                 compile $ getResourceString >>= hakyllCompile hp
         return (hakyllRoute hp $ debugPath,hakyllRoute hp $ jshoodPath,hakyllRoute hp $ jshoedPath)
 
-    
+copyDebuggerFiles :: (MonadIO m,HaapStack t m) => Configuration -> Haap t m ()
+copyDebuggerFiles cfg = do
+    datapath <- runBaseIO' $ hoedExtrasDataPath
+    xs <- runBaseIO' $ listDirectory datapath
+    runBaseSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> "debug" </> x)    
     
     
