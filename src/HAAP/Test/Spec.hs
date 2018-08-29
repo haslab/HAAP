@@ -285,7 +285,7 @@ haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
         ex <- haapNewExample
         let s = fromHUnitTest $ TestLabel (show ex) $ TestCase $ do
             b <- runSpecIO ioargs "test" io
-            assertMaybe "Boolean assertion failed" b
+            assertMaybe "Maybe assertion failed" b
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
     haapSpec' mode (HaapSpecTestEqual eq iox ioy) = do
         ex <- haapNewExample
