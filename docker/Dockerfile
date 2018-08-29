@@ -12,7 +12,7 @@ WORKDIR $HOME/HAAP
 RUN cabal update
 RUN cp ../ghcjs/cabal.sandbox.config cabal.sandbox.config
 RUN cabal sandbox add-source $HOME/HAAP/packages/*
-RUN cabal install brittany haddock hlint homplexity $HOME/HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 $HOME/HAAP/packages/gloss-juicy-0.2.3 --disable-documentation
+RUN cabal install brittany haddock hlint homplexity $HOME/HAAP/HAAP.cabal $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/snap-exports $HOME/HAAP/packages/snaplet-acid-state-0.2.8 $HOME/HAAP/packages/snap-extras-0.12.2.1 --disable-documentation
 
 # install HAAP ghcjs packages
 WORKDIR $HOME
