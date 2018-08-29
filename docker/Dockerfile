@@ -19,7 +19,6 @@ WORKDIR $HOME
 RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
 
 # prepare examples
-RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/cabal.sandbox.config
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/helloworld/cabal.sandbox.config
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/minimalistic/cabal.sandbox.config
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/xterm/cabal.sandbox.config
