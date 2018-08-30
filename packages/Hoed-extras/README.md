@@ -1,7 +1,8 @@
 
 
-## Build javascript app
+## Build javascript apps
 
 ```
-ghcjs JsHoed.hs -o ../web/JsHoed -i../src
+ghcjs JsHoed.hs -o ../web/JsHoed
+ghcjs JsHoedb.hs -o ../web/JsHoedb
 ```

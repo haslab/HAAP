@@ -23,10 +23,11 @@ runHoedExtrasO extras prog = do
     JsHood.jshoodExtra extras h
     GHoed.ghoedExtra extras h
     JsHoed.jshoedExtra extras h
+    JsHoed.jshoedbExtra extras h
     debugExtra extras h 
 
 defaultHoedExtrasArgs :: HoedExtrasArgs
-defaultHoedExtrasArgs = HoedExtrasArgs defaultHoedOptions Nothing None None None None None
+defaultHoedExtrasArgs = HoedExtrasArgs defaultHoedOptions Nothing None None None None None None
 
 debugExtra :: HoedExtrasArgs -> HoedAnalysis -> IO ()
 debugExtra args h = case debug args of

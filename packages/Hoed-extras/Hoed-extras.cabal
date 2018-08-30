@@ -13,7 +13,7 @@ category:            Debug, Trace
 build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  
-data-files:          img/*.gif, img/*.png, GHood.jar, web/*.html, web/JsHoed.jsexe/*.js
+data-files:          img/*.gif, img/*.png, GHood.jar, web/*.html, web/JsHoed.jsexe/*.js, web/JsHoedb.jsexe/*.js
 
 library
   if impl(ghcjs)
@@ -34,7 +34,7 @@ library
     Build-depends:
                        
   else
-    Build-depends:     threepenny-gui, open-browser, temporary, aeson, debug==0.1.2
+    Build-depends:     snap, snap-core, threepenny-gui, open-browser, temporary, aeson, debug==0.1.2
   build-depends:       base >= 4 && <5
                        , array, containers
                        , clock
@@ -61,7 +61,7 @@ library
                        , vector-th-unbox
                        , regex-posix
                        , time, mtl
-                       , Hoed==0.5.1, template, filepath, Glob
+                       , Hoed==0.5.1, template, filepath, Glob, binary
   default-language:    Haskell2010
   hs-source-dirs:      src
 

@@ -94,7 +94,7 @@ runDebugger = do
                         ++ "import Debug.Hoed.Extras" ++ "\n"
                         ++ "main = do" ++ "\n"
                         ++ "  let prog = " ++ debuggerProgram h ++ "\n"
-                        ++ "  let args = defaultHoedExtrasArgs { jshood = Deploy, jshoed = Deploy, debug = Deploy, datapath = Just (return " ++ show htmldatapath ++ ")}" ++ "\n"
+                        ++ "  let args = defaultHoedExtrasArgs { jshood = Deploy, jshoedb = Deploy, debug = Deploy, datapath = Just (return " ++ show htmldatapath ++ ")}" ++ "\n"
                         ++ "  runHoedExtrasO args (print prog)" ++ "\n"
             
             shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") mainfile
@@ -110,14 +110,18 @@ runDebugger = do
         
         let debugPath  = debuggerHtmlPath h </> "debug.html"
         let jshoodPath = debuggerHtmlPath h </> "jshood.html"
-        let jshoedPath = debuggerHtmlPath h </> "jshoed.html"
+        let jshoedPath = debuggerHtmlPath h </> "jshoedb.html"
         
         hakyllRules $ do
             -- copy the debugger data files
             let globdata = (fromGlob $ "debug" </> "img" </> "*.png")
-                      .||. (fromGlob $ "debug" </> "web/JsHoed.jsexe" </> "*.js")
+                      .||. (fromGlob $ "debug" </> "web/JsHoedb.jsexe" </> "*.js")
             match globdata $ do
                 route   $ idRoute`composeRoutes` funRoute (hakyllRoute hp)
+                compile $ copyFileCompiler
+                
+            match (fromGlob $ tmp </> debuggerHtmlPath h </> "CompTree") $ do
+                route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                 compile $ copyFileCompiler
             
             -- copy the debugger generated documentation

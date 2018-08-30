@@ -77,3 +77,7 @@ main4 = do
     let args = defaultHoedExtrasArgs { ghoed = View }
     runHoedExtrasO args (print $ isOddEven 5)
 
+main5 = do
+    let args = defaultHoedExtrasArgs { jshoedb = View }
+    runHoedExtrasO args (print $ isOddEven 5)
+

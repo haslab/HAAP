@@ -53,6 +53,7 @@ import           GHCJS.Foreign.Callback
 import           GHCJS.Marshal
 import           GHCJS.Marshal.Pure
 import           GHCJS.Types
+import GHCJS.Fetch
 
 main = do
     st <- initializeJsHoed
@@ -62,10 +63,7 @@ main = do
 
 getCompTree :: IO CompTree
 getCompTree = do
-    doc <- orError "getCompTree currentDocument" currentDocument
-    textarea <- orError "getCompTree getElementById" $ getElementById doc ("input" :: JSString)
-    content <- orError "getCompTree getValue" $ mapM getValue =<< fromJSVal =<< toJSVal textarea
-    orError "getCompTreeRead" $ return $ readMaybe content
+    fetchBinaryFile "CompTree"
 
 drawJsHoed :: JsHoed -> IO ()
 drawJsHoed st = do

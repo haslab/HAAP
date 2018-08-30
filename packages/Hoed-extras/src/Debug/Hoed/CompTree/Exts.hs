@@ -1,6 +1,9 @@
 {-# LANGUAGE DeriveGeneric, StandaloneDeriving, PackageImports, FlexibleInstances #-}
 
-module Debug.Hoed.CompTree.Exts (showCompTree,readCompTree,prettyCompStmt,prettyVertex) where
+module Debug.Hoed.CompTree.Exts (
+    Graph(..), Judgement(..),AssistedMessage(..),Arc(..),H.Vertex(..),H.CompStmt(..),H.StmtDetails(..),Hashed(..)
+    ,showCompTree,readCompTree,prettyCompStmt,prettyVertex
+    ) where
 
 import Data.Graph.Libgraph
 import Data.Hashable
@@ -13,6 +16,19 @@ import Data.Text (Text(..))
 import Control.Monad
 import Text.Read
 import qualified Data.Text as T
+import Data.Binary (Binary(..))
+import qualified Data.Binary as Binary
+
+instance (Binary a,Binary b) => Binary (Graph a b)
+instance Binary Judgement
+instance Binary AssistedMessage
+instance (Binary a,Binary b) => Binary (Arc a b)
+instance Binary H.Vertex
+instance Binary H.CompStmt
+instance Binary H.StmtDetails
+instance (Hashable a,Binary a) => Binary (Hashed a) where
+    get = liftM hashed Binary.get
+    put = Binary.put . unhashed
 
 showCompTree :: H.CompTree -> String
 showCompTree = show . mapGraph chgVertex

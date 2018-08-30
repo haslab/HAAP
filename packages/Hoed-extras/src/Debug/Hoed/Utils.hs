@@ -20,7 +20,8 @@ data HoedExtrasArgs = HoedExtrasArgs
     , ghood :: HoedExtra
     , jshood :: HoedExtra
     , ghoed :: HoedExtra
-    , jshoed :: HoedExtra
+    , jshoed :: HoedExtra -- pass CompTree in String format (show/red)
+    , jshoedb :: HoedExtra -- pass CompTree in ByteString format (encode/decode)
     , debug :: HoedExtra
     }
 
