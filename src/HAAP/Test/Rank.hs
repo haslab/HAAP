@@ -26,7 +26,7 @@ import Data.Typeable
 import Data.Data
 
 import Control.Monad.Trans
-import Control.Monad.Catch
+--import Control.Monad.Catch
 import Control.Monad.Reader as Reader
 
 data Rank

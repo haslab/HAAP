@@ -31,7 +31,8 @@ import Data.Proxy
 import Shelly (Sh)
 
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
+import Control.Exception.Safe
 
 import Text.Read hiding (lift)
 
@@ -196,15 +197,15 @@ getSVNSourceInfo s = do
     parseInfo txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
         (x:xs) -> case readMaybe (drop 10 x) :: Maybe Int of
             Just rev -> return rev
-            Nothing -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
-        [] -> throwError $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+            Nothing -> throw $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+        [] -> throw $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
     parseLogRev txt1 txt2 = case tailMay (lines $ Text.unpack txt1) of
         Nothing -> return ("","")
         Just t -> case headMay t of
             Nothing -> return ("","")
             Just str -> case splitOn "|" str of
                 [_,author,date,_] -> return (author,date)
-                otherwise -> throwError $ HaapException $ "failed to parse svn revision log for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+                otherwise -> throw $ HaapException $ "failed to parse svn revision log for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
 
 putSVNSource :: (MonadIO m,HasPlugin SVN t m) => [FilePath] -> SVNSource -> Haap t m ()
 putSVNSource files s = do

@@ -20,7 +20,8 @@ import HAAP.Shelly
 
 import Control.Monad
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
+import Control.Exception.Safe
 
 import Data.Foldable
 import Data.Either
@@ -127,7 +128,7 @@ runXterm = do
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile xtCtx >>= hakyllCompile hp
                     matchXtermFiles
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throwError $ HaapException $ pretty res
+            else throw $ HaapException $ pretty res
 
 instance HaapMonad m => HasPlugin Xterm (ReaderT XtermArgs) m where
     liftPlugin = id

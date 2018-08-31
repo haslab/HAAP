@@ -37,10 +37,8 @@ instance HaapPlugin (StateDB st) where
     usePlugin getDB m = do
         db <- getDB
         let run (ComposeT m) = do
-            (e,db') <- State.runStateT m db
-            case e of
-                Left err -> return $ Left err
-                Right (b,(),w) -> return $ Right ((b,db'),(),w)
+            ((b,(),w),db') <- State.runStateT m db
+            return ((b,db'),(),w)
         (x,db') <- mapHaapMonad run m
         return (x,db')
 

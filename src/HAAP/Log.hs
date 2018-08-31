@@ -12,6 +12,7 @@ import HAAP.Pretty
 import Control.Monad.Writer (MonadWriter(..))
 import qualified Control.Monad.Writer as Writer
 import Control.Monad.IO.Class
+import Control.Exception.Safe
 
 import Data.DList as DList
 
@@ -22,5 +23,5 @@ logEvent msg = do
     liftHaap $ liftStack $ liftIO $ putStrLn msg
     Writer.tell $ DList.singleton $ HaapEvent callStack msg
     
-logError :: (MonadIO m,HaapStack t m,HasCallStack) => HaapException -> Haap t m ()
+logError :: (MonadIO m,HaapStack t m,HasCallStack) => SomeException -> Haap t m ()
 logError err = logEvent $ pretty err

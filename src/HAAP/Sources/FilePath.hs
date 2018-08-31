@@ -29,7 +29,7 @@ import Data.Proxy
 import Shelly (Sh)
 
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
 
 import Text.Read hiding (lift)
 

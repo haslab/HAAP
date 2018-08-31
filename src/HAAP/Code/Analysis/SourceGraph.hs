@@ -33,7 +33,7 @@ import Data.Graph.Analysis.Types (graph)
 import Control.Monad.IO.Class
 import Control.DeepSeq
 import Control.Monad
-import Control.Exception
+--import Control.Exception
 import Control.Arrow(first)
 
 import Language.Haskell.Exts as H

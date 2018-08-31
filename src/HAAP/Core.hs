@@ -29,11 +29,14 @@ import Control.Monad.State (MonadState(..),StateT(..))
 import qualified Control.Monad.State as State
 import Control.Monad.RWS (RWST(..))
 import qualified Control.Monad.RWS as RWS
-import Control.Monad.Except (MonadError(..),ExceptT(..))
-import qualified Control.Monad.Except as Except
-import Control.Monad.Catch
+--import Control.Monad.Except (MonadError(..),ExceptT(..))
+--import qualified Control.Monad.Except as Except
+--import Control.Monad.Catch
 import Control.Monad.Signatures
 import Control.DeepSeq
+import Control.Exception.Safe
+--import qualified Control.Monad.Except as E
+import qualified Control.Monad.Catch as C
 
 import Data.DList as DList
 import Data.List as List
@@ -111,15 +114,12 @@ $(deriveSafeCopy 0 'base ''Project)
 runHaap :: Project -> Haap IdentityT IO a -> IO (a,HaapLog)
 runHaap p (Haap m) = do
     createDirectoryIfMissing True $ projectTmpPath p
-    e <- runIdentityT $ Except.runExceptT $ RWS.runRWST m (p) ()
-    case e of
-        Left e -> error $ "Haap Error: " ++ pretty e
-        Right (a,(),w') -> do
---            printLog w'
-            return (a,w')
+    (a,(),w') <- runIdentityT $ RWS.runRWST m (p) ()
+--  printLog w'
+    return (a,w')
 
-newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: RWST Project HaapLog () (ExceptT HaapException (t m)) x }
-  deriving (Applicative,Functor,Monad,MonadWriter HaapLog,MonadThrow,MonadCatch)
+newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: RWST Project HaapLog () (t m) x }
+  deriving (Applicative,Functor,Monad,MonadWriter HaapLog,MonadCatch,MonadThrow)
 
 --instance (MonadTrans t) => MonadTrans (Haap t) where
 --    lift = Haap . lift . lift . lift
@@ -138,8 +138,8 @@ newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap ::
 --instance MFunctor (Haap t) where
 --    hoist f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
 
-mapHaapMonad :: (t1 m (Either HaapException (a,(),HaapLog)) -> t2 n (Either HaapException (b,(),HaapLog))) -> Haap t1 m a -> Haap t2 n b
-mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
+mapHaapMonad :: (t1 m (a,(),HaapLog) -> t2 n (b,(),HaapLog)) -> Haap t1 m a -> Haap t2 n b
+mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST f m
 --    where
 --    g m3 = do
 --        (e,st) <- runStateT m3
@@ -161,20 +161,20 @@ mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
 --mapRWST :: (m (a, s, w) -> n (b, s, w')) -> RWST r w s m a -> RWST r w' s n b
 --mapExceptT :: (m (Either e a) -> n (Either e' b)) -> ExceptT e m a -> ExceptT e' n b
 
-instance HaapStack t m => MonadError HaapException (Haap t m) where
-    {-# INLINE throwError #-}
-    throwError e = Haap $ throwError e
-    {-# INLINE catchError #-}
-    catchError (Haap m) f = Haap $ do
-        (p) <- Reader.ask
-        s <- State.get
-        e <- lift $ lift $ Except.runExceptT $ RWS.runRWST m (p) s
-        case e of
-            Left err -> unHaap $ f err
-            Right (x,s',w') -> do
-                State.put s'
-                Writer.tell w'
-                return x
+--instance HaapStack t m => MonadThrow (Haap t m) where
+--    throwM e = Haap $ throw e
+--    
+--instance HaapStack t m => MonadCatch (Haap t m) where
+--    catch (Haap m) f = Haap $ do
+--        (p) <- Reader.ask
+--        s <- State.get
+--        e <- lift $ lift $ E.runExceptT $ RWS.runRWST m (p) s
+--        case e of
+--            Left err -> unHaap $ f $ SomeException err
+--            Right (x,s',w') -> do
+--                State.put s'
+--                Writer.tell w'
+--                return x
 
 data HaapException = HaapException String
                    | HaapTimeout CallStack Int
@@ -240,7 +240,7 @@ instance {-# OVERLAPPABLE #-} (MonadTrans t,HaapMonad m,HaapMonad (t m)) => Haap
     liftStack = lift
 
 liftHaap :: Monad (t m) => t m a -> Haap t m a
-liftHaap m = Haap $ lift $ lift m
+liftHaap m = Haap $ lift m
 
 
 

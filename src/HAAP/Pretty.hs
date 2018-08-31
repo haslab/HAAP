@@ -17,7 +17,7 @@ import HAAP.Core
 import Data.Map (Map(..))
 import qualified Data.Map as Map
 
-import Control.Exception
+import Control.Exception (SomeException,displayException)
 import Control.Monad
 import Control.DeepSeq
 

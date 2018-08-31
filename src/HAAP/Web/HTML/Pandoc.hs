@@ -19,7 +19,7 @@ import Data.Default
 import Data.Generics
 import qualified Data.Text as T
 
-import Debug.Trace
+--import Debug.Trace
 
 instance Out PandocError where
     docPrec i x = doc x

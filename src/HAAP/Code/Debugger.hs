@@ -25,7 +25,7 @@ import qualified Data.Text as Text
 import Data.Proxy
 
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
 
 import System.FilePath
 import System.Directory

@@ -51,10 +51,8 @@ instance Binary st => HaapPlugin (BinaryDB st) where
         let file = path </> binaryDBFile args
         st <- orDo (\err -> return $ binaryDBInit args) (runBaseIOWith (binaryDBIOArgs args) $ decodeFile file)
         let run (ComposeT m) = do
-            (e,BinaryDB db') <- State.runStateT m (BinaryDB st)
-            case e of
-                Left err -> return $ Left err
-                Right (b,(),w) -> return $ Right ((b,db'),(),w)
+            ((b,(),w),BinaryDB db') <- State.runStateT m (BinaryDB st)
+            return ((b,db'),(),w)
         (x,st') <- mapHaapMonad run m
         runBaseIOWith (binaryDBIOArgs args) $ encodeFile file st'
         return (x,())

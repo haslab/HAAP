@@ -20,7 +20,8 @@ import HAAP.Shelly
 
 import Control.Monad
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
+import Control.Exception.Safe
 
 import Data.Foldable
 import Data.Either
@@ -158,7 +159,7 @@ runCodeWorld = do
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
                     
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throwError $ HaapException $ pretty res
+            else throw $ HaapException $ pretty res
 
 instance HaapMonad m => HasPlugin CodeWorld (ReaderT CodeWorldArgs) m where
     liftPlugin = id

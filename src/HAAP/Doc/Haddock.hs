@@ -28,10 +28,9 @@ import Data.List
 
 import Control.Monad.Reader as Reader
 import Control.Monad.State as State
+--import Control.Monad.Catch
 
 import System.FilePath
-
-import Control.Monad.Catch
 
 import Data.Proxy
 
@@ -114,7 +113,6 @@ runHaddocks allfiles = do
                 compile $ copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
         let mkName (_,files,_) = sepByStr " " files
-            mkName (_,files,_) = sepByStr " " files
         create [fromFilePath indexhtml] $ do
             route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
             compile $ do

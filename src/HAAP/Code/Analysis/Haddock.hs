@@ -36,8 +36,9 @@ import Data.Maybe
 
 import Control.Monad
 import Control.DeepSeq
-import Control.Exception
+--import Control.Exception
 import Control.Monad.IO.Class
+import qualified Control.Exception as E
 
 import System.FilePath
 
@@ -174,7 +175,7 @@ hadCoverage file = orLogMaybe $ do
         shCd $ takeDirectory file
         shCommand "haddock" [takeFileName file]
     let coverage = filterHad (lines $ Text.unpack $ resStdout res) modname
-    liftIO $ evaluate $ force coverage
+    liftIO $ E.evaluate $ force coverage
 
 filterHad :: [String] -> String -> (Int,Int)
 filterHad l s = x

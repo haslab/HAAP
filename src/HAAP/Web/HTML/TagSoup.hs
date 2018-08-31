@@ -18,7 +18,7 @@ import Text.HTML.TagSoup
 import Data.Default
 import Data.Generics
 
-import Debug.Trace
+--import Debug.Trace
 
 import Control.Monad.IO.Class
 

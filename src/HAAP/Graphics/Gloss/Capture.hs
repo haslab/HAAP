@@ -17,7 +17,6 @@ import HAAP.Plugin
 
 import Codec.Picture.Types (Image(..), PixelRGBA8)
 import Codec.Picture.Png (writePng)
-import Control.Monad 
 import Data.Vector.Storable (Vector, unsafeFromForeignPtr0)
 import qualified Data.Vector.Storable as Vector
 import qualified Graphics.Gloss as Gloss
@@ -35,6 +34,7 @@ import Data.Proxy
 
 import Control.Monad.Reader as Reader
 import Control.Monad.IO.Class
+import Control.Monad 
 
 data Gloss
 

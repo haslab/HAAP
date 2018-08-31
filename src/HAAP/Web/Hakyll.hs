@@ -27,7 +27,7 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Morph
 import Control.Monad.Identity
-import Control.Exception
+--import Control.Exception
 import Control.Monad.IO.Class
 import Control.Monad.Writer (MonadWriter(..),WriterT(..))
 import qualified Control.Monad.Reader as Reader
@@ -38,8 +38,9 @@ import qualified Control.Monad.RWS as RWS
 import Control.Monad.RWS (RWST(..))
 import Control.Monad.State (MonadState(..))
 import Control.Monad.Reader (MonadReader(..))
-import Control.Monad.Catch (MonadCatch,MonadThrow)
+--import Control.Monad.Catch (MonadCatch,MonadThrow)
 import Control.Monad.Trans
+import Control.Exception.Safe
 
 import Data.Functor.Contravariant
 import Data.Default

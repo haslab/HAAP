@@ -16,7 +16,7 @@ RUN cabal install brittany haddock hlint homplexity $HOME/HAAP/HAAP.cabal $HOME/
 
 # install HAAP ghcjs packages
 WORKDIR $HOME
-RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras QuickCheck GenericPretty safe xml parsec --disable-documentation
+RUN cabal install --ghcjs $HOME/HAAP/packages/codeworld-haap-api $HOME/HAAP/packages/gloss-window $HOME/HAAP/packages/Xterm $HOME/HAAP/packages/ghcjs-extras $HOME/HAAP/packages/ghcjs-fetch QuickCheck GenericPretty safe xml parsec --disable-documentation
 
 # prepare examples
 RUN ln -s $HOME/cabal.sandbox.config $HOME/HAAP/examples/helloworld/cabal.sandbox.config

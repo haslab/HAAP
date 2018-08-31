@@ -31,12 +31,13 @@ import Data.Acid
 import Data.SafeCopy
 import Data.Default
 
-import Control.Monad.Except
+--import Control.Monad.Except
 import Control.Monad.State (StateT(..))
 import qualified Control.Monad.State as State
 import Control.Monad.Reader as Reader
 import Control.DeepSeq
-import Control.Monad.Catch
+--import Control.Monad.Catch
+import Control.Exception.Safe
 
 import System.Random.Shuffle
 import System.Directory
@@ -137,7 +138,7 @@ getTourneySize _ (length -> n)
     | n <= 32 = return 32
     | n <= 128 = return 128
     | n <= 256 = return 256
-    | otherwise = throwError $ HaapException $ "unsupported tourney size " ++ show n
+    | otherwise = throw $ HaapException $ "unsupported tourney size " ++ show n
 
 tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
@@ -215,7 +216,7 @@ pairPlayers _ (Left players) tourneySize = do
     let xxs = pair (tourneySize `div` 4) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
     if validaMatches xxs
         then return xxs
-        else throwError $ HaapException $ "pairPlayers: "  ++ pretty xxs ++ "\n" ++ show (length xxs)
+        else throw $ HaapException $ "pairPlayers: "  ++ pretty xxs ++ "\n" ++ show (length xxs)
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
     

@@ -21,7 +21,7 @@ import Shelly (Sh(..))
 import qualified Shelly as Sh
 
 import Control.Monad.Reader as Reader
-import Control.Monad.Catch
+--import Control.Monad.Catch
 
 import Data.Proxy
 

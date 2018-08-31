@@ -14,7 +14,7 @@ import HAAP.Pretty
 import HAAP.Plugin
 import HAAP.IO
 
-import Shelly (Sh(..),catchany_sh)
+import Shelly (Sh(..))
 import qualified Shelly as Sh
 
 import Control.Monad.Identity
@@ -25,14 +25,16 @@ import qualified Control.Monad.Reader as Reader
 import Control.Monad.Trans.Control
 import Control.Monad.IO.Class
 import Control.Monad.Morph
-import qualified Control.Monad.Except as Except
+--import qualified Control.Monad.Except as Except
 import qualified Control.Monad.RWS as RWS
-import Control.Monad.Except
+--import Control.Monad.Except
 import Control.Monad
-import Control.Exception
-import Control.Monad.Catch (MonadCatch(..),MonadThrow(..))
+--import Control.Exception
+--import Control.Monad.Catch (MonadCatch(..),MonadThrow(..))
+import Control.DeepSeq
+import Control.Exception.Safe
 
-import System.Timeout
+--import System.Timeout
 import System.FilePath
 import System.Exit
 import System.Process
@@ -53,7 +55,6 @@ import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 import Data.Maybe
 import Text.Read
-import Control.DeepSeq
 
 import System.IO
 
@@ -103,7 +104,7 @@ runShCoreIO args sh = case ioTimeout args of
         else if ioSilent args then Sh.silently else Sh.verbosely
 
 hiddenSh :: Sh a -> Sh a
-hiddenSh = \m -> Sh.catchany_sh (hide m) (const $ return $ error "result is hidden!")
+hiddenSh = \m -> catchAnySh (hide m) (const $ return $ error "result is hidden!")
     where
     hide = Sh.print_commands False . Sh.log_stderr_with (const $ return ()) . Sh.silently . Sh.tracing False
 
@@ -234,7 +235,7 @@ shPipeWith io n args x = shPipeWithType io n args x Proxy
                     Just y -> return y
 
 orEitherSh :: Sh a -> Sh (Either SomeException a)
-orEitherSh m = catchany_sh (liftM Right m) (\err -> return $ Left err)
+orEitherSh m = catchAnySh (liftM Right m) (\err -> return $ Left err)
 
 shWriteFile :: FilePath -> String -> Sh ()
 shWriteFile path ct = do
@@ -331,3 +332,10 @@ equalPathSh x y = do
     x' <- shCanonalize x
     y' <- shCanonalize y
     return $ equalFilePath x y
+
+catchAnySh :: Sh a -> (SomeException -> Sh a) -> Sh a
+catchAnySh = catchSh
+
+catchSh :: (Exception e) => Sh a -> (e -> Sh a) -> Sh a
+catchSh f g = f `Sh.catch_sh` \e ->
+    if isSyncException e then g e else throw e

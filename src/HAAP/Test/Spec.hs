@@ -36,9 +36,12 @@ import Control.Monad.State (State(..))
 import qualified Control.Monad.State as State
 import Control.Monad.Reader (Reader(..))
 import qualified Control.Monad.Reader as Reader
-import Control.Monad.Except
-import Control.Exception
+--import Control.Monad.Except
+--import Control.Exception
 import Control.DeepSeq
+import Control.Monad.Reader
+import Control.Exception.Safe
+import qualified Control.Monad.Catch as C
 
 import System.IO
 import System.Environment
@@ -55,13 +58,14 @@ import qualified Data.ByteString.Char8 as B8
 import Data.CallStack
 import Data.Default
 
-import Control.Monad.Reader
-
 import Text.Read
 
 import Safe
 
 data Spec
+
+instance C.MonadThrow m => C.MonadThrow (PropertyM m) where
+    throwM e = run $ throw e
 
 instance NFData Result where
     rnf = const () -- since this is a quickcheck result there is really no laziness issue, i.e., the test has been executed
@@ -249,7 +253,7 @@ runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
 
     let outstr = B8.unpack outbstr
     res <- case readMaybe outstr :: Maybe HaapTestRes of
-        Nothing -> throwError $ HaapException $ "failed to parse hspec output: " ++ outstr
+        Nothing -> throw $ HaapException $ "failed to parse hspec output: " ++ outstr
         Just res -> return res
     return res
 

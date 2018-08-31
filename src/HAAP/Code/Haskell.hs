@@ -31,7 +31,10 @@ import Text.Parsec ((<|>))
 import qualified Text.Parsec as Parsec
 import Text.ParserCombinators.Parsec.Number as Parsec
 
-import Control.Monad.Except
+import Control.Monad.IO.Class
+--import Control.Monad.Except
+import Control.Exception.Safe
+import Control.Monad
 
 instance Show a => Out (ParseResult a) where
     docPrec i x = doc x
@@ -48,7 +51,7 @@ parseHaskellWith str arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        (ParseFailed loc err) -> throwError $ HaapException $ show loc ++ ": " ++ pretty err
+        (ParseFailed loc err) -> throw $ HaapException $ show loc ++ ": " ++ pretty err
 
 parseHaskellFileWith :: (MonadIO m,HaapStack t m) => FilePath -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m (Module SrcSpanInfo)
 parseHaskellFileWith file arg_exts arg_fix = do
@@ -61,7 +64,7 @@ parseHaskellFileWith file arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        err -> throwError $ HaapException $ pretty err
+        err -> throw $ HaapException $ pretty err
 
 parseHaskell :: (Parseable a,MonadIO m,HaapStack t m) => String -> Haap t m a
 parseHaskell str = parseHaskellWith str Nothing Nothing

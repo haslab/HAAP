@@ -13,7 +13,7 @@ import Graphics.Gloss.Interface.IO.Game
 --import qualified Graphics.Gloss.Juicy as Juicy
 
 import Control.Concurrent.Async
-import Control.Exception
+import Control.Exception.Safe
 import System.Timeout
 import Control.Concurrent 
 import Control.Concurrent.MVar

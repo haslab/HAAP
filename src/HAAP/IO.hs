@@ -16,10 +16,11 @@ import HAAP.Plugin
 import Control.DeepSeq as DeepSeq
 import Control.Monad.IO.Class
 import qualified Control.Monad.Reader as Reader
-import Control.Monad.Catch
-import Control.Monad.Except
+--import Control.Monad.Catch
+--import Control.Monad.Except
 import Control.Monad
-import Control.Exception (evaluate)
+import qualified Control.Exception as E (evaluate)
+import Control.Exception.Safe
 
 import Data.Default
 import Data.Semigroup
@@ -33,7 +34,7 @@ import Data.Bifunctor (bimap)
 import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 
-import System.Timeout
+--import System.Timeout
 import System.FilePath
 import System.Exit
 import System.Process
@@ -202,7 +203,7 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
 
 haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
-haapLiftIO io = catch (liftStack $ liftIO io) (\(e::SomeException) -> throwError $ HaapIOException e)
+haapLiftIO io = catchAny (liftStack $ liftIO io) (\e -> throw $ HaapIOException e)
 
 runIOCore :: MonadIO m => IOArgs -> IO a -> m a
 runIOCore args io = case ioTimeout args of
@@ -219,10 +220,10 @@ runBaseIO' = runBaseIOWith' (defaultIOArgs)
 runIO' :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
 runIO' = runIOWith' (defaultIOArgs)
 
-orEither :: HaapStack t m => Haap t m a -> Haap t m (Either HaapException a)
+orEither :: HaapStack t m => Haap t m a -> Haap t m (Either SomeException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
-orLogEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either HaapException a)
+orLogEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orLogEither m = orDo (\e -> logEvent (pretty e) >> return (Left e)) (liftM Right m)
 
 orMaybe :: HaapStack t m => Haap t m a -> Haap t m (Maybe a)
@@ -231,14 +232,14 @@ orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
 orLogMaybe :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Maybe a)
 orLogMaybe m = orDo (\e -> logEvent (pretty e) >> return Nothing) (liftM Just m)
 
-orDo :: HaapStack t m => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
-orDo ex m = catchError m ex
+orDo :: HaapStack t m => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
+orDo ex m = catchAny m ex
 
-orLogDo :: (MonadIO m,HaapStack t m) => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
+orLogDo :: (MonadIO m,HaapStack t m) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
 orLogDo f m = orDo (\e -> logEvent (pretty e) >> f e) m
 
 orDoIO :: (SomeException -> IO a) -> IO a -> IO a
-orDoIO ex m = catch m ex
+orDoIO ex m = catchAny m ex
 
 orLogDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orLogDefault a m = orDo (\e -> logEvent (pretty e) >> return a) m
@@ -247,25 +248,25 @@ orDefault :: HaapStack t m => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
 orMaybeIO :: IO a -> IO (Maybe a)
-orMaybeIO m = catch (liftM Just m) (\(err::SomeException) -> return Nothing)
+orMaybeIO m = catchAny (liftM Just m) (\err -> return Nothing)
 
-orError :: HaapStack t m => Haap t m a -> Haap t m (Either a HaapException)
+orError :: HaapStack t m => Haap t m a -> Haap t m (Either a SomeException)
 orError m = orDo (return . Right) (liftM Left m)
 
-orDo' :: (HaapStack t m,NFData a) => (HaapException -> Haap t m a) -> Haap t m a -> Haap t m a
-orDo' ex m = catchError (forceM m) ex
+orDo' :: (HaapStack t m,NFData a) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
+orDo' ex m = catchAny (forceM m) ex
 
 ignoreError :: (MonadIO m,HaapStack t m) => Haap t m () -> Haap t m ()
 ignoreError m = orDo (\e -> logEvent (pretty e)) m
 
 addMessageToError :: HaapStack t m => String -> Haap t m a -> Haap t m a
-addMessageToError msg m = orDo (\e -> throwError $ HaapException $ msg ++ pretty e) m
+addMessageToError msg m = orDo (\e -> throw $ HaapException $ msg ++ pretty e) m
 
 orLogError :: (MonadIO m,IsString str,HaapStack t m) => Haap t m str -> Haap t m str
 orLogError m = orDo (\e -> logEvent (pretty e) >> return (fromString $ pretty e)) m
 
 forceHaap :: (NFData a,HaapStack t m,MonadIO m) => a -> Haap t m a
-forceHaap x = liftIO $ evaluate $ force x
+forceHaap x = liftIO $ E.evaluate $ force x
 
 forceM :: (Monad m,NFData a) => m a -> m a
 forceM m = do
@@ -287,11 +288,11 @@ orIOResult :: HaapStack t m => Haap t m IOResult -> Haap t m IOResult
 orIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (Text.pack $ pretty err)) m
 
 -- timeout from System.Timeout sometimes fails to halt the computation, so we wrap it as an async computation
-timeoutIO :: Int -> IO a -> IO (Maybe a)
-timeoutIO i f = liftM join $ asyncTimeout i $ timeout i f
+--timeoutIO :: Int -> IO a -> IO (Maybe a)
+--timeoutIO i f = liftM join $ asyncTimeout i $ timeout i f
 
-asyncTimeout :: Int -> IO a -> IO (Maybe a)
-asyncTimeout i f =
+timeoutIO :: Int -> IO a -> IO (Maybe a)
+timeoutIO i f =
   withAsync f $ \a1 ->
   withAsync (threadDelay i) $ \a2 ->
   liftM (either Just (const Nothing)) $ race (wait a1) (wait a2)

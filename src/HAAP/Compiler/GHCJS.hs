@@ -24,7 +24,8 @@ import Data.Proxy
 import Data.String
 
 import Control.Monad.Reader as Reader
-import Control.Monad.Except
+--import Control.Monad.Except
+import Control.Exception.Safe
 
 import Shelly (Sh(..))
 import qualified Shelly as Sh
@@ -128,4 +129,4 @@ runGhcjs hsFile hmtlPath = do
                         compile copyFileCompiler
                     
                 return (hakyllRoute hp $ destfolder </> "all.js")
-            else throwError $ HaapException $ pretty res
+            else throw $ HaapException $ pretty res

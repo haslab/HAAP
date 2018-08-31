@@ -17,8 +17,9 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.State 
 import Control.Monad.RWS
-import Control.Monad.Catch
+--import Control.Monad.Catch
 import Control.Monad.Morph
+import Control.Exception.Safe
 
 import GHC.Exts
 

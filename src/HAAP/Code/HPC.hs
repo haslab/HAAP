@@ -37,7 +37,7 @@ import Text.HTML.TagSoup
 import Control.DeepSeq
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Exception
+import qualified Control.Exception as E
 import Control.Monad.Reader as Reader
 
 import System.FilePath
@@ -178,7 +178,7 @@ runHpcReport defa m = do
                 shCommandWith io' "hpc" ["report",exec]
             addMessageToError (pretty hpcres) $ do
                 let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
-                report <- orLogDefault def $ liftIO $ evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
+                report <- orLogDefault def $ liftIO $ E.evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
                 return (x,report)
 
 useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Out a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,FilePath)
