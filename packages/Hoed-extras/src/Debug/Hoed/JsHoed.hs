@@ -36,7 +36,9 @@ jshoedExtra args h = case jshoed args of
             debugOutput "." h >>= writeFile "jshoed.html"
             files <- jsHoedFiles
             path <- getDataFileName "."
-            forM_ files $ \file -> system $ "cp " ++ file ++ " " ++ (makeRelative path file)
+            forM_ files $ \file -> do
+                system $ "mkdir -p " ++ (takeDirectory $ makeRelative path file)
+                system $ "cp " ++ file ++ " " ++ (makeRelative path file)
         Just path -> path >>= flip debugOutput h >>= writeFile "jshoed.html"
 
 runJsHoedO :: IO a -> IO ()
