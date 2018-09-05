@@ -5,113 +5,214 @@ This module provides basic metrics of data type and higher-order functions usage
 
 -}
 
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE TupleSections, CPP #-}
 
-module HAAP.Code.Analysis.Usage where
+module HAAP.Code.Analysis.Usage
+    ( Usage(..),UsageArgs(..),runUsage
+    ) where
 
 import HAAP.IO
 import HAAP.Core
-import HAAP.Code.Haskell
+import HAAP.Code.Haskell hiding (nameString,moduleName,moduleNameString)
 import HAAP.Log
 import HAAP.Plugin
 import HAAP.Shelly
 
-import qualified Data.Foldable as Foldable
-import Data.Default
-import qualified Data.Text as Text
-import qualified Data.Set as Set
-import Data.Set (Set(..))
-import qualified Data.Map as Map
-import Data.Map (Map(..))
-import Data.List as List
-import Data.Either
-import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
+-- GHC imports
+import GHC.Paths ( libdir )
+import GHC.LanguageExtensions
+import GHC
+import Outputable
+import DynFlags
+import SrcLoc
+import Bag
+import Type
+import NameSet
+import FastString
+import Name
+import Module
+import TcRnTypes
+import HscTypes hiding (Usage)
+import Var
+import ConLike
+import TyCon
+import InstEnv
+
 import Data.Maybe
-
-import Control.DeepSeq
+import Data.Map (Map(..))
+import qualified Data.Map as Map
+import Data.Set (Set(..))
+import qualified Data.Set as Set
 import Control.Monad
+import Data.Generics hiding (TyCon,tyConName)
 import Control.Monad.IO.Class
-
-import System.FilePath.Find as FilePath
-import System.FilePath
-
-import Language.Haskell.Exts.Parser
-import Language.Haskell.Exts.Syntax
-import Language.Haskell.Exts.SrcLoc
-import Language.Haskell.Exts.Pretty
-import Language.Haskell.Exts.Comments
-import Language.Haskell.Exts.ExactPrint
-import Language.Haskell.Exts.Extension
-
-import GHC.Generics (Generic)
-
+ 
+-- whether it is higher-order entity or not
+type IsHO = Bool
+-- whether it is a type synonym or a data/newtype
+type IsTySyn = Bool
+ 
 data Usage = Usage
-    { typesUsage :: Int -- number of type declarations
-    , datasUsage :: Int -- number of data/newtype declarations
-    , preludeUsage :: Int -- number of prelude high-order data types usage
-    , baseNonHighOrderUsage :: Int -- number of used non-high-order base definitions
-    , baseHighOrderUsage :: Int -- number of used high-order base definitions
+    { definedFunctions :: Map String IsHO -- | functions defined in the analyzed modules
+    , usedFunctions :: Map String IsHO -- | used functions imported from external modules
+    , definedTypes :: Map String (IsTySyn,IsHO) -- types defined in the analyzed modules
+    , usedTypes :: Map String IsHO -- used types imported from external modules
+    , definedClasses :: Set String -- classes defined in the analyzed modules
+    , usedClasses :: Set String -- used classes imported from external modules
+    , instancesClasses :: Map String (String,IsHO) -- instances defined per class
+}
+
+data UsageArgs = UsageArgs
+    { usageFiles :: [(FilePath,String)] -- a list of Haskell files (with their module names) to analyze
+    , usageIgnores :: String -> String -> Bool -- ignore predicate: receives name and module
+    , usageImportPaths :: [FilePath] -- aaa list of addityional import paths (similar to ghc's -i parameter)
     }
-  deriving (Show,Generic)
-
-instance NFData Usage where
+ 
+runUsage :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m Usage
+runUsage u = liftIO $ do
     
-instance DefaultOrdered Usage where
-    headerOrder _ = header ["typesUsage","datasUsage","preludeUsage","baseNonHighOrderUsage","baseHighOrderUsage"]
-
-instance ToNamedRecord Usage where
-    toNamedRecord (Usage x1 x2 x3 x4 x5) = namedRecord
-        ["typesUsage" .= x1,"datasUsage" .= x2,"preludeUsage" .= x3,"baseNonHighOrderUsage" .= x4,"baseHighOrderUsage" .= x5]
-instance FromNamedRecord Usage where
-    parseNamedRecord m = Usage <$>
-        m .: "typesUsage" <*> m .: "datasUsage" <*> m .: "preludeUsage"  <*> m .: "baseNonHighOrderUsage" <*> m .: "baseHighOrderUsage"
-
-instance Default Usage where
-    def = Usage (-1) (-1) (-1) (-1) (-1)
-
-runUsage :: (MonadIO m,HaapStack t m) => [FilePath] -> BaseDefs -> Haap t m Usage
-runUsage files basedefs = do
-    (ts,ds,ps) <- runDatatypes files
-    (nho,ho) <- runFunctionUsage basedefs files
-    return $ Usage ts ds ps nho ho
-
-runDatatypes :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (Int,Int,Int)
-runDatatypes files = do
-    ccs <- mapM datatypes files
-    let cc = Foldable.foldr (\(a,b,c) (x,y,z) -> (a+x,b+y,c+z)) (0,0,0) ccs
-    return cc
-
-datatypes :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Int,Int,Int)
-datatypes m = do
-    let ioargs = def
-    orLogDefault (-1,-1,-1) $ runBaseShWith (ioargs) $ do
-        x <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","type",m]
-        y <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R","-w","data|newtype",m]
-        z <- liftM (Text.unpack . resStdout) $ shCommandWith ioargs "egrep" ["-R"," Maybe| Either",m]
-        return (length $ lines x,length $ lines y,length $ lines z)
+    -- compiler flags
+    dflags <- runGhc (Just libdir) $ do
+        dflags <- getSessionDynFlags
+        return $ (foldl xopt_set dflags [ImplicitPrelude]) { importPaths = usageImportPaths u }
+        
+--    let pretty = showSDoc dflags . ppr
     
-getBaseDefs :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m BaseDefs
-getBaseDefs basepath = orLogDefault (Set.empty,Set.empty) $ do
-    hs <- hsFiles basepath
-    let parse f = do
-        --logEvent $ "parsing base usage for " ++ f
-        parseHaskellFile f
-    mods <- liftM (rights) $ mapM (orLogEither . parse) hs
-    let ns = Map.unions $ map moduFunctionNames mods
-    let (nonho,ho) = Map.partition not ns
-    return (Map.keysSet nonho,Map.keysSet ho)
+    -- run ghc API
+    (defthings,extthings,insts) <- defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
+        runGhc (Just libdir) $ do
+            setSessionDynFlags dflags
+            targets <- forM (usageFiles u) $ \(f,m) -> guessTarget f Nothing
+            setTargets targets
+            load LoadAllTargets
+            tcenvs <- forM (usageFiles u) $ \(f,m) -> do
+                modSum <- getModSummary $ mkModuleName m
+                p <- parseModule modSum
+                t <- typecheckModule p
+                let (tcenv,_) = tm_internals_ t
+                return tcenv
+            
+            let (defns,usedns) = foldl (flip defUses) (emptyNameSet,emptyNameSet) (map tcg_dus tcenvs)
+            let extns = minusNameSet usedns defns
+            
+            let ignoreNameSet = filterNameSet $ \n -> not $ (usageIgnores u) (nameString n) (nameModuleString n)
+            
+            defthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet defns) lookupName
+            extthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet extns) lookupName
+            
+            let insts = concatMap tcg_insts tcenvs
+            
+            return (defthings,extthings,insts)
     
-type BaseDefs = (Set (Name ()),Set (Name ()))
+    let (deffuns,deftys,defclss) = defThings defthings (Map.empty,Map.empty,Set.empty)
+    let (usedfuns,usedtys,usedclss) = extThings extthings (Map.empty,Map.empty,Set.empty)
     
-runFunctionUsage :: (MonadIO m,HaapStack t m) => BaseDefs -> [FilePath] -> Haap t m (Int,Int)
-runFunctionUsage (nho,ho) files = orLogDefault (-1,-1) $ do
-    let parse f = do
-        logEvent $ "parsing usage for " ++ f
-        parseHaskellFile f
-    ms <- liftM catMaybes $ mapM (orLogMaybe . parse) files
-    let fs = Map.unions $ map moduNames ms
-    let nonhos = Map.filterWithKey (\k _ -> k `elem` nho) fs
-    let hos = Map.filterWithKey (\k _ -> k `elem` ho) fs
-    return (Map.size nonhos,Map.size hos)
+    let instclss = mkInsts insts Map.empty
+    
+    --putStrLn $ pretty defthings
+    --putStrLn $ show deffuns
+    --putStrLn $ show deftys
+    --putStrLn $ show defclss
+    --putStrLn $ pretty extthings
+    --putStrLn $ show usedfuns
+    --putStrLn $ show usedtys
+    --putStrLn $ show usedclss
+    --putStrLn $ show instclss
+    
+    return $ Usage deffuns usedfuns deftys usedtys defclss usedclss instclss
+ 
+mkInsts :: [ClsInst] -> Map String (String,IsHO) -> Map String (String,IsHO)
+mkInsts ds xs = foldl (flip mkInst) xs ds
+
+mkInst :: ClsInst -> Map String (String,IsHO) -> Map String (String,IsHO)
+mkInst i m = Map.insert n (showSDocUnsafe $ pprInstanceHdr i,isho) m
+    where
+    n = nameString $ is_cls_nm i
+    isho = not $ null $ is_tvs i
+ 
+nameString :: Name -> String
+nameString = unpackFS . occNameFS . nameOccName
+
+nameModuleString :: Name -> String
+nameModuleString = moduleNameString . moduleName . nameModule
+ 
+type ExtThings = (Map String IsHO,Map String IsHO,Set String)
+ 
+extThings :: [TyThing] -> ExtThings -> ExtThings
+extThings ds xs = foldl (flip extThing) xs ds
+
+extThing :: TyThing -> ExtThings -> ExtThings
+extThing (AnId fid) (usedfuns,usedtys,usedclss) = (Map.insertWith (||) n isho usedfuns,usedtys,usedclss)
+    where
+    n = nameString $ Var.varName fid
+    isho = isHigherOrderType $ varType fid
+extThing (AConLike con) (usedfuns,usedtys,usedclss) = (usedfuns,Map.insertWith (||) n isho usedtys,usedclss)
+    where
+    --n = nameString $ conLikeName con
+    (args,_,_,_,_,_,ty) = conLikeFullSig con
+    n = showSDocUnsafe (ppr ty)
+    isho = isHigherOrderType ty
+extThing (ATyCon con) (usedfuns,usedtys,usedclss)
+    | isClassTyCon con = (usedfuns,usedtys,Set.insert n usedclss)
+    | otherwise = (usedfuns,Map.insertWith (||) n isho usedtys,usedclss)
+  where
+    n = nameString $ tyConName con
+    isho = not $ null $ tyConTyVars con
+extThing thing useds = error $ "extThing: " ++ showSDocUnsafe (ppr thing)
+ 
+type DefThings = (Map String IsHO,Map String (IsTySyn,IsHO),Set String)
+ 
+defThings :: [TyThing] -> DefThings -> DefThings
+defThings ds xs = foldl (flip defThing) xs ds
+
+defThing :: TyThing -> DefThings -> DefThings
+defThing (AnId fid) (deffuns,deftys,defclss) = (Map.insertWith (||) n isho deffuns,deftys,defclss)
+    where
+    n = nameString $ Var.varName fid
+    isho = isHigherOrderType $ varType fid
+defThing (ATyCon con) (deffuns,deftys,defclss)
+    | isClassTyCon con = (deffuns,deftys,Set.insert n defclss)
+    | isAlgTyCon con = (deffuns,Map.insertWith or2 n (False,isho) deftys,defclss)
+    | isFunTyCon con || isTypeSynonymTyCon con = (deffuns,Map.insertWith or2 n (True,isho) deftys,defclss)
+  where
+    n = nameString $ tyConName con
+    isho = not $ null $ tyConTyVars con
+defThing (AConLike con) defs = defs
+--defThing (AConLike con) (deffuns,deftys,defclss) = (deffuns,Map.insertWith or2 n (isTySynConLike con,isho) deftys,defclss)
+--  where
+--    n = nameString $ conLikeName con
+--    (args,_,_,_,_,_,_) = conLikeFullSig con
+--    isho = not $ null args
+defThing thing defs = error $ "defThing: " ++ showSDocUnsafe (ppr thing)
+ 
+isTySynConLike :: ConLike -> Bool
+isTySynConLike (RealDataCon {}) = False
+isTySynConLike (PatSynCon {}) = True
+ 
+or2 (x1,x2) (y1,y2) = (x1 || y1,x2 || y2)
+ 
+-- if it uses variables anywhere
+isHigherOrderType :: Type -> Bool
+isHigherOrderType x = everything (||) (mkQ False aux) x
+    where
+    aux :: Var -> Bool
+    aux v = True
+ 
+defUses :: DefUses -> (NameSet,NameSet) -> (NameSet,NameSet)
+defUses ds xs = foldl (flip defUse) xs ds
+
+defUse :: DefUse -> (NameSet,NameSet) -> (NameSet,NameSet)
+defUse (ds1,us1) (ds2,us2) = (unionNameSet (maybe emptyNameSet id ds1) ds2,unionNameSet us1 us2)
+ 
+--main :: IO ()
+--main = do
+--    let uargs = UsageArgs [("/Users/hpacheco/Desktop/HAAP/LI1-1819/svn/2018li1g201/src/Tarefa1_2018li1g201.hs","Tarefa1_2018li1g201")] (\n m -> m=="LI11819") ["/Users/hpacheco/Desktop/HAAP/LI1-1819/svn/2018li1g201/src/"]
+--    u <- runUsage uargs
+--    return ()
+ 
+
+        
+
+
 
 
