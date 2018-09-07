@@ -58,7 +58,7 @@ data DebuggerArgs = DebuggerArgs
     , debuggerFiles :: [FilePath] -- debugged files relative to the debugger path
     , debuggerInstrumentedPath :: FilePath -- path relative to the project path of lareaady instrumented debug files
     , debuggerInstrumentedFiles :: [FilePath] -- debug files relative to the instrumented path
-    , debuggerModules :: [String]
+    , debuggerModules :: [String] -- a list of modules to import or the source code
     , debuggerProgram :: String
     , debuggerHtmlPath :: FilePath
     }

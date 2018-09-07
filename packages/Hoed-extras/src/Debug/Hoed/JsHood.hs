@@ -35,6 +35,8 @@ import Web.Browser
 
 import Paths_Hoed_extras
 
+--import Debug.Trace
+
 jshoodExtra :: HoedExtrasArgs -> HoedAnalysis -> IO ()
 jshoodExtra args h = case jshood args of
     None -> return ()
@@ -54,6 +56,7 @@ debugOutput options h = do
     let tr = hoedTrace h
     ti <- traceInfo (verbose options) tr
     let jstr = mkJsTrace tr ti
+--    forM_ jstr $ \j -> putStrLn $ show j
     let jsons = show $ map encode jstr
     let ctx "jsEvents" = T.pack jsons
         ctx n = n
@@ -112,27 +115,28 @@ instance ToJSON JsEvent where
 type JsTrace = [JsEvent]
     
 data JsState = JsState
-    { jsLabels :: JsLabels
-    , jsChilds :: JsChildren
-    , jsAliases :: JsAliases
+    { jsLabels :: JsLabels -- map from nodes to labels
+    , jsChilds :: JsChildren  -- ordered list of children of a node
+    , jsAliases :: JsAliases -- parent aliases, to convert binary functions to n-ary functions
     , jsFuns :: JsFuns
     , jsObserveFuns :: JsFuns
     , jsDeadFuns :: JsFuns
-    , jsTraceInfo :: JsTraceInfo
+    , jsTraceInfo :: JsTraceInfo -- map from childs to parents
+    , jsThunk :: Int -- counter for unique node ids that are not evaluated
     }
   deriving (Generic,Show)
 
-type JsLabels = IntMap JsLabel -- map from nodes to labels
-type JsChildren = IntMap [Int] -- ordered list of children of a node
+type JsLabels = IntMap JsLabel 
+type JsChildren = IntMap [Int]
 type JsAliases = Map Parent Parent
 type JsFuns = IntSet
 
-type JsTraceInfo = IntMap JsId -- map from childs to parents
+type JsTraceInfo = IntMap JsId 
 
 initializeJsState :: Trace -> TraceInfo -> JsState
 initializeJsState tr ti = st
     where
-    emptyJsState = JsState IMap.empty IMap.empty Map.empty ISet.empty ISet.empty ISet.empty (mkJsTraceInfo ti)
+    emptyJsState = JsState IMap.empty IMap.empty Map.empty ISet.empty ISet.empty ISet.empty (mkJsTraceInfo ti) (-1)
     st = GV.ifoldl initializeJsEvent emptyJsState (GV.unsafeTail tr)
     initializeJsEvent :: JsState -> Int -> Event -> JsState
     initializeJsEvent st (succ -> uid) (Event parent change) = case change of
@@ -178,13 +182,14 @@ addJsChildrenAliases uid p@(Parent puid pidx) st =
     st { jsAliases = Map.insert (Parent uid 1) (Parent puid $ pidx+1) $ Map.insert (Parent uid 0) p $ jsAliases st }
 
 addJsChild :: JsId -> Parent -> JsState -> JsState
-addJsChild uid p st = st { jsChilds = IMap.alter (Just . ins cpidx uid . maybe [] id) cpuid $ jsChilds st }
+addJsChild uid p st = st { jsThunk = thunk-fromEnum cpidx, jsChilds = IMap.alter (Just . ins cpidx uid . maybe [] id) cpuid $ jsChilds st }
     where
+    thunk = jsThunk st
     cp@(Parent cpuid cpidx) = canonicalParent p st
-    ins :: (Num a) => Word8 -> a -> [a] -> [a]
+    ins :: Word8 -> Int -> [Int] -> [Int]
     ins 0 v [] = [v]
     ins 0 v (x:xs) = v:xs
-    ins n v [] = (-1) : ins (n-1) v []
+    ins n v [] = (thunk-fromEnum n) : ins (n-1) v []
     ins n v (x:xs) = x : ins (n-1) v xs
 
 canonicalParent :: Parent -> JsState -> Parent
@@ -200,7 +205,7 @@ mkJsTraceInfo = IMap.foldrWithKey go IMap.empty . dependencies
                   | otherwise = m
 
 mkJsTrace :: Trace -> TraceInfo -> JsTrace
-mkJsTrace tr ti = reverse $ State.evalState (mkJsTraceSt tr) ini
+mkJsTrace tr ti = {-trace (show ini) $-} reverse $ State.evalState (mkJsTraceSt tr) ini
     where ini = initializeJsState tr ti
     
 mkJsTraceSt :: Trace -> State JsState JsTrace

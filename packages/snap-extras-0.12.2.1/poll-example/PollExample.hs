@@ -133,7 +133,7 @@ splices = do
 
 ------------------------------------------------------------------------------
 -- | Starts a job and returns its job ID.
-startlongjob :: Handler App App ()
+startlongjob :: AppHandler ()
 startlongjob = do
     ref <- gets _repo
     ts <- liftIO getCurrentTime
@@ -144,7 +144,7 @@ startlongjob = do
 
 ------------------------------------------------------------------------------
 -- | A function that gets the status of a job.
-getMyJobStatus :: Handler App App (Maybe Status)
+getMyJobStatus :: AppHandler (Maybe Status)
 getMyJobStatus = do
     ref <- gets _repo
     repo <- liftIO $ readIORef ref
