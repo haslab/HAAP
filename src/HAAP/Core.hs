@@ -38,6 +38,7 @@ import Control.Exception.Safe
 --import qualified Control.Monad.Except as E
 import qualified Control.Monad.Catch as C
 
+import qualified Data.Text as T
 import Data.DList as DList
 import Data.List as List
 import Data.Typeable
@@ -50,8 +51,7 @@ import GHC.Generics
 
 import System.Directory
 
-import Text.PrettyPrint as PP
-import Text.PrettyPrint.GenericPretty
+import Data.Text.Prettyprint.Doc as PP
 
 -- General static project information
 
@@ -76,9 +76,8 @@ data Group = Group
     }
   deriving (Data,Typeable,Read,Show,Eq,Ord,Generic)
 
-instance Out Group where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Group where
+    pretty x = unsafeViaShow x
 
 instance NFData Group
 
@@ -176,30 +175,14 @@ mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST f m
 --                Writer.tell w'
 --                return x
 
-data HaapException = HaapException String
+data HaapException = HaapException T.Text
                    | HaapTimeout CallStack Int
                    | HaapIOException SomeException
   deriving (Typeable,Show,Generic)
-  
-instance Out HaapException where
-    docPrec i x = doc x
-    doc (HaapException str) = text str
-    doc (HaapTimeout stack i) = text "timed out after" <+> int i <+> text "seconds"
-    doc (HaapIOException e) = text (displayException e)
-  
-instance Exception HaapException where
-    displayException e = pretty e
 
 type HaapLog = DList HaapEvent 
-data HaapEvent = HaapEvent CallStack String
+data HaapEvent = HaapEvent CallStack T.Text
   deriving (Typeable,Show)
-  
-instance Out HaapEvent where
-    docPrec i x = doc x
-    doc (HaapEvent c s) = text (prettyCallStack c) PP.<> char ':' $+$ nest 4 (text s)
-
-printLog :: HaapLog -> IO ()
-printLog l = forM_ l $ \e -> putStrLn $ pretty e
 
 getProject :: HaapStack t m => Haap t m (Project)
 getProject = Haap $ ask

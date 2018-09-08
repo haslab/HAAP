@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides the @Tourney@ plugin to run tournaments.
 -}
 
-{-# LANGUAGE DeriveDataTypeable, TupleSections, TypeOperators, DeriveFunctor, DeriveAnyClass, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, TypeFamilies, EmptyDataDecls, TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, TupleSections, TypeOperators, DeriveFunctor, DeriveAnyClass, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances, TypeFamilies, EmptyDataDecls, TemplateHaskell, DeriveGeneric, ViewPatterns, ScopedTypeVariables, RankNTypes #-}
 module HAAP.Test.Tourney where
 
 import HAAP.Core
@@ -30,6 +30,7 @@ import Data.Data
 import Data.Acid
 import Data.SafeCopy
 import Data.Default
+import qualified Data.Text as T
 
 --import Control.Monad.Except
 import Control.Monad.State (StateT(..))
@@ -75,17 +76,17 @@ instance (HaapStack t2 m,HaapPluginT (ReaderT TourneyArgs) m (t2 m)) => HasPlugi
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 -- | Player names need to be unique
-class (Ord a,Out a) => TourneyPlayer a where
+class (Ord a,Pretty a) => TourneyPlayer a where
     defaultPlayer :: IO a -- players should be unique
     isDefaultPlayer :: a -> Bool
     renderPlayer :: a -> Html
-    renderPlayer p = H.preEscapedToMarkup (pretty p)
+    renderPlayer p = H.preEscapedToMarkup (prettyText p)
 
 data HaapTourney t m db a r = HaapTourney
     { tourneyMax :: Int -- maximum number of table entries for the tournament
-    , tourneyTitle :: String
+    , tourneyTitle :: T.Text
     , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
-    , tourneyPlayerTag :: String
+    , tourneyPlayerTag :: T.Text
     , tourneyPlayers :: Either [a] [[a]] -- must be unique (left = unpaiared players, right = paired players)
     , tourneyPath :: FilePath -- web folder where to render the tournaments
     , lensTourneyDB :: DBLens db (HaapTourneyDB a)
@@ -138,7 +139,7 @@ getTourneySize _ (length -> n)
     | n <= 32 = return 32
     | n <= 128 = return 128
     | n <= 256 = return 256
-    | otherwise = throw $ HaapException $ "unsupported tourney size " ++ show n
+    | otherwise = throw $ HaapException $ "unsupported tourney size " <> prettyText n
 
 tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
@@ -216,7 +217,7 @@ pairPlayers _ (Left players) tourneySize = do
     let xxs = pair (tourneySize `div` 4) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
     if validaMatches xxs
         then return xxs
-        else throw $ HaapException $ "pairPlayers: "  ++ pretty xxs ++ "\n" ++ show (length xxs)
+        else throw $ HaapException $ "pairPlayers: " <> prettyText xxs <> "\n" <> prettyText (length xxs)
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
     
@@ -259,7 +260,7 @@ playRounds matches tourneySize round = do
 -- returns (standings for players that lost this round, winner players for next round)
 playRound :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [[a]] -> Int -> Int -> HaapPlay t m db a r ([(a,Int)],Round a r)
 playRound matches tourneySize round = do
-    lift $ logEvent $ "playing round " ++ show round
+    lift $ logEvent $ "playing round " <> prettyText round
     State.modify $ \(o,x,y,z,w) -> (o,x,round,1,w)
     (matches',roundRes) <- playMatches matches
     let uniquematches' = Map.toList $ foldr (\(a,x) m -> Map.insertWith (++) a [x] m) Map.empty (concat matches')    
@@ -297,7 +298,7 @@ playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) x
     isWinner xs = length (filter (==1) xs) >= bestof
     playMatchBest' :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [r] -> Map (a) [Int] -> HaapPlay t m db a r ([(a,Int)],[r])
     playMatchBest' replays players = do
-        lift $ logEvent $ "playMatchBest " ++ show bestof ++ pretty (players)
+        lift $ logEvent $ "playMatchBest " <> prettyText bestof <> prettyText (players)
         let winners = Map.filter isWinner players
         if Map.null winners
             then do
@@ -307,7 +308,7 @@ playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) x
                 playMatchBest' replays' players'
             else do
                 let rank = rankGroups players
-                lift $ logEvent $ "match rank" ++ pretty rank
+                lift $ logEvent $ "match rank" <> prettyText rank
                 return (rank,replays)
 
 rankGroups :: Ord a => Map.Map a [Int] -> [(a,Int)]
@@ -324,7 +325,7 @@ rankGroups xs = rank 0 Nothing $ sortBy cmpsnd $ Map.toList (Map.map (map (neg .
 playMatch :: (MonadIO m,HasDB db t m,TourneyPlayer a) => [a] -> HaapPlay t m db a r ([(a,Int)],r)
 playMatch xs = do
     (tourney,tourneyno,roundno,matchno,_) <- State.get
-    lift $ logEvent $ "playing match " ++ show roundno ++ " " ++ show matchno
+    lift $ logEvent $ "playing match " <> prettyText roundno <> " " <> prettyText matchno
     r <- lift $ tourneyMatch tourney tourneyno roundno matchno xs
     State.modify $ \(tourney,tourneyno,roundno,matchno,w) -> (tourney,tourneyno,roundno,matchno+1,w)
     return $ mapFst (sortBy cmpsnd) r

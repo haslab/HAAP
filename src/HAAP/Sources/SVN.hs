@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides the @SVN@ plugin that provides support for _subversion_ @HaapSource@s.
 -}
 
-{-# LANGUAGE DeriveDataTypeable, TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, TypeOperators, MultiParamTypeClasses, UndecidableInstances, FlexibleContexts, FlexibleInstances, TemplateHaskell, TypeFamilies, EmptyDataDecls #-}
 
 module HAAP.Sources.SVN where
 
@@ -14,6 +14,7 @@ import HAAP.Sources
 import HAAP.Plugin
 import HAAP.Shelly
 import HAAP.Log
+import HAAP.Pretty
 
 import Data.Data
 import Data.Typeable
@@ -27,6 +28,7 @@ import Data.Time.LocalTime
 import Data.Time.Calendar
 import Data.Maybe
 import Data.Proxy
+import qualified Data.Text as T
 
 import Shelly (Sh)
 
@@ -74,6 +76,9 @@ $(deriveSafeCopy 0 'base ''SVNSource)
 instance Show SVNSource where
     show (SVNSource user pass path repo) = show user
 
+instance Pretty SVNSource where
+    pretty = viaShow
+
 data SVNSourceInfo = SVNSourceInfo
     { svnRevision :: Int
     , svnAuthor  :: String
@@ -88,6 +93,9 @@ instance Eq SVNSourceInfo where
 instance Ord SVNSourceInfo where
     compare x y = compare (svnRevision x) (svnRevision y)
 
+instance Pretty SVNSourceInfo where
+    pretty = viaShow
+
 data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
     , svnAcceptConflicts :: Bool
@@ -95,6 +103,9 @@ data SVNSourceArgs = SVNSourceArgs
     , svnHidden :: Bool
     }
   deriving (Show,Data,Typeable)
+
+instance Pretty SVNSourceArgs where
+    pretty = viaShow
 
 instance HaapPlugin SVN where
     type PluginI SVN = SVNSourceArgs
@@ -197,15 +208,15 @@ getSVNSourceInfo s = do
     parseInfo txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
         (x:xs) -> case readMaybe (drop 10 x) :: Maybe Int of
             Just rev -> return rev
-            Nothing -> throw $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
-        [] -> throw $ HaapException $ "failed to parse svn info revision for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+            Nothing -> throw $ HaapException $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
+        [] -> throw $ HaapException $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
     parseLogRev txt1 txt2 = case tailMay (lines $ Text.unpack txt1) of
         Nothing -> return ("","")
         Just t -> case headMay t of
             Nothing -> return ("","")
             Just str -> case splitOn "|" str of
                 [_,author,date,_] -> return (author,date)
-                otherwise -> throw $ HaapException $ "failed to parse svn revision log for " ++ show s ++ show (Text.unpack txt1) ++ show (Text.unpack txt2)
+                otherwise -> throw $ HaapException $ "failed to parse svn revision log for " <> T.pack (show s) <> txt1 <> txt2
 
 putSVNSource :: (MonadIO m,HasPlugin SVN t m) => [FilePath] -> SVNSource -> Haap t m ()
 putSVNSource files s = do

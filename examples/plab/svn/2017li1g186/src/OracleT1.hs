@@ -46,23 +46,23 @@ instance NFData Jogo
 instance NFData Propriedades
 instance NFData Acao
 
-instance Out Jogo where
+instance Pretty Jogo where
     docPrec i x = doc x
     doc x = text $ show x
     
-instance Out Propriedades where
+instance Pretty Propriedades where
     docPrec i x = doc x
     doc x = text $ show x
 
-instance Out Acao where
+instance Pretty Acao where
     docPrec i x = doc x
     doc x = text $ show x
 
-instance Out Carro where
+instance Pretty Carro where
     docPrec i x = doc x
     doc x = text $ show x
 
-instance Out Orientacao where
+instance Pretty Orientacao where
     docPrec i x = doc x
     doc x = text $ show x
 
@@ -73,15 +73,15 @@ instance NFData PrettyMapa
 instance Show PrettyMapa where
     show = pretty
 
-instance Out Peca where
+instance Pretty Peca where
     docPrec i x = doc x
     doc x = text $ show x
     
-instance Out PrettyMapa where
+instance Pretty PrettyMapa where
     docPrec i x = doc x
     doc (PrettyMapa m) = doc m
 
-instance Out Mapa where
+instance Pretty Mapa where
     docPrec i x = doc x
     doc m@(Mapa pair tab) = text $ show m++"\n"++printTab tab
 
@@ -92,7 +92,7 @@ instance NFData PrettyTabuleiro
 instance Show PrettyTabuleiro where
     show = pretty
 
-instance Out PrettyTabuleiro where
+instance Pretty PrettyTabuleiro where
     docPrec i x = doc x
     doc (PrettyTabuleiro tab) = text $ show tab++"\n"++printTab tab
 
@@ -102,11 +102,11 @@ instance NFData PrettyCaminho
  
 instance Show PrettyCaminho where
     show = pretty
-instance Out PrettyCaminho where
+instance Pretty PrettyCaminho where
     docPrec i x = doc x
     doc (PrettyCaminho x) = docList x
 
-instance Out Passo where
+instance Pretty Passo where
     docPrec i x = doc x
     doc x = text $ show x
     docList [] = text $ []

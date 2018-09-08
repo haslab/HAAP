@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides a generic interface for HAAP sources, that are typically version-control repositories.
 -}
 
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, TypeFamilies, TypeFamilyDependencies, RankNTypes, DoAndIfThenElse #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, FlexibleContexts, TypeFamilies, TypeFamilyDependencies, RankNTypes, DoAndIfThenElse #-}
 
 module HAAP.Sources where
 

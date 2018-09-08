@@ -26,7 +26,7 @@ import Data.Maybe
 import Data.List
 import Data.Default
 import Data.List.Split
-import qualified Data.Text as Text
+import qualified Data.Text as T
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
@@ -162,7 +162,7 @@ runHpcReport defa m = do
         let ghc = (hpcGHC hpc)
         let io = (hpcIO hpc)
         let io' = io
-        let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
+        let ghc' = ghc { ghcMake = True, ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
         do
             hpcCleanup dir exec
                 
@@ -176,15 +176,15 @@ runHpcReport defa m = do
             hpcres <- runBaseSh $ do
                 shCd dir
                 shCommandWith io' "hpc" ["report",exec]
-            addMessageToError (pretty hpcres) $ do
-                let xs = map words $ lines $ Text.unpack $ resStdout hpcres     
+            addMessageToError (prettyText hpcres) $ do
+                let xs = map words $ lines $ T.unpack $ resStdout hpcres     
                 report <- orLogDefault def $ liftIO $ E.evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
                 return (x,report)
 
-useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Out a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,FilePath)
+useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Pretty a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,FilePath)
 useAndRunHpc args x m = usePlugin_ (return args) $ runHpc x m
 
-runHpc :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin HPC t m,Out a) => a -> (IOResult -> Haap t m a) -> Haap t m (a,FilePath)
+runHpc :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin HPC t m,Pretty a) => a -> (IOResult -> Haap t m a) -> Haap t m (a,FilePath)
 runHpc def m = do
     hpc <- liftHaap $ liftPluginProxy (Proxy::Proxy HPC) $ Reader.ask
     hp <- getHakyllP
@@ -196,7 +196,7 @@ runHpc def m = do
         let ghc = (hpcGHC hpc)
         let io = (hpcIO hpc)
         let io' = io 
-        let ghc' = ghc { ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
+        let ghc' = ghc { ghcMake = True, ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
         do
             hpcCleanup dir exec
                 

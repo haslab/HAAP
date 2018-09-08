@@ -9,7 +9,7 @@ This module provides wrappers to the _blaze-html_ library (<https://hackage.hask
 module HAAP.Web.Blaze
     ( module HAAP.Web.Blaze
     , module Text.Blaze.Html5
-    , module Text.Blaze.Html.Renderer.String
+    , module Text.Blaze.Html.Renderer.Text
     ) where
 
 import HAAP.Pretty
@@ -17,8 +17,8 @@ import HAAP.Pretty
 import qualified Text.Blaze.Html5 as H
 import Text.Blaze.Html5 ((!),toHtml,Html,docTypeHtml)
 import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Html.Renderer.String
+import Text.Blaze.Html.Renderer.Text
+import Data.Text.Lazy as TL
 
-instance Out Html where
-    docPrec i x = doc x
-    doc x = text $ renderHtml x
+instance Pretty Html where
+    pretty x = text $ TL.toStrict $ renderHtml x

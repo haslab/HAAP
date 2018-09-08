@@ -5,7 +5,7 @@ This module provides functions for processing Haskell source code files.
 
 -}
 
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts #-}
 
 module HAAP.Code.Haskell where
 
@@ -22,7 +22,7 @@ import Data.Maybe
 import qualified Data.Map as Map 
 import Data.Map (Map(..))
 
-import Language.Haskell.Exts as H
+import Language.Haskell.Exts as H hiding (Pretty)
 
 import System.FilePath.Find as FilePath
 import System.FilePath
@@ -36,10 +36,12 @@ import Control.Monad.IO.Class
 import Control.Exception.Safe
 import Control.Monad
 
-instance Show a => Out (ParseResult a) where
-    docPrec i x = doc x
-    doc (ParseOk x) = text "parsing ok:" <+> text (show x)
-    doc (ParseFailed l s) = text "parsing failed at" <+> text (show l) PP.<> char ':' <+> text s
+instance Pretty SrcLoc where
+    pretty = unsafeViaShow
+
+instance Show a => Pretty (ParseResult a) where
+    pretty (ParseOk x) = string "parsing ok:" <+> string (show x)
+    pretty (ParseFailed l s) = string "parsing failed at" <+> string (show l) PP.<> char ':' <+> string s
 
 parseHaskellWith :: (Parseable a,MonadIO m,HaapStack t m) => String -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m a
 parseHaskellWith str arg_exts arg_fix = do
@@ -51,7 +53,7 @@ parseHaskellWith str arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        (ParseFailed loc err) -> throw $ HaapException $ show loc ++ ": " ++ pretty err
+        (ParseFailed loc err) -> throw $ HaapException $ prettyText loc <> ": " <> prettyText err
 
 parseHaskellFileWith :: (MonadIO m,HaapStack t m) => FilePath -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m (Module SrcSpanInfo)
 parseHaskellFileWith file arg_exts arg_fix = do
@@ -64,7 +66,7 @@ parseHaskellFileWith file arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        err -> throw $ HaapException $ pretty err
+        err -> throw $ HaapException $ prettyText err
 
 parseHaskell :: (Parseable a,MonadIO m,HaapStack t m) => String -> Haap t m a
 parseHaskell str = parseHaskellWith str Nothing Nothing

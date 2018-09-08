@@ -46,25 +46,20 @@ instance NFData Jogo
 instance NFData Propriedades
 instance NFData Acao
 
-instance Out Jogo where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Jogo where
+    pretty x = text $ show x
     
-instance Out Propriedades where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Propriedades where
+    pretty x = text $ show x
 
-instance Out Acao where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Acao where
+    pretty x = text $ show x
 
-instance Out Carro where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Carro where
+    pretty x = text $ show x
 
-instance Out Orientacao where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Orientacao where
+    pretty x = text $ show x
 
 newtype PrettyMapa = PrettyMapa { unPrettyMapa :: Mapa }
   deriving (Eq,Generic)
@@ -73,17 +68,14 @@ instance NFData PrettyMapa
 instance Show PrettyMapa where
     show = pretty
 
-instance Out Peca where
-    docPrec i x = doc x
-    doc x = text $ show x
+instance Pretty Peca where
+    pretty x = text $ show x
     
-instance Out PrettyMapa where
-    docPrec i x = doc x
-    doc (PrettyMapa m) = doc m
+instance Pretty PrettyMapa where
+    pretty (PrettyMapa m) = doc m
 
-instance Out Mapa where
-    docPrec i x = doc x
-    doc m@(Mapa pair tab) = text $ show m++"\n"++printTab tab
+instance Pretty Mapa where
+    pretty m@(Mapa pair tab) = text $ show m++"\n"++printTab tab
 
 newtype PrettyTabuleiro = PrettyTabuleiro { unPrettyTabuleiro :: Tabuleiro }
   deriving (Eq,Generic)
@@ -92,9 +84,8 @@ instance NFData PrettyTabuleiro
 instance Show PrettyTabuleiro where
     show = pretty
 
-instance Out PrettyTabuleiro where
-    docPrec i x = doc x
-    doc (PrettyTabuleiro tab) = text $ show tab++"\n"++printTab tab
+instance Pretty PrettyTabuleiro where
+    pretty (PrettyTabuleiro tab) = text $ show tab++"\n"++printTab tab
 
 newtype PrettyCaminho = PrettyCaminho { unPrettyCaminho :: Caminho }
   deriving (Eq,Generic)
@@ -102,16 +93,14 @@ instance NFData PrettyCaminho
  
 instance Show PrettyCaminho where
     show = pretty
-instance Out PrettyCaminho where
-    docPrec i x = doc x
-    doc (PrettyCaminho x) = docList x
+instance Pretty PrettyCaminho where
+    pretty (PrettyCaminho x) = docList x
 
-instance Out Passo where
-    docPrec i x = doc x
-    doc x = text $ show x
-    docList [] = text $ []
-    docList [x] = text $ show [x]
-    docList (h:t) = text $ "["++show h++(concatMap ((", "++).show) t)++"]"
+instance Pretty Passo where
+    pretty x = text $ show x
+    prettyList [] = text $ []
+    prettyList [x] = text $ show [x]
+    prettyList (h:t) = text $ "["++show h++(concatMap ((", "++).show) t)++"]"
 
 -------
 -- Tweaks para melhorar o feedback no browser

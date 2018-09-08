@@ -154,9 +154,8 @@ data ExPlayer = ExPlayer (String,Bool)
 instance Binary ExPlayer
 instance NFData ExPlayer
 
-instance Out ExPlayer where
-    docPrec i x = doc x
-    doc (ExPlayer x) = text (fst x)
+instance Pretty ExPlayer where
+    pretty (ExPlayer x) = text (fst x)
 
 instance TourneyPlayer ExPlayer where
     isDefaultPlayer (ExPlayer (_,b)) = b

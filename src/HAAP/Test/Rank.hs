@@ -24,10 +24,12 @@ import Data.SafeCopy
 import Data.Default
 import Data.Typeable
 import Data.Data
+import qualified Data.Text as T
 
 import Control.Monad.Trans
 --import Control.Monad.Catch
 import Control.Monad.Reader as Reader
+import GHC.Generics
 
 data Rank
 
@@ -56,7 +58,7 @@ instance HaapMonad m => HasPlugin Rank (ReaderT RankArgs) m where
 instance (HaapStack t2 m,HaapPluginT (ReaderT RankArgs) m (t2 m)) => HasPlugin Rank (ComposeT (ReaderT RankArgs) t2) m where
     liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
-class (Eq score,Ord score,Out score) => Score score where
+class (Eq score,Ord score,Pretty score) => Score score where
     okScore :: score -> Bool
     appendScores :: [score] -> score
 
@@ -64,9 +66,8 @@ newtype FloatScore = FloatScore { unFloatScore :: Float }
   deriving (Eq,Ord,Show,Generic,Data,Typeable,Num,Fractional)
 $(deriveSafeCopy 0 'base ''FloatScore)
 
-instance Out FloatScore where
-    docPrec i x = doc x
-    doc (FloatScore f) = doc f
+instance Pretty FloatScore where
+    pretty (FloatScore f) = pretty f
 
 instance Score FloatScore where
     okScore (FloatScore x) = x > 0
@@ -76,22 +77,20 @@ newtype PercentageScore = PercentageScore { unPercentageScore :: Double }
   deriving (Eq,Ord,Show,Generic,Data,Typeable,Num,Fractional)
 $(deriveSafeCopy 0 'base ''PercentageScore)
 
-instance Out PercentageScore where
-    docPrec i  = doc
-    doc (PercentageScore x) = text (printDouble x 2) PP.<> text "%"
+instance Pretty PercentageScore where
+    pretty (PercentageScore x) = string (printDouble x 2) <> text "%"
 
 instance Score PercentageScore where
     okScore (PercentageScore x) = x > 50
     appendScores = PercentageScore . averageList . map unPercentageScore
     
-newtype PercentageMsgScore = PercentageMsgScore { unPercentageMsgScore :: Either String Double }
+newtype PercentageMsgScore = PercentageMsgScore { unPercentageMsgScore :: Either T.Text Double }
   deriving (Eq,Ord,Show,Generic,Data,Typeable)
 $(deriveSafeCopy 0 'base ''PercentageMsgScore)
 
-instance Out PercentageMsgScore where
-    docPrec i  = doc
-    doc (PercentageMsgScore (Left x)) = text x
-    doc (PercentageMsgScore (Right x)) = text (printDouble x 2) PP.<> text "%"
+instance Pretty PercentageMsgScore where
+    pretty (PercentageMsgScore (Left x)) = text x
+    pretty (PercentageMsgScore (Right x)) = string (printDouble x 2) <> text "%"
 
 instance Score PercentageMsgScore where
     okScore (PercentageMsgScore x) = isRight x
@@ -109,24 +108,23 @@ instance Score MaybeFloatScore where
         appendScores' [] = MaybeFloatScore $ Nothing
         appendScores' xs = MaybeFloatScore $ Just $ unFloatScore $ appendScores $ map FloatScore xs
 
-instance Out MaybeFloatScore where
-    docPrec i x = doc x
-    doc (MaybeFloatScore Nothing) = text "-"
-    doc (MaybeFloatScore (Just x)) = doc x
+instance Pretty MaybeFloatScore where
+    pretty (MaybeFloatScore Nothing) = text "-"
+    pretty (MaybeFloatScore (Just x)) = pretty x
 
 data HaapRank t m a score = HaapRank
     { rankPath :: FilePath
-    , rankTitle :: String
-    , rankIdTag :: String
-    , rankHeaders :: Maybe [String]
-    , rankTag :: String
+    , rankTitle :: T.Text
+    , rankIdTag :: T.Text
+    , rankHeaders :: Maybe [T.Text]
+    , rankTag :: T.Text
     , rankIds :: [a]
     , rankScore :: a -> Haap t m [score]
     }
 
 type HaapRankRes a score = [(a,[score],score)]
 
-runHaapRank :: (HasPlugin Rank t m,Out a,Score score) => HaapRank t m a score -> Haap t m (HaapRankRes a score)
+runHaapRank :: (HasPlugin Rank t m,Pretty a,Score score) => HaapRank t m a score -> Haap t m (HaapRankRes a score)
 runHaapRank rank = do
     scores <- forM (rankIds rank) $ \x -> do
         scores <- rankScore rank x
@@ -136,15 +134,15 @@ runHaapRank rank = do
 
 data HaapSpecRank t m a score = HaapSpecRank
     { sRankPath :: FilePath
-    , sRankTitle :: String
-    , sRankIdTag :: String
-    , sRankTag :: String
+    , sRankTitle :: T.Text
+    , sRankIdTag :: T.Text
+    , sRankTag :: T.Text
     , sRankIds :: [a]
     , sRankSpec :: a -> HaapSpec
     , sRankScore :: HaapTestRes -> Haap t m score
     }
 
-runHaapSpecRank :: (MonadIO m,HasPlugin Rank t m,HasPlugin Spec t m,Out a,Score score) => HaapSpecRank t m a score -> Haap t m (HaapRankRes a score)
+runHaapSpecRank :: (MonadIO m,HasPlugin Rank t m,HasPlugin Spec t m,Pretty a,Score score) => HaapSpecRank t m a score -> Haap t m (HaapRankRes a score)
 runHaapSpecRank r = runHaapRank (haapSpecRank r)
 
 haapSpecRank :: (MonadIO m,HasPlugin Spec t m,HasPlugin Rank t m) => HaapSpecRank t m a score -> HaapRank t m a score

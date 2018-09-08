@@ -5,7 +5,7 @@ This module provides the @Spec@ plugin to run test specifications.
 -}
 
 
-{-# LANGUAGE DeriveGeneric, StandaloneDeriving, TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, OverloadedStrings, GADTs, ScopedTypeVariables, DeriveTraversable #-}
+{-# LANGUAGE OverloadedStrings, DeriveGeneric, StandaloneDeriving, TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where
 
@@ -57,6 +57,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import Data.CallStack
 import Data.Default
+import qualified Data.Text as T
 
 import Text.Read
 
@@ -103,15 +104,13 @@ defaultHaapSpecArgs = HaapSpecArgs HaapSpecQuickCheck Nothing def
 
 data HaapSpecMode = HaapSpecQuickCheck | HaapSpecHUnit
 
-instance Out HUnit.FailureReason where
-    docPrec i x = doc x
-    doc err = text (HUnit.formatFailureReason err)
+instance Pretty HUnit.FailureReason where
+    pretty err = string (HUnit.formatFailureReason err)
 
-instance Out FailureReason where
-    docPrec i x = doc x
-    doc NoReason = text "no reason"
-    doc (Reason str) = text "reason" <+> text str
-    doc (ExpectedButGot msg x y) = doc msg $+$ nest 4 (text "expected:" <+> text x $+$ text "got:" <+> text y)
+instance Pretty FailureReason where
+    pretty NoReason = text "no reason"
+    pretty (Reason str) = text "reason" <+> string str
+    pretty (ExpectedButGot msg x y) = pretty msg $+$ nest 4 (text "expected:" <+> string x $+$ text "got:" <+> string y)
 
 runSpec :: (MonadIO m,HasPlugin Spec t m) => HaapSpec -> Haap t m HaapTestTableRes
 runSpec spec = do
@@ -121,41 +120,41 @@ runSpec spec = do
     runHaapTestTable args tests
 
 -- generates a list of tests
-bounded :: (Out a,Show a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
+bounded :: (Pretty a) => T.Text -> [a] -> (a -> HaapSpec) -> HaapSpec
 bounded = HaapSpecBounded
 
 -- generates a random test (receives a set of seeds for grading)
-unbounded :: (Out a,Show a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+unbounded :: (Pretty a) => T.Text -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
 unbounded = HaapSpecUnbounded
 
 testBool :: Bool -> HaapSpec
 testBool x = testBoolIO (return x)
 
-testMaybe :: (NFData a,OutIO a) => Maybe a -> HaapSpec
+testMaybe :: (NFData a,PrettyIO a) => Maybe a -> HaapSpec
 testMaybe x = testMaybeIO (return x)
 
-testEqual :: (NFData a,Eq a,OutIO a) => a -> a -> HaapSpec
+testEqual :: (NFData a,Eq a,PrettyIO a) => a -> a -> HaapSpec
 testEqual x y = testEqualIO (return x) (return y)
 
-testEqualWith :: (NFData a,OutIO a) => (a -> a -> Bool) -> a -> a -> HaapSpec
+testEqualWith :: (NFData a,PrettyIO a) => (a -> a -> Bool) -> a -> a -> HaapSpec
 testEqualWith eq x y = testEqualIOWith eq (return x) (return y)
 
-testMessage :: String -> HaapSpec
+testMessage :: T.Text -> HaapSpec
 testMessage x = testMessageIO (return x)
 
 testBoolIO :: IO Bool -> HaapSpec
 testBoolIO = HaapSpecTestBool
 
-testMaybeIO :: (NFData a,OutIO a) => IO (Maybe a) -> HaapSpec
+testMaybeIO :: (NFData a,PrettyIO a) => IO (Maybe a) -> HaapSpec
 testMaybeIO = HaapSpecTestMaybe
 
-testEqualIO :: (NFData a,Eq a,OutIO a) => IO a -> IO a -> HaapSpec
+testEqualIO :: (NFData a,Eq a,PrettyIO a) => IO a -> IO a -> HaapSpec
 testEqualIO = HaapSpecTestEqual (==)
 
-testEqualIOWith :: (NFData a,OutIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+testEqualIOWith :: (NFData a,PrettyIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
 testEqualIOWith eq iox ioy = HaapSpecTestEqual eq iox ioy
 
-testMessageIO :: IO String -> HaapSpec
+testMessageIO :: IO T.Text -> HaapSpec
 testMessageIO = HaapSpecTestMessage
 
 testResult :: Result -> HaapSpec
@@ -165,17 +164,17 @@ testResultIO :: IO Result -> HaapSpec
 testResultIO = HaapSpecTestResult
 
 data HaapSpec where
-     HaapSpecBounded :: (Show a,Out a) => String -> [a] -> (a -> HaapSpec) -> HaapSpec
-     HaapSpecUnbounded :: (Show a,Out a) => String -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecBounded :: (Pretty a) => T.Text -> [a] -> (a -> HaapSpec) -> HaapSpec
+     HaapSpecUnbounded :: (Pretty a) => T.Text -> [Int] -> Gen a -> (a -> HaapSpec) -> HaapSpec
      HaapSpecTestBool :: IO Bool -> HaapSpec
-     HaapSpecTestMaybe :: (NFData a,OutIO a) => IO (Maybe a) -> HaapSpec
-     HaapSpecTestEqual :: (NFData a,OutIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
-     HaapSpecTestMessage :: IO String -> HaapSpec
+     HaapSpecTestMaybe :: (NFData a,PrettyIO a) => IO (Maybe a) -> HaapSpec
+     HaapSpecTestEqual :: (NFData a,PrettyIO a) => (a -> a -> Bool) -> IO a -> IO a -> HaapSpec
+     HaapSpecTestMessage :: IO T.Text -> HaapSpec
      HaapSpecTestResult :: IO Result -> HaapSpec -- the result of running a quickCheck property
 
 data HaapTestTable a = HaapTestTable
-    { haapTestTableHeader :: [String] -- table header
-    , haapTestTableRows   :: [([String],a)] -- table of tests
+    { haapTestTableHeader :: [T.Text] -- table header
+    , haapTestTableRows   :: [([T.Text],a)] -- table of tests
     }
   deriving (Functor,Traversable,Foldable,Show,Read,Typeable)
 
@@ -201,20 +200,19 @@ type HaapTestTableRes = HaapTestTable HaapTestRes
 
 data HaapTestRes
     = HaapTestOk
-    | HaapTestError String
-    | HaapTestMessage String
+    | HaapTestError T.Text
+    | HaapTestMessage T.Text
   deriving (Eq,Ord,Read,Show)
 
-instance Out HaapTestRes where
-    docPrec i x = doc x
-    doc HaapTestOk = text "OK"
-    doc (HaapTestError msg) = text msg
-    doc (HaapTestMessage msg) = text msg
+instance Pretty HaapTestRes where
+    pretty HaapTestOk = text "OK"
+    pretty (HaapTestError msg) = text msg
+    pretty (HaapTestMessage msg) = text msg
 
 haapTestResPercentage :: HaapTestRes -> Float
 haapTestResPercentage HaapTestOk = 100
 haapTestResPercentage (HaapTestError _) = 0
-haapTestResPercentage (HaapTestMessage str) = read str
+haapTestResPercentage (HaapTestMessage str) = read $ T.unpack str
 
 haapNewExample :: State Int Int
 haapNewExample = do
@@ -224,19 +222,19 @@ haapNewExample = do
 
 haapTestRes :: Either SomeException FailureReason -> HaapTestRes
 haapTestRes (Left some) = case fromException some of
-    Nothing -> HaapTestError $ pretty some
+    Nothing -> HaapTestError $ prettyText some
     Just (HaapSpecMessage msg) -> HaapTestMessage msg
-haapTestRes (Right msg) = HaapTestError $ pretty msg
+haapTestRes (Right msg) = HaapTestError $ prettyText msg
 
 runHaapTestTable :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> HaapTestTable (Int,Hspec.Spec) -> Haap t m HaapTestTableRes
-runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ pretty e) tests) $ do
+runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ prettyText e) tests) $ do
     forM tests $ \(i,spec) -> runHaapTest args i spec
     
 runHaapTest :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> Int -> Hspec.Spec -> Haap t m HaapTestRes
-runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
+runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ prettyText e) $ do
     let ioargs = specIO args
-    outknob <- addMessageToError ("initializing test knob" ++ show ex) $ runBaseIOWith (ioargs) $ newKnob (B.pack [])
-    outhandle <- addMessageToError ("initializing test handle" ++ show ex) $ runBaseIOWith (ioargs) $ newFileHandle outknob "knob" WriteMode
+    outknob <- addMessageToError ("initializing test knob" <> prettyText ex) $ runBaseIOWith (ioargs) $ newKnob (B.pack [])
+    outhandle <- addMessageToError ("initializing test handle" <> prettyText ex) $ runBaseIOWith (ioargs) $ newFileHandle outknob "knob" WriteMode
     let formatter = silent
             { exampleSucceeded = \parents name -> write $ "HaapTestOk"
             , exampleFailed = \parents name err -> write $ show (haapTestRes $ Right err)
@@ -253,7 +251,7 @@ runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ pretty e) $ do
 
     let outstr = B8.unpack outbstr
     res <- case readMaybe outstr :: Maybe HaapTestRes of
-        Nothing -> throw $ HaapException $ "failed to parse hspec output: " ++ outstr
+        Nothing -> throw $ HaapException $ T.pack $ "failed to parse hspec output: " ++ outstr
         Just res -> return res
     return res
 
@@ -268,13 +266,13 @@ haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
     haapSpec' mode (HaapSpecBounded n xs f) = do
         let add x = do
             HaapTestTable h t <- haapSpec' mode (f x)
-            return $ HaapTestTable (n:h) (map (mapFst (show x :)) t)
+            return $ HaapTestTable (n:h) (map (mapFst (prettyText x :)) t)
         ys <- mapM add xs
         return $ concatTable ys
     haapSpec' HaapSpecQuickCheck spec@(HaapSpecUnbounded n seeds g f) = do
         ex <- haapNewExample
         let ns = unsafePerformIO $ haapSpecNames spec
-        return $ HaapTestTable ns [(replicate (length ns) "randomly sampled",(ex,it (show ex) $ forAll g f))]
+        return $ HaapTestTable ns [(replicate (length ns) "randomly sampled",(ex,it (show ex) $ forAllShow g prettyString f))]
     haapSpec' HaapSpecHUnit (HaapSpecUnbounded n seeds g f) = do
         let mkArg i = unGen g (mkQCGen i) i
         let xs = map mkArg seeds
@@ -311,20 +309,20 @@ haapSpec ioargs mode s = State.evalState (haapSpec' mode s) 0
             assertResult res
         return $ HaapTestTable [] [([],(ex,describe (show ex) s))]
 
-data HaapSpecMessage = HaapSpecMessage String
+data HaapSpecMessage = HaapSpecMessage T.Text
   deriving Show
 
 instance Exception HaapSpecMessage where
-    displayException (HaapSpecMessage msg) = msg
+    displayException (HaapSpecMessage msg) = prettyString msg
 
-runSpecIO :: NFData a => IOArgs -> String -> IO a -> IO a
+runSpecIO :: NFData a => IOArgs -> T.Text -> IO a -> IO a
 runSpecIO ioargs side io = do
-    catch (forceM io) (\(e::SomeException) -> error $ side ++ " failed: " ++ pretty e)
+    catch (forceM io) (\(e::SomeException) -> error $ T.unpack side ++ " failed: " ++ prettyString e)
 
 instance QuickCheck.Testable HaapSpec where
     property = haapSpecProperty defaultIOArgs
 
-haapSpecNames :: HaapSpec -> IO [String]
+haapSpecNames :: HaapSpec -> IO [T.Text]
 haapSpecNames (HaapSpecBounded n xs f) = do
     ns <- mapM (haapSpecNames . f) (headMay xs)
     return (n:maybe [] id ns)
@@ -340,21 +338,21 @@ haapSpecNames (HaapSpecTestResult io) = return []
 
 haapSpecProperty :: IOArgs -> HaapSpec -> Property
 haapSpecProperty ioargs (HaapSpecBounded n xs f) = conjoin $ map (haapSpecProperty ioargs . f) xs
-haapSpecProperty ioargs (HaapSpecUnbounded n _ g f) = forAll g f
+haapSpecProperty ioargs (HaapSpecUnbounded n _ g f) = forAllShow g prettyString f
 haapSpecProperty ioargs (HaapSpecTestBool io) = counterexample "Boolean assertion failed" $ monadicIO $ do
     b <- run $ runSpecIO ioargs "test" io
     QuickCheck.assert b
 haapSpecProperty ioargs (HaapSpecTestMaybe io) = counterexample "Maybe assertion failed" $ monadicIO $ do
     b <- run $ runSpecIO ioargs "test" io
     unless (isNothing b) $ do
-        pb <- run $ runSpecIO ioargs "solution" $ prettyIO (fromJust b)
+        pb <- run $ runSpecIO ioargs "solution" $ prettyStringIO (fromJust b)
         fail ("Maybe assertion failed: got...\n"++pb)
     QuickCheck.assert (isNothing b)
 haapSpecProperty ioargs (HaapSpecTestEqual eq iox ioy) = monadicIO $ do
     x <- run $ runSpecIO ioargs "oracle" iox
     y <- run $ runSpecIO ioargs "solution" ioy
-    px <- run $ runSpecIO ioargs "oracle" $ prettyIO x
-    py <- run $ runSpecIO ioargs "solution" $ prettyIO y
+    px <- run $ runSpecIO ioargs "oracle" $ prettyStringIO x
+    py <- run $ runSpecIO ioargs "solution" $ prettyStringIO y
     unless (x `eq` y) $ fail ("Equality assertion failed: expected...\n"++px ++ "\n...but got...\n"++ py)
     QuickCheck.assert (x `eq` y)
 haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
@@ -373,7 +371,7 @@ location = case reverse callStack of
   (_, loc) : _ -> Just loc
   [] -> Nothing
 
-assertMaybe :: (HasCallStack, OutIO a)
+assertMaybe :: (HasCallStack, PrettyIO a)
                               => String -- ^ The message prefix
                               -> (Maybe a)      -- ^ The result with maybe the unexpected result
                               -> Assertion
@@ -381,10 +379,10 @@ assertMaybe preface gotten = case gotten of
     Nothing -> return ()
     Just actual -> do
         prefaceMsg <- if null preface then return Nothing else return $ Just preface
-        actualMsg <- prettyIO actual
+        actualMsg <- prettyStringIO actual
         throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg "" actualMsg
 
-assertEqualWith :: (HasCallStack, OutIO a)
+assertEqualWith :: (HasCallStack, PrettyIO a)
                               => String -- ^ The message prefix
                               -> (a -> a -> Bool)
                               -> a      -- ^ The expected value
@@ -392,8 +390,8 @@ assertEqualWith :: (HasCallStack, OutIO a)
                               -> Assertion
 assertEqualWith preface eq expected actual = unless (actual `eq` expected) $ do
     prefaceMsg <- if null preface then return Nothing else return $ Just preface
-    expectedMsg <- prettyIO expected
-    actualMsg <- prettyIO actual
+    expectedMsg <- prettyStringIO expected
+    actualMsg <- prettyStringIO actual
     throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg expectedMsg actualMsg
 
 assertResult :: (HasCallStack) => Result -> Assertion

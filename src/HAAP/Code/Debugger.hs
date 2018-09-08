@@ -21,7 +21,7 @@ import HAAP.Compiler.GHC
 
 import Data.Default
 import Data.List
-import qualified Data.Text as Text
+import qualified Data.Text as T
 import Data.Proxy
 
 import Control.Monad.Reader as Reader
@@ -97,13 +97,13 @@ runDebugger = do
                         ++ "  let args = defaultHoedExtrasArgs { jshood = Deploy, jshoedb = Deploy, debug = Deploy, datapath = Just (return " ++ show htmldatapath ++ ")}" ++ "\n"
                         ++ "  runHoedExtrasO args (print prog)" ++ "\n"
             
-            shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") mainfile
+            shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") (T.pack mainfile)
             
         let dir = (tmp </> debuggerHtmlPath h)
         iores <- orIOResult $ runBaseSh $ do
             shCd dir
-            shGhcWith ghcArgs ["Main.hs"]
-        addMessageToError (pretty iores) $ runBaseSh $ do
+            shGhcWith (ghcArgs { ghcMake = True }) ["Main.hs"]
+        addMessageToError (prettyText iores) $ runBaseSh $ do
             shCd dir
             exec <- shExec "Main"
             shCommandWith_ ioArgs exec extras

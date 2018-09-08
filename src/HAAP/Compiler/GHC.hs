@@ -33,10 +33,11 @@ data GHCArgs = GHCArgs
     , ghcArgs :: [String] -- additional flags
     , ghcRTS :: Bool
     , ghcIO :: IOArgs 
+    , ghcMake :: Bool -- --make flag
     }
 
 instance Default GHCArgs where
-    def = GHCArgs True False [] False def
+    def = GHCArgs True False [] False def False
 
 instance HaapPlugin GHC where
     type PluginI GHC = GHCArgs
@@ -63,7 +64,7 @@ shGhc ins = do
     liftSh $ shGhcWith args ins
 
 shGhcWith :: GHCArgs -> [FilePath] -> Sh IOResult
-shGhcWith ghc ins = shCommandWith (ghcIO ghc) "ghc" $ addArgs (ghcArgs ghc) $ addRTS (ghcRTS ghc) $ addHpc (ghcHpc ghc) $ addSafe (ghcSafe ghc) ins
+shGhcWith ghc ins = shCommandWith (ghcIO ghc) "ghc" $ addArgs (ghcArgs ghc) $ addRTS (ghcRTS ghc) $ addHpc (ghcHpc ghc) $ addSafe (ghcSafe ghc) $ addMake ins
     where
     addSafe True cmds = "-XSafe" : cmds
     addSafe False cmds = cmds
@@ -72,3 +73,4 @@ shGhcWith ghc ins = shCommandWith (ghcIO ghc) "ghc" $ addArgs (ghcArgs ghc) $ ad
     addRTS True  cmds = "-rtsopts" : cmds
     addRTS False cmds = cmds
     addArgs xs ys = ys ++ xs
+    addMake cmds = if ghcMake ghc then "--make":cmds else cmds

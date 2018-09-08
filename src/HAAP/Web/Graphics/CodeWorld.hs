@@ -29,7 +29,7 @@ import Data.String
 import Data.Traversable
 import Data.Default
 import Data.Proxy
-import qualified Data.Text as Text
+import qualified Data.Text as T
 
 import System.FilePath
 import System.Directory
@@ -55,7 +55,7 @@ instance HaapPlugin CodeWorld where
 
 data CWTemplate
     = CWGame CWGameType
-    | CWDraw CWDrawType String
+    | CWDraw CWDrawType T.Text
     
 data CWGameType 
     = CWGameFullscreen
@@ -68,7 +68,7 @@ data CWDrawType
 
 data CodeWorldArgs = CodeWorldArgs
     { cwExecutable :: Either FilePath FilePath -- graphical web applications to compile with ghjs and codeworld libraries, or a link to an existing runmain.js file
-    , cwTitle :: String
+    , cwTitle :: T.Text
     , cwTemplate :: CWTemplate 
     , cwGHCJS :: GHCJSArgs
     , cwIO :: IOArgs
@@ -107,22 +107,22 @@ runCodeWorld = do
         res <- case cwExecutable cw of
             Left cwexec -> orIOResult $ runBaseShWith (io) $ do
                 let (dir,exec) = splitFileName cwexec
-                let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
+                let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)
                 shCd dir
-                --Sh.setenv "GHC_PACKAGE_PATH" (Text.pack $ concatPaths ghcpackagedbs)
-                --Sh.setenv "GHCJS_PACKAGE_PATH" (Text.pack $ concatPaths ghcjspackagedbs)
+                --Sh.setenv "GHC_PACKAGE_PATH" (T.pack $ concatPaths ghcpackagedbs)
+                --Sh.setenv "GHCJS_PACKAGE_PATH" (T.pack $ concatPaths ghcjspackagedbs)
                 shGhcjsWith ghcjs' [exec]
             otherwise -> do
-                let precompiled = Text.pack $ "Pre-compiled at " ++ show (cwExecutable cw)
+                let precompiled = "Pre-compiled at " <> prettyText (cwExecutable cw)
                 return $ IOResult 0 precompiled precompiled
         let images = (cwImages cw)
         let audios = (cwAudios cw)
         
         if resOk res
-            then addMessageToError (pretty res) $ do
+            then addMessageToError (prettyText res) $ do
                 hakyllRules $ do 
-                    let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
+                    let message = text "=== Compiling ===" $+$ pretty res $+$ text "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile $ getResourceString >>= hakyllCompile hp
@@ -149,17 +149,17 @@ runCodeWorld = do
                                        `mappend` field "audiofile" (return . mkImg . snd . itemBody)
                                        `mappend` field "audiotype" (return . filter (/='.') . takeExtension . snd . itemBody)
                                        `mappend` constField "runpath" (runpath)
-                            let cwCtx = constField "title" (cwTitle cw)
+                            let cwCtx = constField "title" (T.unpack $ cwTitle cw)
                                       `mappend` constField "projectpath" (dirToRoot destfolder)
                                       `mappend` constField "runpath" runpath
-                                      `mappend` constField "message" message
-                                      `mappend` constField "textmessage" textmessage
+                                      `mappend` constField "message" (renderDocString message)
+                                      `mappend` constField "textmessage" (T.unpack textmessage)
                                       `mappend` listField "images" imgCtx (mapM makeItem images)
                                       `mappend` listField "audios" audioCtx (mapM makeItem audios)
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
                     
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throw $ HaapException $ pretty res
+            else throw $ HaapException $ prettyText res
 
 instance HaapMonad m => HasPlugin CodeWorld (ReaderT CodeWorldArgs) m where
     liftPlugin = id

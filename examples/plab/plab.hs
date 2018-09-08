@@ -85,10 +85,9 @@ instance Eq TourneyGroup where
 instance Ord TourneyGroup where
     compare (TourneyGroup x) (TourneyGroup y) = fst x `compare` fst y
 
-instance Out TourneyGroup where
-    docPrec i x = doc x
-    doc (TourneyGroup (Right i,_)) = text "random"
-    doc (TourneyGroup (Left g,_)) = doc $ plabGroupId g
+instance Pretty TourneyGroup where
+    pretty (TourneyGroup (Right i,_)) = text "random"
+    pretty (TourneyGroup (Left g,_)) = doc $ plabGroupId g
 
 instance NFData TourneyGroup
 
@@ -292,7 +291,7 @@ cwImgs =
 
 newtype T3Group = T3Group (Group,(FilePath,[PercentageScore]))
 
-instance Out T3Group where
+instance Pretty T3Group where
     docPrec i = doc
     doc (T3Group (g,p)) = text $ groupId g
 

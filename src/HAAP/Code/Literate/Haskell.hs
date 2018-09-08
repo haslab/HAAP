@@ -23,6 +23,7 @@ import Data.List as List
 import Data.Maybe
 import qualified Data.Map as Map 
 import Data.Map (Map(..))
+import qualified Data.Text as T
 
 import Language.Haskell.Exts
 
@@ -62,9 +63,9 @@ run doHaddock doCode file resfile =
 
 endsWith x = elem x . tails 
 
-perform f = unlines.f . lines
+perform f = T.unlines. map T.pack . f . map T.unpack . T.lines
 
-haddock:: Bool -> [String]->[String]
+haddock:: Bool -> [String] -> [String]
 haddock doCode [] = []
 haddock doCode a@(x:xs) 
   | startsWith "\\begin{code}" x = let (p1,p2) = splitCond (startsWith "\\end{code}") xs in 

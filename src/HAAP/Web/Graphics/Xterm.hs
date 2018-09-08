@@ -88,22 +88,22 @@ runXterm = do
         res <- case xtExecutable xt of
             Left xtexec -> orIOResult $ runBaseShWith (io) $ do
                 let (dir,exec) = splitFileName xtexec
-                let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
+                let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)
                 shCd dir
                 --Sh.setenv "GHC_PACKAGE_PATH" (Text.pack $ concatPaths ghcpackagedbs)
                 --Sh.setenv "GHCJS_PACKAGE_PATH" (Text.pack $ concatPaths ghcjspackagedbs)
                 shGhcjsWith ghcjs' [exec]
             otherwise -> do
-                let precompiled = Text.pack $ "Pre-compiled at " ++ show (xtExecutable xt)
+                let precompiled = "Pre-compiled at " <> prettyText (xtExecutable xt)
                 return $ IOResult 0 precompiled precompiled
         
         if resOk res
-            then addMessageToError (pretty res) $ do
+            then addMessageToError (prettyText res) $ do
                 
                 getHakyllArgs >>= copyXtermDataFiles . hakyllCfg
                 hakyllRules $ do 
-                    let message = show $ text "=== Compiling ===" $+$ doc res $+$ "=== Running ==="
+                    let message = renderDocString $ text "=== Compiling ===" $+$ pretty res $+$ text "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile $ getResourceString >>= hakyllCompile hp
@@ -128,7 +128,7 @@ runXterm = do
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile xtCtx >>= hakyllCompile hp
                     matchXtermFiles
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throw $ HaapException $ pretty res
+            else throw $ HaapException $ prettyText res
 
 instance HaapMonad m => HasPlugin Xterm (ReaderT XtermArgs) m where
     liftPlugin = id

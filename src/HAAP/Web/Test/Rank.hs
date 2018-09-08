@@ -19,21 +19,22 @@ import HAAP.Plugin
 
 import Data.Traversable
 import Data.List
+import qualified Data.Text as T
 
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.IO.Class
 
-renderHaapRank :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapRank t m a score -> Haap t m FilePath
+renderHaapRank :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Pretty a,Score score) => HaapRank t m a score -> Haap t m FilePath
 renderHaapRank rank = do
     scores <- runHaapRank rank
     renderHaapRankScores rank scores
 
-renderHaapSpecRank :: (HasPlugin Spec t m,MonadIO m,HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapSpecRank t m a score -> Haap t m FilePath
+renderHaapSpecRank :: (HasPlugin Spec t m,MonadIO m,HasPlugin Rank t m,HasPlugin Hakyll t m,Pretty a,Score score) => HaapSpecRank t m a score -> Haap t m FilePath
 renderHaapSpecRank rank = do
     scores <- runHaapSpecRank rank
     renderHaapRankScores (haapSpecRank rank) scores
 
-renderHaapRankScores :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Out a,Score score) => HaapRank t m a score -> HaapRankRes a score -> Haap t m FilePath
+renderHaapRankScores :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Pretty a,Score score) => HaapRank t m a score -> HaapRankRes a score -> Haap t m FilePath
 renderHaapRankScores rank scores = do
     hp <- getHakyllP
     hakyllRules $ create [fromFilePath $ rankPath rank] $ do
@@ -41,18 +42,19 @@ renderHaapRankScores rank scores = do
         compile $ do
             let headerCtx = field "header" (return . itemBody)
             let colCtx = field "col" (return . scoreShow . snd . itemBody)
-                       `mappend` field "header" (return . pretty . fst . itemBody)
-                       `mappend` constField "ranktag" (rankTag rank)
+                       `mappend` field "header" (return . prettyString . fst . itemBody)
+                       `mappend` constField "ranktag" (T.unpack $ rankTag rank)
                        `mappend` field "class" (return . scoreClass . snd . itemBody)
-            let rowCtx = field "id" (return . pretty . fst3 . itemBody)
+            let rowCtx = field "id" (return . prettyString . fst3 . itemBody)
                        `mappend` listFieldWith "cols" colCtx (mapM makeItem . snd3 . itemBody)
-                       `mappend` constField "ranktag" (rankTag rank)
+                       `mappend` constField "ranktag" (T.unpack $ rankTag rank)
                        `mappend` field "score" (return . scoreShow . Just . thr3 . itemBody)
                        `mappend` field "class" (return . scoreClass . Just . thr3 . itemBody)
-            let pageCtx = constField "title" (rankTitle rank)
+            let pageCtx :: Context String
+                pageCtx = constField "title" (T.unpack $ rankTitle rank)
                         `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp $ rankPath rank)
-                        `mappend` constField "idtag" (rankIdTag rank)
-                        `mappend` constField "ranktag" (rankTag rank)
+                        `mappend` constField "idtag" (T.unpack $ rankIdTag rank)
+                        `mappend` constField "ranktag" (T.unpack $ rankTag rank)
                         `mappend` listField "headers" headerCtx (mapM makeItem headers)
                         `mappend` listField "rows" rowCtx (mapM makeItem scores')
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/ranks.html" pageCtx >>= hakyllCompile hp
@@ -64,11 +66,11 @@ renderHaapRankScores rank scores = do
     headernums = if numscores scores == 0 then [] else [1..numscores scores]
     headers = case rankHeaders rank of
         Nothing -> map show headernums
-        Just xs -> xs
+        Just xs -> map T.unpack xs
     scoreClass Nothing = "hspec-failure"
     scoreClass (Just x) = if okScore x then "hspec-success" else "hspec-failure"
     scoreShow Nothing = "-"
-    scoreShow (Just x) = pretty x
+    scoreShow (Just x) = prettyString x
 
 
 

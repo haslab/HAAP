@@ -27,9 +27,8 @@ data Url a = Url FilePath a
 instance Show a => Show (Url a) where
     show (Url url x) = "<a href=" ++ show url ++ ">" ++ show x ++ "</a>"
 
-instance Out a => Out (Url a) where
-    docPrec i x = doc x
-    doc (Url url x) = text "<a href=" PP.<> text (show url) PP.<> text ">" PP.<> doc x PP.<> text "</a>"
+instance Pretty a => Pretty (Url a) where
+    pretty (Url url x) = text "<a href=" <> string (show url) <> text ">" <> pretty x <> text "</a>"
 
 data HaapTable = HaapTable
     { haapTableTitle :: String

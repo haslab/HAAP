@@ -19,18 +19,19 @@ import HAAP.Plugin
 import Control.Monad.IO.Class
 
 import Data.Traversable
+import qualified Data.Text as T
 
-renderHaapSpec :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> String -> HaapSpec -> Haap t m FilePath
+renderHaapSpec :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> T.Text -> T.Text -> HaapSpec -> Haap t m FilePath
 renderHaapSpec path title notes spec = do
     test <- runSpec spec
     renderHaapTest path title notes test
 
-renderHaapSpecs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> String -> String -> [(String,HaapSpec)] -> Haap t m FilePath
+renderHaapSpecs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> T.Text -> T.Text -> [(T.Text,HaapSpec)] -> Haap t m FilePath
 renderHaapSpecs path title notes specs = do
     tests <- forM specs $ mapSndM (runSpec)
     renderHaapTests path title notes tests
 
-renderHaapTest :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> String -> HaapTestTableRes -> Haap t m FilePath
+renderHaapTest :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> T.Text -> T.Text -> HaapTestTableRes -> Haap t m FilePath
 renderHaapTest path title notes spec = do
     hp <- getHakyllP
     hakyllRules $ create [fromFilePath path] $ do
@@ -40,19 +41,22 @@ renderHaapTest path title notes spec = do
                                 HaapTestOk -> "hspec-success"
                                 HaapTestError _ -> "hspec-failure"
                                 HaapTestMessage _ -> "hspec-warning datatext"
-            let headerCtx = field "header" (return . itemBody)
-            let rowCtx =  field "result" (return . pretty . snd . itemBody)
+            let headerCtx :: Context T.Text
+                headerCtx = field "header" (return . T.unpack . itemBody)
+            let rowCtx :: Context ([T.Text], HaapTestRes)
+                rowCtx =  field "result" (return . prettyString . snd . itemBody)
                         `mappend` field "class" (return . classCtx)
-                        `mappend` listFieldWith "cols" (field "col" (return . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
-            let specCtx = constField "title" (title)
+                        `mappend` listFieldWith "cols" (field "col" (return . T.unpack . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
+            let specCtx :: Context String
+                specCtx = constField "title" (T.unpack title)
                          `mappend` listField "headers" headerCtx (mapM makeItem $ haapTestTableHeader spec)
                          `mappend` listField "rows" rowCtx (mapM makeItem $ haapTestTableRows spec)
                          `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp path)
-                         `mappend` constField "notes" notes                        
+                         `mappend` constField "notes" (T.unpack notes)                
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/spec.html" specCtx >>= hakyllCompile hp
     return (hakyllRoute hp path)
 
-renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  String -> String -> [(String,HaapTestTableRes)] -> Haap t m FilePath
+renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  T.Text -> T.Text -> [(T.Text,HaapTestTableRes)] -> Haap t m FilePath
 renderHaapTests path title notes specs = do
     hp <- getHakyllP
     hakyllRules $ create [fromFilePath path] $ do
@@ -62,17 +66,21 @@ renderHaapTests path title notes specs = do
                                 HaapTestOk -> "hspec-success"
                                 HaapTestError _ -> "hspec-failure"
                                 HaapTestMessage _ -> "hspec-warning datatext"
-            let headerCtx = field "header" (return . itemBody)
-            let rowCtx =  field "result" (return . pretty . snd . itemBody)
+            let headerCtx :: Context T.Text
+                headerCtx = field "header" (return . T.unpack . itemBody)
+            let rowCtx :: Context ([T.Text], HaapTestRes)
+                rowCtx =  field "result" (return . prettyString . snd . itemBody)
                         `mappend` field "class" (return . classCtx)
-                        `mappend` listFieldWith "cols" (field "col" (return . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
-            let specCtx = field "name" (return . fst . itemBody)
+                        `mappend` listFieldWith "cols" (field "col" (return . T.unpack . itemBody)) (\i -> mapM makeItem (fst $ itemBody i))
+            let specCtx :: Context (T.Text,HaapTestTableRes)
+                specCtx = field "name" (return . T.unpack . fst . itemBody)
                          `mappend` listFieldWith "headers" headerCtx (mapM makeItem . haapTestTableHeader . snd . itemBody)
                          `mappend` listFieldWith "rows" rowCtx (mapM makeItem . haapTestTableRows . snd . itemBody)
-            let pageCtx = constField "title" title
+            let pageCtx :: Context String
+                pageCtx = constField "title" (T.unpack title)
                         `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp path)
                         `mappend` listField "specs" specCtx (mapM makeItem specs)
-                        `mappend` constField "notes" notes                 
+                        `mappend` constField "notes" (T.unpack notes)                 
             makeItem "" >>= loadAndApplyHTMLTemplate "templates/specs.html" pageCtx >>= hakyllCompile hp
     return (hakyllRoute hp path)
 

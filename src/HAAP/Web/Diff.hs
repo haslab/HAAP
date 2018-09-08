@@ -24,7 +24,7 @@ import Data.Default
 import Data.List
 import Data.List.Split
 import Data.Maybe
-import qualified Data.Text as Text
+import qualified Data.Text as T
 import Data.Proxy
 
 import Control.Monad.Reader as Reader
@@ -32,8 +32,8 @@ import Control.Monad.Reader as Reader
 import System.FilePath
 
 data DiffArgs = DiffArgs
-    { diffTitle :: String
-    , diffFiles :: [(String,String,String)] -- (file name,source content, target content)
+    { diffTitle :: T.Text
+    , diffFiles :: [(T.Text,T.Text,T.Text)] -- (file name,source content, target content)
     , diffHtmlPath :: FilePath -- relative to the project path
     }
 
@@ -48,12 +48,12 @@ runDiff diff = do
             create [fromFilePath $ diffHtmlPath diff] $ do
                 route $  idRoute `composeRoutes` funRoute (hakyllRoute hp)
                 compile $ do
-                    let fileCtx = field "diffFile" (return . fst3 . itemBody)
-                               `mappend` field "diffSource" (return . snd3 . itemBody)
-                               `mappend` field "diffTarget" (return . thr3 . itemBody)
+                    let fileCtx = field "diffFile" (return . T.unpack . fst3 . itemBody)
+                               `mappend` field "diffSource" (return . T.unpack . snd3 . itemBody)
+                               `mappend` field "diffTarget" (return . T.unpack . thr3 . itemBody)
                     let homCtx = constField "projectpath" (fileToRoot $ hakyllRoute hp $ diffHtmlPath diff)
                                `mappend` listField "diffFiles" fileCtx (mapM makeItem $ diffFiles diff)
-                               `mappend` constField "pageTitle" (diffTitle diff)
+                               `mappend` constField "pageTitle" (T.unpack $ diffTitle diff)
                     makeItem "" >>= loadAndApplyHTMLTemplate "templates/diff.html" homCtx >>= hakyllCompile hp
         return (hakyllRoute hp $ diffHtmlPath diff)
       

@@ -45,7 +45,7 @@ import qualified System.IO.Strict as Strict
 
 import Data.Default
 import Data.Text (Text(..))
-import qualified Data.Text as Text
+import qualified Data.Text as T
 import Data.Foldable
 import Data.Typeable
 import Data.Proxy
@@ -55,6 +55,7 @@ import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 import Data.Maybe
 import Text.Read
+import qualified Data.Text.IO as T
 
 import System.IO
 
@@ -95,7 +96,7 @@ runShCoreIO args sh = case ioTimeout args of
     Just secs -> do
         mb <- timeoutIO (secs * 10^6) io
         case mb of
-            Nothing -> error $ pretty $ HaapTimeout callStack secs
+            Nothing -> error $ prettyString $ HaapTimeout callStack secs
             Just a -> return a
   where
     io = Sh.shelly $ silent $ Sh.escaping (ioEscaping args) sh
@@ -116,15 +117,15 @@ liftSh m = liftStack m
 liftShOp :: (HaapPurePluginT t Sh) => (Sh (StPluginT (Haap t) a) -> Sh (StPluginT (Haap t) c)) -> Haap t Sh a -> Haap t Sh c
 liftShOp f m = liftWithPluginT (\run -> f $ run m) >>= restorePluginT . return
 
-orErrorWritePage :: (HaapStack t m,Out a,MonadIO m) => FilePath -> a -> Haap t m a -> Haap t m a
+orErrorWritePage :: (HaapStack t m,Pretty a,MonadIO m) => FilePath -> a -> Haap t m a -> Haap t m a
 orErrorWritePage path def m = orDo go $ do
     x <- m
     ok <- orLogDefault False $ runBaseIO $ doesFileExist path
-    unless ok $ orLogDefault () $ runBaseSh $ shWriteFile' path $ pretty x
+    unless ok $ orLogDefault () $ runBaseSh $ shWriteFile' path $ prettyText x
     return x
   where
     go e = do
-        runBaseIO $ Strict.run $ Strict.writeFile path $ pretty e
+        runBaseIO $ T.writeFile path $ prettyText e
         return def
 
 shExec :: String -> Sh FilePath
@@ -143,13 +144,13 @@ shCommand_ = shCommandWith_ defaultIOArgs
 shCommandWith_ :: IOArgs -> String -> [String] -> Sh ()
 shCommandWith_ ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    Sh.run_ (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
+    Sh.run_ (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addTimeout (Just secs) cmds = ["timeout",prettyString secs++"s"]++cmds
 --    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
@@ -158,13 +159,13 @@ shCommandWith_ ioargs name args  = do
 shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
 shCommandToFileWith_ ioargs name args file = do
     forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
+    Sh.runHandle (shFromFilePath $ head cmds) (map T.pack $ tail cmds) handle
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addTimeout (Just secs) cmds = ["timeout",prettyString secs++"s"]++cmds
 --    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
@@ -182,16 +183,16 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
     shCommandWith' :: IOArgs -> String -> [String] -> Sh IOResult
     shCommandWith' ioargs name args = do
         forM_ (ioStdin ioargs) Sh.setStdin
-        forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+        forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
         let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-        stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map Text.pack $ tail cmds)
-        stderr <- if ioHidden ioargs then return (Text.pack "hidden") else Sh.lastStderr
+        stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
+        stderr <- if ioHidden ioargs then return (T.pack "hidden") else Sh.lastStderr
         exit <- Sh.lastExitCode
         return $ force $ IOResult exit stdout stderr
       where
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds
-        addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+        addTimeout (Just secs) cmds = ["timeout",prettyString secs++"s"]++cmds
         addSandbox NoSandbox cmds = cmds
         addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
         addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
@@ -206,14 +207,14 @@ shPipeBinaryWith ioargs name args = shCommandHandleWith ioargs name args handle
 shCommandHandleWith :: IOArgs -> String -> [String] -> (Handle -> Sh a) -> Sh a
 shCommandHandleWith ioargs name args handle = do
     forM_ (ioStdin ioargs) Sh.setStdin
-    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (Text.pack evar) (Text.pack epath)
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
-    a <- Sh.errExit False $ Sh.runHandle (shFromFilePath $ head cmds) (map Text.pack $ tail cmds) handle
+    a <- Sh.errExit False $ Sh.runHandle (shFromFilePath $ head cmds) (map T.pack $ tail cmds) handle
     return a
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
-    addTimeout (Just secs) cmds = ["timeout",pretty secs++"s"]++cmds
+    addTimeout (Just secs) cmds = ["timeout",prettyString secs++"s"]++cmds
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
@@ -224,50 +225,50 @@ shPipeWith io n args x = shPipeWithType io n args x Proxy
     shPipeWithType :: (Show a,Read b,Typeable b) => IOArgs -> String -> [String] -> a -> Proxy b -> Sh b
     shPipeWithType io n args x (_::Proxy b) = do
         let typeb = typeOf (error "shPipeWith"::b)
-        let io' = io { ioStdin = Just $ Text.pack $ show x }
+        let io' = io { ioStdin = Just $ T.pack $ show x }
         res <- orEitherSh $ shCommandWith io' n args
         case res of
-            Left err -> error $ "error...\n" ++ pretty err ++ "\n...on parsing result as type...\n" ++ show typeb
+            Left err -> error $ "error...\n" ++ prettyString err ++ "\n...on parsing result as type...\n" ++ show typeb
             Right res -> do
-                let out = (Text.unpack . resStdout) res
+                let out = (T.unpack . resStdout) res
                 case readMaybe out of
-                    Nothing -> error $ "failed to parse result...\n" ++ show out ++ "\n...as type...\n" ++ show typeb ++ "\n" ++ pretty res
+                    Nothing -> error $ "failed to parse result...\n" ++ show out ++ "\n...as type...\n" ++ show typeb ++ "\n" ++ prettyString res
                     Just y -> return y
 
 orEitherSh :: Sh a -> Sh (Either SomeException a)
 orEitherSh m = catchAnySh (liftM Right m) (\err -> return $ Left err)
 
-shWriteFile :: FilePath -> String -> Sh ()
+shWriteFile :: FilePath -> T.Text -> Sh ()
 shWriteFile path ct = do
     Sh.mkdir_p $ shFromFilePath $ takeDirectory path
-    Sh.writefile (shFromFilePath path) (Text.pack ct)
+    Sh.writefile (shFromFilePath path) ct
 
-shAppendFile :: FilePath -> String -> Sh ()
+shAppendFile :: FilePath -> T.Text -> Sh ()
 shAppendFile path ct = do
-    Sh.appendfile (shFromFilePath path) (Text.pack ct)
+    Sh.appendfile (shFromFilePath path) ct
 
-shReadFile :: FilePath -> Sh String
+shReadFile :: FilePath -> Sh T.Text
 shReadFile path = do
     ct <- Sh.readfile (shFromFilePath path)
-    return (Text.unpack ct)
-
-shReadFile' :: FilePath -> Sh String
-shReadFile' path = do
-    path' <- Sh.absPath (shFromFilePath path)
-    ct <- liftIO $ Strict.run $ Strict.readFile (shToFilePath path')
     return ct
 
-shWriteFile' :: FilePath -> String -> Sh ()
+shReadFile' :: FilePath -> Sh T.Text
+shReadFile' path = do
+    path' <- Sh.absPath (shFromFilePath path)
+    ct <- liftIO $ T.readFile (shToFilePath path')
+    return ct
+
+shWriteFile' :: FilePath -> T.Text -> Sh ()
 shWriteFile' path ct = do
     Sh.mkdir_p $ shFromFilePath $ takeDirectory path
     path' <- Sh.absPath (shFromFilePath path)
-    liftIO $ Strict.run $ Strict.writeFile (shToFilePath path') ct
+    liftIO $ T.writeFile (shToFilePath path') ct
 
 shFromFilePath :: FilePath -> Sh.FilePath
-shFromFilePath = Sh.fromText . Text.pack
+shFromFilePath = Sh.fromText . T.pack
 
 shToFilePath :: Sh.FilePath -> FilePath
-shToFilePath = Text.unpack . Sh.toTextIgnore
+shToFilePath = T.unpack . Sh.toTextIgnore
 
 shCd :: FilePath -> Sh ()
 shCd = Sh.cd . shFromFilePath

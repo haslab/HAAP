@@ -13,7 +13,9 @@ import HAAP.Core
 import HAAP.IO
 import HAAP.Code.Haskell
 import HAAP.Log
+import HAAP.Pretty
 
+import qualified Data.Text as T
 import Data.List as List
 import Data.Generics hiding (Generic)
 import Data.Traversable
@@ -51,7 +53,7 @@ instance Default Modularity where
 runModularity :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Modularity
 runModularity files = do
     modus <- liftM catMaybes $ forM files $ \file -> orLogMaybe $ do
-        logEvent $ "parsing modularity for " ++ file
+        logEvent $ "parsing modularity for " <> prettyText file
         parseHaskellFile file
     let sizes = sort $ concat $ List.map (maxSize) modus
     let sizesf = drop (length sizes - 5) sizes

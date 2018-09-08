@@ -5,7 +5,7 @@ This module provides the @Gloss@ plugin for the animation of _gloss_ (<https://h
 
 -}
 
-{-# LANGUAGE FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, UndecidableInstances, EmptyDataDecls, CPP, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, UndecidableInstances, EmptyDataDecls, CPP, TupleSections #-}
 
 module HAAP.Graphics.Gloss.Capture where
 

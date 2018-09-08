@@ -160,34 +160,34 @@ matchDataCSSs = do
         route idRoute
         compile compressCssCompiler
 
-orErrorHakyllPage :: (HasPlugin Hakyll t m,Out a) => FilePath -> a -> Haap t m a -> Haap t m a
+orErrorHakyllPage :: (HasPlugin Hakyll t m,Pretty a) => FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPage page def m = orDo go m
   where
     go e = do
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (pretty e::String) >>= hakyllCompile hp
+            compile $ makeItem (prettyString e) >>= hakyllCompile hp
         return def
 
-orErrorHakyllPage' :: (MonadIO m,HaapStack t m,Out a) => HakyllArgs -> FilePath -> a -> Haap t m a -> Haap t m a
+orErrorHakyllPage' :: (MonadIO m,HaapStack t m,Pretty a) => HakyllArgs -> FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPage' hakyllargs page def m = orDo go m
   where
     go e = useHakyll hakyllargs $ do
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (pretty e::String) >>= hakyllCompile hp
+            compile $ makeItem (prettyString e) >>= hakyllCompile hp
         return def
 
-orErrorHakyllPageWith :: (MonadIO m,HaapStack t m,Out a) => (forall a . Haap (HakyllT :..: t) m a -> Haap t m a) -> FilePath -> a -> Haap t m a -> Haap t m a
+orErrorHakyllPageWith :: (MonadIO m,HaapStack t m,Pretty a) => (forall a . Haap (HakyllT :..: t) m a -> Haap t m a) -> FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPageWith runHakyll page def m = orDo go m
   where
     go e = runHakyll $ do
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (pretty e::String) >>= hakyllCompile hp
+            compile $ makeItem (prettyString e) >>= hakyllCompile hp
         return def
 
 getHakyllP :: (HasPlugin Hakyll t m) => Haap t m HakyllP

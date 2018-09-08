@@ -16,10 +16,11 @@ import HAAP.Web.Hakyll
 import HAAP.Utils
 import HAAP.Plugin
 import HAAP.Shelly
+import HAAP.Pretty
 
 import Data.Default
 import Data.List
-import qualified Data.Text as Text
+import qualified Data.Text as T
 import Data.Proxy
 
 import Control.Monad.Reader as Reader
@@ -65,14 +66,14 @@ runBrittany = do
     let extras = brittanyArgs h
     let files = brittanyFiles h
     difffiles <- forM files $ \infile -> do
-        instr <- orDo' (return . show) $ runBaseSh $ do
+        instr <- orDo' (return . prettyText) $ runBaseSh $ do
             shCd $ brittanyPath h
             shReadFile infile
         outres <- orIOResult $ runBaseSh $ do
             shCd $ brittanyPath h
             shCommandWith ioArgs "brittany" [infile]
-        let outstr = Text.unpack $ resStdout outres `Text.append` resStderr outres
-        return (infile,instr,outstr)
+        let outstr = resStdout outres <> resStderr outres
+        return (T.pack infile,instr,outstr)
     
     let title = "Brittany Code Formatter Tool"
     runDiff (DiffArgs title difffiles (brittanyHtmlPath h))

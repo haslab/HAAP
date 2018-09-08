@@ -31,6 +31,7 @@ import Data.Traversable
 import Data.Foldable
 import Data.SafeCopy
 import Data.Proxy
+import qualified Data.Text as T
 
 import Control.Monad
 import Control.DeepSeq
@@ -44,9 +45,8 @@ import System.FilePath
 newtype ScoredTourneyPlayer a r = ScoredTourneyPlayer (a,r)
   deriving (Eq,Ord,Show)
 
-instance Out a => Out (ScoredTourneyPlayer a r) where
-    docPrec i x = doc x
-    doc (ScoredTourneyPlayer x) = doc $ fst x
+instance Pretty a => Pretty (ScoredTourneyPlayer a r) where
+    pretty (ScoredTourneyPlayer x) = pretty $ fst x
 
 renderHaapTourney :: (PluginK db t m,MonadIO m,HasPlugin Rank t m,HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,NFData a,HaapDB db,TourneyPlayer a) => HaapTourney t m db a r -> Haap t m FilePath
 renderHaapTourney tourney = do
@@ -61,8 +61,8 @@ renderHaapTourneyDB t db = do
     hp <- getHakyllP
     --runIO $ putStrLn $ "render " ++ show (toRoot $ tourneysPath)
     let tourneysPath = tourneyPath t </> addExtension "tourneys" "html"
-        makeTourneyPath tourneyno = hakyllRoute hp $ addExtension ("tourney" ++ pretty tourneyno) "html"
-        makeHeader i = pretty $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
+        makeTourneyPath tourneyno = hakyllRoute hp $ addExtension ("tourney" ++ prettyString tourneyno) "html"
+        makeHeader i = prettyText $ H.a ! A.href (fromString $ makeTourneyPath i) $ H.preEscapedToMarkup i
         headers = map (makeHeader) (map fst db)
         rank = HaapRank
                     tourneysPath
@@ -91,26 +91,26 @@ renderHaapTourneyDB t db = do
 renderHaapTourneyTree :: (HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,TourneyPlayer a) => HaapTourney t m db a r -> Int -> TourneyTree a r -> ZonedTime -> Haap t m FilePath
 renderHaapTourneyTree (t::HaapTourney t m db a r) no tree time = do
     hp <- getHakyllP
-    let tPath =  tourneyPath t </> addExtension ("tourney" ++ pretty no) "html"
+    let tPath =  tourneyPath t </> addExtension ("tourney" ++ prettyString no) "html"
     size <- case tourneyPlayers t of
         Left ps -> getTourneySize (Proxy::Proxy db) ps
         Right ps -> return $ length $ concat ps
-    let title = "Tourney " ++ pretty no ++ " " ++ show time
-    let header = H.h1 $ fromString title
+    let title = "Tourney " <> prettyText no <> " " <> prettyText time
+    let header = H.h1 $ H.preEscapedToMarkup title
     let csspath = fileToRoot tPath </> "css"
     
     hakyllRules $ create [fromFilePath tPath] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         tree' <- mapM (mapM (mapSndM (mapM (renderMatch t)))) tree
         compile $ do
-            makeItem (pretty $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
+            makeItem (prettyString $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
     return $ hakyllRoute hp tPath
 
-tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a Link -> Int -> String -> Html -> Html
+tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a Link -> Int -> T.Text -> Html -> Html
 tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do
     H.head $ do
         H.meta ! A.charset "UTF-8"
-        H.title $ fromString title
+        H.title $ H.preEscapedToMarkup title
         H.link ! A.rel "stylesheet" ! A.href (fromString $ pathtocss </> "tourney.css")
     H.body $ do
         let bigsmall = if tsize >= 64 then "big" else "small"
@@ -203,8 +203,7 @@ instance Score MaybeFloatRank where
         appendScores' [] = MaybeFloatRank $ Nothing
         appendScores' xs = MaybeFloatRank $ Just $ unFloatScore $ appendScores $ map FloatScore xs
 
-instance Out MaybeFloatRank where
-    docPrec i x = doc x
-    doc (MaybeFloatRank Nothing) = text "-"
-    doc (MaybeFloatRank (Just x)) = doc x
+instance Pretty MaybeFloatRank where
+    pretty (MaybeFloatRank Nothing) = text "-"
+    pretty (MaybeFloatRank (Just x)) = pretty x
 

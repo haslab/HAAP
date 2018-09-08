@@ -51,10 +51,11 @@ data GHCJSArgs = GHCJSArgs
     { ghcjsSafe :: Bool -- compile with the -XSafe extension
     , ghcjsArgs :: [String] -- additional flags
     , ghcjsIO :: IOArgs
+    , ghcjsMake :: Bool -- --make flag
     }
 
 instance Default GHCJSArgs where
-    def = GHCJSArgs True [] def
+    def = GHCJSArgs True [] def False
 
 instance HaapMonad m => HasPlugin GHCJS (ReaderT GHCJSArgs) m where
     liftPlugin = id
@@ -70,11 +71,12 @@ shGhcjs ins = do
     liftSh $ shGhcjsWith args ins
 
 shGhcjsWith :: GHCJSArgs -> [FilePath] -> Sh IOResult
-shGhcjsWith ghc ins = shCommandWith (ghcjsIO ghc) "ghcjs" $ addArgs (ghcjsArgs ghc) $ addSafe (ghcjsSafe ghc) ins
+shGhcjsWith ghc ins = shCommandWith (ghcjsIO ghc) "ghcjs" $ addArgs (ghcjsArgs ghc) $ addSafe (ghcjsSafe ghc) $ addMake $ ins
     where
     addSafe True cmds = "-XSafe" : cmds
     addSafe False cmds = cmds
     addArgs xs ys = ys ++ xs
+    addMake cmds = if ghcjsMake ghc then "--make":cmds else cmds
 
 useIoGhcjs :: (HaapStack t m,MonadIO m) => GHCJSArgs -> [FilePath] -> Haap t m IOResult
 useIoGhcjs args ins = usePlugin_ (return args) (ioGhcjs ins)
@@ -109,13 +111,13 @@ runGhcjs hsFile hmtlPath = do
         
         res <- orIOResult $ runBaseShWith (io) $ do
                 let (dir,exec) = splitFileName hsFile
-                let ghcjs' = ghcjs { ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
+                let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)
                 shCd dir
                 shGhcjsWith ghcjs' [exec]
         
         if resOk res
-            then addMessageToError (pretty res) $ do
+            then addMessageToError (prettyText res) $ do
                 hakyllRules $ do 
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
@@ -129,4 +131,4 @@ runGhcjs hsFile hmtlPath = do
                         compile copyFileCompiler
                     
                 return (hakyllRoute hp $ destfolder </> "all.js")
-            else throw $ HaapException $ pretty res
+            else throw $ HaapException $ prettyText res
