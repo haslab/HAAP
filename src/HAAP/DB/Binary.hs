@@ -19,7 +19,11 @@ import Data.Binary
 import Data.Proxy
 
 import Control.Monad
+import Control.Monad.Base
 import Control.Monad.Trans
+import Control.Monad.Morph
+import Control.Monad.Trans.Compose
+import Control.Monad.Catch
 import Control.Monad.Reader (MonadReader(..))
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.State (MonadState(..),StateT(..))
@@ -74,10 +78,10 @@ instance Binary st => HaapDB (BinaryDB st) where
         liftPluginProxy (Proxy::Proxy (BinaryDB st)) $ State.put $ BinaryDB st'
         return x
 
-instance HaapMonad m => HasPlugin (BinaryDB st) (StateT (BinaryDB st)) m where
+instance (MonadCatch m) => HasPlugin (BinaryDB st) (StateT (BinaryDB st)) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (StateT (BinaryDB st)) m (t2 m)) => HasPlugin (BinaryDB st) (ComposeT (StateT (BinaryDB st)) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin (BinaryDB st) (ComposeT (StateT (BinaryDB st)) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 
 

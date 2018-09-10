@@ -15,7 +15,9 @@ module HAAP.Core where
 
 import HAAP.Utils
 
+import Control.Monad.Morph
 import Control.Monad
+import Control.Monad.Base
 import Control.Monad.Trans.Compose
 import Control.Monad.Trans
 import Control.Monad.Trans.Identity
@@ -29,13 +31,9 @@ import Control.Monad.State (MonadState(..),StateT(..))
 import qualified Control.Monad.State as State
 import Control.Monad.RWS (RWST(..))
 import qualified Control.Monad.RWS as RWS
---import Control.Monad.Except (MonadError(..),ExceptT(..))
---import qualified Control.Monad.Except as Except
---import Control.Monad.Catch
 import Control.Monad.Signatures
 import Control.DeepSeq
 import Control.Exception.Safe
---import qualified Control.Monad.Except as E
 import qualified Control.Monad.Catch as C
 
 import qualified Data.Text as T
@@ -83,12 +81,6 @@ instance NFData Group
 
 data HaapFileType
     = HaapFileType { isStudent :: Bool, isTemplate :: Bool, isInstructor :: Bool }
-    
-    -- = HaapTemplateFile -- student files with a given template
-    -- -- | HaapBinaryFile -- student files without a given template
-    -- | HaapLibraryFile  -- common libraries for both students and instructors
-    -- | HaapOracleFile -- instructor code that students can't see and is not copied into the student's directory
-    -- | HaapOracleTemplateFile -- instructor code that students can't see with a given template aand is copied into the student's directory
   deriving (Data,Typeable,Eq,Show,Ord)
 
 data HaapFile = HaapFile
@@ -111,69 +103,20 @@ $(deriveSafeCopy 0 'base ''Task)
 $(deriveSafeCopy 0 'base ''Project)
 
 runHaap :: Project -> Haap IdentityT IO a -> IO (a,HaapLog)
-runHaap p (Haap m) = do
+runHaap p (Haap (ComposeT m)) = do
     createDirectoryIfMissing True $ projectTmpPath p
     (a,(),w') <- runIdentityT $ RWS.runRWST m (p) ()
 --  printLog w'
     return (a,w')
 
-newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: RWST Project HaapLog () (t m) x }
-  deriving (Applicative,Functor,Monad,MonadWriter HaapLog,MonadCatch,MonadThrow)
+newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: (ComposeT (RWST Project HaapLog ()) t) m x }
+  deriving (Applicative,Functor,Monad,MonadWriter HaapLog)
 
---instance (MonadTrans t) => MonadTrans (Haap t) where
---    lift = Haap . lift . lift . lift
-
---instance MonadTrans t => MonadTransControl (Haap t) where
-
---mapHaapDB :: HaapMonad m => Haap p args st1 m st2 -> (st2 -> Haap p args st1 m ()) -> Haap p args st2 m a -> Haap p args st1 m a
---mapHaapDB get put (Haap m) = Haap $ do
---    (p,r) <- Reader.ask
---    st2 <- unHaap $ get
---    (x,st2',w') <- lift $ RWS.runRWST m (p,r) st2
---    unHaap $ put st2'
---    Writer.tell w'
---    return x
-
---instance MFunctor (Haap t) where
---    hoist f (Haap m) = Haap $ RWS.mapRWST (Except.mapExceptT f) m
+deriving instance (Monad (t m),MonadCatch (ComposeT (RWST Project HaapLog ()) t m)) => MonadCatch (Haap t m)
+deriving instance (Monad (t m),MonadThrow (ComposeT (RWST Project HaapLog ()) t m)) => MonadThrow (Haap t m)
 
 mapHaapMonad :: (t1 m (a,(),HaapLog) -> t2 n (b,(),HaapLog)) -> Haap t1 m a -> Haap t2 n b
-mapHaapMonad f (Haap m) = Haap $ RWS.mapRWST f m
---    where
---    g m3 = do
---        (e,st) <- runStateT m3
---        
---        
---        (Either HaapException (b,HaapLog),st)
---        
---        (Either HaapException ((b,st),HaapLog),st)
-
---mapHaapMonad' :: Haap m a -> Haap n b
---mapHaapMonad' m = liftWith () m
-
---liftWith :: Monad m => (Run t -> m a) -> t m a
---type Run t = forall n b. Monad n => t n b -> n (StT t b)
-
---liftBaseWith :: (RunInBase m b -> b a) -> m a
---type RunInBase m b = forall a. m a -> b (StM m a)
-
---mapRWST :: (m (a, s, w) -> n (b, s, w')) -> RWST r w s m a -> RWST r w' s n b
---mapExceptT :: (m (Either e a) -> n (Either e' b)) -> ExceptT e m a -> ExceptT e' n b
-
---instance HaapStack t m => MonadThrow (Haap t m) where
---    throwM e = Haap $ throw e
---    
---instance HaapStack t m => MonadCatch (Haap t m) where
---    catch (Haap m) f = Haap $ do
---        (p) <- Reader.ask
---        s <- State.get
---        e <- lift $ lift $ E.runExceptT $ RWS.runRWST m (p) s
---        case e of
---            Left err -> unHaap $ f $ SomeException err
---            Right (x,s',w') -> do
---                State.put s'
---                Writer.tell w'
---                return x
+mapHaapMonad f (Haap (ComposeT m)) = Haap $ ComposeT $ RWS.mapRWST f m
 
 data HaapException = HaapException T.Text
                    | HaapTimeout CallStack Int
@@ -211,21 +154,21 @@ getProjectTaskFiles :: HaapStack t m => Haap t m [HaapFile]
 getProjectTaskFiles = liftM (concatMap taskFiles) getProjectTasks
 
 type HaapMonad m = (Monad m,MonadCatch m,MonadThrow m)
-
--- | @MonadTrans@ equivalent
-class (HaapMonad m,HaapMonad (t m)) => HaapStack t m where
-    liftStack :: m a -> t m a
-
-instance (HaapMonad m,HaapStack t m) => HaapStack (Haap t) m where
-    liftStack = liftHaap . liftStack
-
-instance {-# OVERLAPPABLE #-} (MonadTrans t,HaapMonad m,HaapMonad (t m)) => HaapStack t m where
-    liftStack = lift
+type HaapStack t m = (HaapMonad m,HaapMonad (t m),MonadTrans t,MFunctor' t m)
 
 liftHaap :: Monad (t m) => t m a -> Haap t m a
-liftHaap m = Haap $ lift m
+liftHaap m = Haap $ ComposeT $ lift m
 
+deriving instance MonadCatch (t1 (t2 m)) => MonadCatch (ComposeT t1 t2 m)
+deriving instance MonadThrow (t1 (t2 m)) => MonadThrow (ComposeT t1 t2 m)
 
+instance MonadTrans t => MonadTrans (Haap t) where
+    lift = Haap . lift
+    
+deriving instance (MonadTrans t,MonadTransControl (ComposeT (RWST Project HaapLog ()) t)) => MonadTransControl (Haap t)
 
+class Monad m => MFunctor' t m where
+    hoist' :: (forall a . m a -> n a) -> t m b -> t n b
 
-
+instance {-# OVERLAPPABLE #-} (Monad m,MFunctor t) => MFunctor' t m where
+    hoist' = hoist

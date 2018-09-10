@@ -50,13 +50,13 @@ instance HaapPlugin Rank where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 instance HaapMonad m => HasPlugin Rank (ReaderT RankArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT RankArgs) m (t2 m)) => HasPlugin Rank (ComposeT (ReaderT RankArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Rank (ComposeT (ReaderT RankArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 class (Eq score,Ord score,Pretty score) => Score score where
     okScore :: score -> Bool

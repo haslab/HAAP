@@ -5,7 +5,7 @@ This module provides the @Debugger@ plugin that invokes external debugging tools
 
 -}
 
-{-# LANGUAGE EmptyDataDecls, ScopedTypeVariables, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE EmptyDataDecls, TypeOperators, ScopedTypeVariables, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
 
 module HAAP.Code.Debugger where
 
@@ -42,13 +42,13 @@ instance HaapPlugin Debugger where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 instance HaapMonad m => HasPlugin Debugger (ReaderT DebuggerArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT DebuggerArgs) m (t2 m)) => HasPlugin Debugger (ComposeT (ReaderT DebuggerArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Debugger (ComposeT (ReaderT DebuggerArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 data DebuggerArgs = DebuggerArgs
     { debuggerSandbox :: Sandbox

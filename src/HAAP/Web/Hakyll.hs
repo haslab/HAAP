@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides the @Hakyll@ plugin (<https://hackage.haskell.org/package/hakyll>) for static web-page generation.
 -}
 
-{-# LANGUAGE TypeOperators, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, OverloadedStrings, ScopedTypeVariables, GeneralizedNewtypeDeriving, MultiParamTypeClasses, Rank2Types #-}
+{-# LANGUAGE StandaloneDeriving, TypeOperators, UndecidableInstances, FlexibleContexts, EmptyDataDecls, FlexibleInstances, TypeFamilies, OverloadedStrings, ScopedTypeVariables, GeneralizedNewtypeDeriving, MultiParamTypeClasses, Rank2Types #-}
 
 module HAAP.Web.Hakyll
     ( module HAAP.Web.Hakyll
@@ -25,7 +25,9 @@ import System.Exit
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Base
 import Control.Monad.Morph
+import Control.Monad.Trans.Compose
 import Control.Monad.Identity
 --import Control.Exception
 import Control.Monad.IO.Class
@@ -41,6 +43,7 @@ import Control.Monad.Reader (MonadReader(..))
 --import Control.Monad.Catch (MonadCatch,MonadThrow)
 import Control.Monad.Trans
 import Control.Exception.Safe
+import Control.Monad.Trans.Control
 
 import Data.Functor.Contravariant
 import Data.Default
@@ -59,6 +62,7 @@ data HakyllArgs = HakyllArgs
     { hakyllCfg :: Configuration
     , hakyllClean :: Bool
     , hakyllCopy :: Bool
+    , hakyllMatch :: Bool
     , hakyllP :: HakyllP
     }
 
@@ -66,7 +70,7 @@ instance Default HakyllArgs where
     def = defaultHakyllArgs
 
 defaultHakyllArgs :: HakyllArgs
-defaultHakyllArgs = HakyllArgs def True True def
+defaultHakyllArgs = HakyllArgs def True True True def
 
 instance HaapPlugin Hakyll where
     type PluginI Hakyll = HakyllArgs
@@ -90,21 +94,18 @@ instance Monoid (Rules ()) where
     mappend x y = x >> y
 
 newtype HakyllT m a = HakyllT { unHakyllT :: RWST HakyllArgs (Rules ()) HakyllP m a }
-  deriving (Functor,Applicative,Monad,MFunctor,MonadTrans,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules ()))
-
-instance HaapMonad m => HaapStack HakyllT m where
-    liftStack = lift
+  deriving (Functor,Applicative,Monad,MonadTrans,MFunctor,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules ()))
 
 instance HaapMonad m => HasPlugin Hakyll HakyllT m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT HakyllT m (t2 m)) => HasPlugin Hakyll (ComposeT HakyllT t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Hakyll (ComposeT HakyllT t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 morphHakyllT :: (forall b . m b -> n b) -> HakyllT m a -> HakyllT n a
 morphHakyllT f (HakyllT m) = HakyllT $ RWS.mapRWST f m
 
 hakyllRules :: HasPlugin Hakyll t m => Rules () -> Haap t m ()
-hakyllRules r = liftHaap $ liftPluginProxy (Proxy::Proxy Hakyll) $ Writer.tell r
+hakyllRules r = liftPluginProxy (Proxy::Proxy Hakyll) $ Writer.tell r
 
 runHaapHakyllT :: (HaapStack t m,MonadIO m) => PluginI Hakyll -> Haap (HakyllT :..: t) m a -> Haap t m a
 runHaapHakyllT args m = do
@@ -113,12 +114,11 @@ runHaapHakyllT args m = do
             (e,hp,rules) <- RWS.runRWST m (args) (hakyllP args)
             let datarules = do
                 matchDataTemplates
-                matchDataCSSs
-                matchDataJSs
+                when (hakyllMatch args) $ matchDataCSSs >> matchDataJSs
                 rules
-            let build = liftStack $ liftIO $ withArgs ["build"] $ hakyllWithExitCode (hakyllCfg args) datarules
-            let clean = liftStack $ liftIO $ withArgs ["clean"] $ hakyllWithExitCode (hakyllCfg args) datarules
-            if (hakyllClean args)
+            let build = withArgs ["build"] $ hakyllWithExitCode (hakyllCfg args) datarules
+            let clean = withArgs ["clean"] $ hakyllWithExitCode (hakyllCfg args) datarules
+            lift $ liftIO $ hakyllIO hp $ if (hakyllClean args)
                 then clean >> build
                 else build
             --    else catch
@@ -145,13 +145,13 @@ matchDataJSs = do
 matchDataTemplates :: Rules ()
 matchDataTemplates = do
     match (fromGlob ("templates" </> "*.html")) $ do
-        route idRoute
+        --route idRoute
         compile templateBodyCompiler
     match (fromGlob ("templates" </> "*.php")) $ do
-        route idRoute
+        --route idRoute
         compile templateBodyCompiler
     match (fromGlob ("templates" </> "*.markdown")) $ do
-        route $ setExtension "html"
+        --route $ setExtension "html"
         compile $ pandocCompiler
 
 matchDataCSSs :: Rules ()
@@ -234,20 +234,24 @@ dataRoute datapath = customRoute (\iden -> makeRelative datapath $ toFilePath id
 
 -- * Hakyll pre-processor
 
-data HakyllP = HakyllP { hakyllRoute :: FilePath -> FilePath, hakyllCompile :: Item String -> Compiler (Item String) }
+data HakyllP = HakyllP
+    { hakyllRoute :: FilePath -> FilePath -- additional routing
+    , hakyllCompile :: Item String -> Compiler (Item String) -- additional compilation pipepile
+    , hakyllIO :: forall a . IO a -> IO a -- handling of the hakyll run process
+    }
 
 instance Semigroup HakyllP where
     (<>) = mappend
 
 instance Monoid HakyllP where
     mempty = defaultHakyllP
-    mappend x y = HakyllP (hakyllRoute y . hakyllRoute x) (hakyllCompile x >=> hakyllCompile y)
+    mappend x y = HakyllP (hakyllRoute y . hakyllRoute x) (hakyllCompile x >=> hakyllCompile y) (hakyllIO x . hakyllIO y)
 
 instance Default HakyllP where
     def = defaultHakyllP
     
 defaultHakyllP :: HakyllP
-defaultHakyllP = HakyllP id return
+defaultHakyllP = HakyllP id return id
 
 readHakyllP :: HasPlugin Hakyll t m => Haap t m HakyllP
 readHakyllP = liftHaap $ liftPluginProxy (Proxy::Proxy Hakyll) $ State.get
@@ -263,9 +267,16 @@ withHakyllP newhp m = do
     writeHakyllP oldhp
     return x
 
+instance MonadBase b m => MonadBase b (HakyllT m) where
+    liftBase = liftBaseDefault
 
+deriving instance MonadBaseControl b m => MonadBaseControl b (HakyllT m)
+deriving instance MonadTransControl HakyllT
 
-
-
+instance (Monad m,MonadTransControl HakyllT) => MonadTransRestore' HakyllT m where
+    type StT' HakyllT a = StT HakyllT a
+    restoreT' = restoreT
+instance (Monad m,Monad n,MonadTransControl HakyllT) => MonadTransControl' HakyllT m n where
+    liftWith' = liftWith
 
 

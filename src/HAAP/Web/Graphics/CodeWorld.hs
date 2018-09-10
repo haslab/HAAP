@@ -5,7 +5,7 @@ This module provides the @CodeWorld@ plugin to compile _CodeWorld_ animations (<
 -}
 
 
-{-# LANGUAGE UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, EmptyDataDecls, OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances, TypeOperators, FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, EmptyDataDecls, OverloadedStrings #-}
 
 module HAAP.Web.Graphics.CodeWorld where
 
@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Monad.Reader as Reader
 --import Control.Monad.Except
 import Control.Exception.Safe
+import Control.Monad.Morph
 
 import Data.Foldable
 import Data.Either
@@ -50,7 +51,7 @@ instance HaapPlugin CodeWorld where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 data CWTemplate
@@ -163,8 +164,8 @@ runCodeWorld = do
 
 instance HaapMonad m => HasPlugin CodeWorld (ReaderT CodeWorldArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT CodeWorldArgs) m (t2 m)) => HasPlugin CodeWorld (ComposeT (ReaderT CodeWorldArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin CodeWorld (ComposeT (ReaderT CodeWorldArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 --loadCodeWorldImages :: (MonadIO m,HaapStack t m) => [(String,FilePath)] -> Haap t m [(String,FilePath),(Int,Int)]
 --loadCodeWorldImages xs = forM xs $ \(n,fp) -> do

@@ -24,8 +24,12 @@ import Data.Proxy
 import Data.String
 
 import Control.Monad.Reader as Reader
---import Control.Monad.Except
 import Control.Exception.Safe
+import Control.Monad.Base
+import qualified Control.Monad.Catch as E
+import Control.Monad.Trans.Control
+import Control.Monad.Trans.Compose
+import Control.Monad.Morph
 
 import Shelly (Sh(..))
 import qualified Shelly as Sh
@@ -44,7 +48,7 @@ instance HaapPlugin GHCJS where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
     
 data GHCJSArgs = GHCJSArgs
@@ -57,17 +61,17 @@ data GHCJSArgs = GHCJSArgs
 instance Default GHCJSArgs where
     def = GHCJSArgs True [] def False
 
-instance HaapMonad m => HasPlugin GHCJS (ReaderT GHCJSArgs) m where
+instance (E.MonadCatch m) => HasPlugin GHCJS (ReaderT GHCJSArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT GHCJSArgs) m (t2 m)) => HasPlugin GHCJS (ComposeT (ReaderT GHCJSArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin GHCJS (ComposeT (ReaderT GHCJSArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
-useShGhcjs :: HaapStack t Sh => GHCJSArgs -> [FilePath] -> Haap t Sh IOResult
+useShGhcjs :: (HaapStack t Sh) => GHCJSArgs -> [FilePath] -> Haap t Sh IOResult
 useShGhcjs args ins = usePlugin_ (return args) (shGhcjs ins)
 
 shGhcjs :: (HasPlugin GHCJS t Sh) => [FilePath] -> Haap t Sh IOResult
 shGhcjs ins = do
-    args <- liftHaap $ liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
+    args <- liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
     liftSh $ shGhcjsWith args ins
 
 shGhcjsWith :: GHCJSArgs -> [FilePath] -> Sh IOResult
@@ -83,8 +87,8 @@ useIoGhcjs args ins = usePlugin_ (return args) (ioGhcjs ins)
 
 ioGhcjs :: (MonadIO m,HasPlugin GHCJS t m) => [FilePath] -> Haap t m IOResult
 ioGhcjs ins = do
-    args <- liftHaap $ liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
-    liftStack $ liftIO $ ioGhcjsWith args ins
+    args <- liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
+    lift $ liftIO $ ioGhcjsWith args ins
 
 
 ioGhcjsWith :: GHCJSArgs -> [FilePath] -> IO IOResult
@@ -98,7 +102,7 @@ ioGhcjsWith ghc ins = do
 runGhcjs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin GHCJS t m) => FilePath -> FilePath -> Haap t m FilePath
 runGhcjs hsFile hmtlPath = do
     hp <- getHakyllP
-    ghcjs <- liftHaap $ liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
+    ghcjs <- liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
     do
         tmp <- getProjectTmpPath
         -- compile files with ghcjs

@@ -21,7 +21,10 @@ import Shelly (Sh(..))
 import qualified Shelly as Sh
 
 import Control.Monad.Reader as Reader
---import Control.Monad.Catch
+import Control.Monad.Base
+import Control.Monad.Trans.Control
+import Control.Monad.Trans.Compose
+import Control.Monad.Morph
 
 import Data.Proxy
 
@@ -47,20 +50,20 @@ instance HaapPlugin GHC where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
-instance HaapMonad m => HasPlugin GHC (ReaderT GHCArgs) m where
+instance (HaapMonad m) => HasPlugin GHC (ReaderT GHCArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT GHCArgs) m (t2 m)) => HasPlugin GHC (ComposeT (ReaderT GHCArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin GHC (ComposeT (ReaderT GHCArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 useShGhc :: (HaapStack t Sh) => GHCArgs -> [FilePath] -> Haap t Sh IOResult
-useShGhc args ins = usePlugin_ (return args) (shGhc ins)
+useShGhc args ins = usePlugin_ (return args) (shGhc ins)    
 
 shGhc :: (HasPlugin GHC t Sh) => [FilePath] -> Haap t Sh IOResult
 shGhc ins = do
-    args <- liftHaap $ liftPluginProxy (Proxy::Proxy GHC) Reader.ask
+    args <- liftPluginProxy (Proxy::Proxy GHC) Reader.ask
     liftSh $ shGhcWith args ins
 
 shGhcWith :: GHCArgs -> [FilePath] -> Sh IOResult

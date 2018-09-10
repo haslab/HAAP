@@ -35,6 +35,7 @@ import Shelly (Sh)
 import Control.Monad.Reader as Reader
 --import Control.Monad.Except
 import Control.Exception.Safe
+import Control.Monad.Trans.Compose
 
 import Text.Read hiding (lift)
 
@@ -137,13 +138,13 @@ defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing True
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
     
-instance HaapMonad m => HaapStack (ReaderT SVNSourceArgs) m where
-    liftStack = lift
+--instance HaapMonad m => HaapStack (ReaderT SVNSourceArgs) m where
+--    liftStack = lift
 
-instance (MonadIO m,HaapMonad m) => HasPlugin SVN (ReaderT SVNSourceArgs) m where
+instance (HaapMonad m) => HasPlugin SVN (ReaderT SVNSourceArgs) m where
     liftPlugin = id
-instance (MonadIO m,HaapStack t2 m,HaapPluginT (ReaderT SVNSourceArgs) m (t2 m)) => HasPlugin SVN (ComposeT (ReaderT SVNSourceArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin SVN (ComposeT (ReaderT SVNSourceArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
     
 svnIOArgs :: SVNSourceArgs -> IOArgs
 svnIOArgs args = (if svnHidden args then hiddenIOArgs else defaultIOArgs) { ioTimeout = Nothing }
@@ -201,7 +202,7 @@ getSVNSourceInfo s = do
     --logEvent "svn parseLogRev"
     (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
 --    logEvent $ "svn parseSVNDateCurrent " ++ show datestr
-    date <- liftHaap $ liftStack $ parseSVNDateCurrent datestr
+    date <- liftHaap $ lift $ parseSVNDateCurrent datestr
 --    logEvent "svn svnsourceinfo"
     return $ SVNSourceInfo rev author date
   where

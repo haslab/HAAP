@@ -18,15 +18,18 @@ import HAAP.IO
 import HAAP.Plugin
 
 import Control.Monad
+import Control.Monad.Base
 import Control.Monad.Identity
 import Control.Monad.Morph
 import Control.Monad.Trans
+import Control.Monad.Trans.Compose
 import Control.Monad.Reader (MonadReader(..))
 import qualified Control.Monad.Reader as Reader
 import Control.Monad.Writer (MonadWriter(..))
 import qualified Control.Monad.Writer as Writer
 import Control.Monad.State (MonadState(..),StateT(..))
 import qualified Control.Monad.State as State
+import Control.Monad.Catch
 
 import Data.Acid
 import Data.Acid.Advanced
@@ -60,7 +63,7 @@ instance IsAcidic st => HaapPlugin (AcidDB st) where
         path <- getProjectPath
         let ioargs = acidDBIOArgs args
         acid <- runBaseIOWith (ioargs) $ openLocalStateFrom (path </> acidDBFile args) (acidDBInit args)
-        x <- mapHaapMonad (flip State.evalStateT (ioargs,acid) . unComposeT) m
+        x <- mapHaapMonad (flip State.evalStateT (ioargs,acid) . getComposeT) m
         ignoreError $ runBaseIOWith (ioargs) $ createArchive acid
         ignoreError $ runBaseIOWith (ioargs) $ closeAcidState acid
         return (x,())
@@ -80,10 +83,10 @@ instance IsAcidic st => HaapDB (AcidDB st) where
         (ioargs,acid) <- liftPluginProxy (Proxy::Proxy (AcidDB st)) $ State.get
         runBaseIOWith (ioargs) $ update acid u
 
-instance HaapMonad m => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m where
+instance (MonadCatch m) => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (StateT (IOArgs, AcidState st)) m (t2 m)) => HasPlugin (AcidDB st) (ComposeT (StateT (IOArgs,AcidState st)) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin (AcidDB st) (ComposeT (StateT (IOArgs,AcidState st)) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
     
 readAcidState :: HasPlugin (AcidDB st) t m => Haap t m (AcidState st)
 readAcidState = do

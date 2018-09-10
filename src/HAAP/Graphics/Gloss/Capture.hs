@@ -32,9 +32,13 @@ import Text.Printf (printf)
 import Data.StateVar
 import Data.Proxy
 
+import Control.Monad.Trans.Compose
 import Control.Monad.Reader as Reader
 import Control.Monad.IO.Class
 import Control.Monad 
+import Control.Monad.Base
+import Control.Monad.Catch
+import Control.Monad.Morph
 
 data Gloss
 
@@ -53,13 +57,13 @@ instance HaapPlugin Gloss where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
-instance HaapMonad m => HasPlugin Gloss (ReaderT GlossArgs) m where
+instance (MonadCatch m) => HasPlugin Gloss (ReaderT GlossArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT GlossArgs) m (t2 m)) => HasPlugin Gloss (ComposeT (ReaderT GlossArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+--instance (HaapStack t2 m,HaapPluginT (ReaderT GlossArgs) m (t2 m)) => HasPlugin Gloss (ComposeT (ReaderT GlossArgs) t2) m where
+--    liftPlugin m = ComposeT $ hoistPluginT liftStack m
 
 -- for GLFW hackage package
 initOpenGL :: Int -> Int -> IO ()

@@ -13,6 +13,8 @@ import HAAP.Log
 import HAAP.Pretty
 import HAAP.Plugin
 
+import Control.Monad.Trans
+import Control.Monad.Trans.Control
 import Control.DeepSeq as DeepSeq
 import Control.Monad.IO.Class
 import qualified Control.Monad.Reader as Reader
@@ -49,7 +51,7 @@ import Control.Concurrent (threadDelay)
 
 import Test.QuickCheck
 
-import Text.Read
+import Text.Read hiding (lift)
 
 import GHC.Stack
 import GHC.Generics
@@ -126,7 +128,7 @@ hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
 instance Default IOArgs where
     def = defaultIOArgs
 
-runIOWithTimeout :: (HaapPureLiftT (Haap t) m IO,HaapStack t m,MonadIO m) => Int -> Haap t IO a -> Haap t m a
+runIOWithTimeout :: (HaapPureStack t m IO,MonadIO m) => Int -> Haap t IO a -> Haap t m a
 runIOWithTimeout timeout m = runIOWith (args) m
     where
     args = def { ioTimeout = Just timeout }
@@ -140,28 +142,28 @@ runBaseIOWith :: (HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
 runBaseIOWith args io = do
     haapLiftIO $ runIOCore args io
 
-runIOWith :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m) => IOArgs -> Haap t IO a -> Haap t m a
+runIOWith :: (HaapPureStack t m IO,MonadIO m) => IOArgs -> Haap t IO a -> Haap t m a
 runIOWith args io = do
-    st <- liftWithPluginT $ \run -> do
+    st <- liftWith' $ \run -> do
         st <- runIOCore args $ run io
         return st
-    restorePluginT $ return st
+    restoreT' $ return st
 
 runBaseIOWith' :: (NFData a,HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
 runBaseIOWith' args io = do
     haapLiftIO $ forceM $ runIOCore args io
 
-runIOWith' :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m,NFData a) => IOArgs -> Haap t IO a -> Haap t m a
+runIOWith' :: (HaapPureStack t m IO,MonadIO m,NFData a) => IOArgs -> Haap t IO a -> Haap t m a
 runIOWith' args io = forceM $ runIOWith args io
 
 runBaseIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
 runBaseIO = runBaseIOWith (defaultIOArgs)
 
-runIO :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m) => Haap t IO a -> Haap t m a
+runIO :: (HaapPureStack t m IO,MonadIO m) => Haap t IO a -> Haap t m a
 runIO = runIOWith (defaultIOArgs)
 
-runIOExit :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,HaapStack t IO,MonadIO m) => Haap t IO () -> Haap t m ExitCode
-runIOExit m = runIOWith (defaultIOArgs) (catch (m >> liftStack exitSuccess) (liftStack . catchExit))
+runIOExit :: (HaapPureStack t m IO,MonadIO m) => Haap t IO () -> Haap t m ExitCode
+runIOExit m = runIOWith (defaultIOArgs) (catch (m >> lift exitSuccess) (lift . catchExit))
     where
     catchExit :: ExitCode -> IO ExitCode
     catchExit e = return e
@@ -204,7 +206,7 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
 
 haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
-haapLiftIO io = catchAny (liftStack $ liftIO io) (\e -> throw $ HaapIOException e)
+haapLiftIO io = catchAny (lift $ liftIO io) (\e -> throw $ HaapIOException e)
 
 runIOCore :: MonadIO m => IOArgs -> IO a -> m a
 runIOCore args io = case ioTimeout args of
@@ -218,7 +220,7 @@ runIOCore args io = case ioTimeout args of
 runBaseIO' :: (HaapStack t m,MonadIO m,NFData a) => IO a -> Haap t m a
 runBaseIO' = runBaseIOWith' (defaultIOArgs)
 
-runIO' :: (HaapPureLiftT (Haap t) m IO,HaapPureRestoreT (Haap t) m,HaapStack t m,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
+runIO' :: (HaapPureStack t m IO,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
 runIO' = runIOWith' (defaultIOArgs)
 
 orEither :: HaapStack t m => Haap t m a -> Haap t m (Either SomeException a)

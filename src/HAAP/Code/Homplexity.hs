@@ -5,7 +5,7 @@ This module provides the @Homplexity@ plugin that invokes the external _homplexi
 
 -}
 
-{-# LANGUAGE EmptyDataDecls, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE EmptyDataDecls, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
 
 module HAAP.Code.Homplexity where
 
@@ -35,13 +35,13 @@ instance HaapPlugin Homplexity where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 instance HaapMonad m => HasPlugin Homplexity (ReaderT HomplexityArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT HomplexityArgs) m (t2 m)) => HasPlugin Homplexity (ComposeT (ReaderT HomplexityArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Homplexity (ComposeT (ReaderT HomplexityArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 data HomplexityArgs = HomplexityArgs
     { homplexitySandbox :: Sandbox

@@ -36,6 +36,8 @@ import qualified Data.Text as T
 import Control.Monad.State (StateT(..))
 import qualified Control.Monad.State as State
 import Control.Monad.Reader as Reader
+import Control.Monad.Morph
+import Control.Monad.Trans.Compose
 import Control.DeepSeq
 --import Control.Monad.Catch
 import Control.Exception.Safe
@@ -64,7 +66,7 @@ instance HaapPlugin Tourney where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 useTourney :: (HaapStack t m,PluginK Tourney t m) => Haap (PluginT Tourney :..: t) m a -> Haap t m a
@@ -72,8 +74,8 @@ useTourney m = usePlugin_ (return def) m
 
 instance HaapMonad m => HasPlugin Tourney (ReaderT TourneyArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT TourneyArgs) m (t2 m)) => HasPlugin Tourney (ComposeT (ReaderT TourneyArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Tourney (ComposeT (ReaderT TourneyArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 -- | Player names need to be unique
 class (Ord a,Pretty a) => TourneyPlayer a where

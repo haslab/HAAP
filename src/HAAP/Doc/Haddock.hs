@@ -45,7 +45,7 @@ instance HaapPlugin Haddock where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip State.evalStateT args . unComposeT) m
+        x <- mapHaapMonad (flip State.evalStateT args . getComposeT) m
         return (x,())
 
 data HaddockArgs = HaddockArgs
@@ -59,8 +59,8 @@ data HaddockArgs = HaddockArgs
 
 instance HaapMonad m => HasPlugin Haddock (StateT HaddockArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (StateT HaddockArgs) m (t2 m)) => HasPlugin Haddock (ComposeT (StateT HaddockArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Haddock (ComposeT (StateT HaddockArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 useAndRunHaddock :: (MonadIO m,HasPlugin Hakyll t m) => HaddockArgs -> Haap t m FilePath
 useAndRunHaddock args = usePlugin_ (return args) $ runHaddock

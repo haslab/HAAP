@@ -15,8 +15,8 @@ class HaapPlugin db => HaapDB db where
     type DBQuery db a = r | r -> db a
     type DBUpdate db a = r | r -> db a
     
-    queryDB :: (HasPlugin db t m,PluginK db t m) => DBQuery db a -> Haap t m a
-    updateDB :: (HasPlugin db t m,PluginK db t m) => DBUpdate db a -> Haap t m a
+    queryDB :: (HaapStack t m,HasPlugin db t m,PluginK db t m) => DBQuery db a -> Haap t m a
+    updateDB :: (HaapStack t m,HasPlugin db t m,PluginK db t m) => DBUpdate db a -> Haap t m a
 
 type HasDB db t m = (HaapDB db,HasPlugin db t m)
 

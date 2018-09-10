@@ -56,13 +56,13 @@ instance HaapPlugin HPC where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
     
 instance HaapMonad m => HasPlugin HPC (ReaderT HpcArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT HpcArgs) m (t2 m)) => HasPlugin HPC (ComposeT (ReaderT HpcArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin HPC (ComposeT (ReaderT HpcArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
     
 data HpcArgs = HpcArgs
     { hpcExecutable :: FilePath -- executables to run with hpc

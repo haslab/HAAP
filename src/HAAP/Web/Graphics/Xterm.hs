@@ -5,7 +5,7 @@ This module provides the @Xterm@ plugin to compile _Xterm_ terminal interactions
 -}
 
 
-{-# LANGUAGE UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeFamilies, MultiParamTypeClasses, EmptyDataDecls, OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances, FlexibleContexts, FlexibleInstances, TypeOperators, TypeFamilies, MultiParamTypeClasses, EmptyDataDecls, OverloadedStrings #-}
 
 module HAAP.Web.Graphics.Xterm where
 
@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Monad.Reader as Reader
 --import Control.Monad.Except
 import Control.Exception.Safe
+import Control.Monad.Morph
 
 import Data.Foldable
 import Data.Either
@@ -52,7 +53,7 @@ instance HaapPlugin Xterm where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 data XtermArgs = XtermArgs
@@ -132,8 +133,8 @@ runXterm = do
 
 instance HaapMonad m => HasPlugin Xterm (ReaderT XtermArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT XtermArgs) m (t2 m)) => HasPlugin Xterm (ComposeT (ReaderT XtermArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Xterm (ComposeT (ReaderT XtermArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 copyXtermDataFiles :: (MonadIO m,HaapStack t m) => Configuration -> Haap t m ()
 copyXtermDataFiles cfg = do

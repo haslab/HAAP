@@ -20,6 +20,9 @@ import Data.Proxy
 import Data.Typeable
 
 import Control.Monad.Reader as Reader
+import Control.Monad.Catch
+import Control.Monad.Trans.Compose
+import Control.Monad.Morph
 
 data CmdArgs args = CmdArgs args
   deriving (Data,Typeable)
@@ -35,16 +38,16 @@ instance (Data args) => HaapPlugin (CmdArgs args) where
     usePlugin getArgs m = do
         CmdArgs argsDef <- getArgs
         args <- runBaseIO $ cmdArgs argsDef
-        x <- mapHaapMonad (flip Reader.runReaderT (CmdArgs args) . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT (CmdArgs args) . getComposeT) m
         return (x,())
 
 useCmdArgs :: (HaapStack t m,PluginK (CmdArgs args) t m) => args -> Haap (PluginT (CmdArgs args) :..: t) m a -> Haap t m a
 useCmdArgs argsDef = usePlugin_ (return $ CmdArgs argsDef)
 
-instance HaapMonad m => HasPlugin (CmdArgs args) (ReaderT (CmdArgs args)) m where
+instance (MonadCatch m) => HasPlugin (CmdArgs args) (ReaderT (CmdArgs args)) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT (CmdArgs args)) m (t2 m)) => HasPlugin (CmdArgs args) (ComposeT (ReaderT (CmdArgs args)) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin (CmdArgs args) (ComposeT (ReaderT (CmdArgs args)) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 readCmdArgs :: HasPlugin (CmdArgs args) t m => Haap t m args
 readCmdArgs = do

@@ -32,6 +32,8 @@ import qualified Test.HUnit.Lang as HUnit
 import qualified Test.HUnit.Base as HUnit
 
 import Control.Monad
+import Control.Monad.Base
+import Control.Monad.Trans.Compose
 import Control.Monad.State (State(..))
 import qualified Control.Monad.State as State
 import Control.Monad.Reader (Reader(..))
@@ -59,7 +61,7 @@ import Data.CallStack
 import Data.Default
 import qualified Data.Text as T
 
-import Text.Read
+import Text.Read hiding (lift)
 
 import Safe
 
@@ -79,16 +81,16 @@ instance HaapPlugin Spec where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 useSpec :: (HaapStack t m,PluginK Spec t m) => (PluginI Spec) -> Haap (PluginT Spec :..: t) m a -> Haap t m a
 useSpec args m = usePlugin_ (return args) m
 
-instance HaapMonad m => HasPlugin Spec (ReaderT HaapSpecArgs) m where
+instance (MonadCatch m) => HasPlugin Spec (ReaderT HaapSpecArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT HaapSpecArgs) m (t2 m)) => HasPlugin Spec (ComposeT (ReaderT HaapSpecArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Spec (ComposeT (ReaderT HaapSpecArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 data HaapSpecArgs = HaapSpecArgs
     { specMode :: HaapSpecMode

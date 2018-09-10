@@ -5,7 +5,7 @@ This module provides the @HLint@ plugin that invokes the external _hlint_ tool (
 
 -}
 
-{-# LANGUAGE EmptyDataDecls, OverloadedStrings, TypeFamilies, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE EmptyDataDecls, OverloadedStrings, TypeOperators, TypeFamilies, FlexibleContexts, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses #-}
 
 module HAAP.Code.HLint where
 
@@ -34,13 +34,13 @@ instance HaapPlugin HLint where
     
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 instance HaapMonad m => HasPlugin HLint (ReaderT HLintArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT HLintArgs) m (t2 m)) => HasPlugin HLint (ComposeT (ReaderT HLintArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin HLint (ComposeT (ReaderT HLintArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 data HLintArgs = HLintArgs
     { hlintSandbox :: Sandbox

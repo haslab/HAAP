@@ -29,6 +29,7 @@ import Data.Proxy
 import Shelly (Sh)
 
 import Control.Monad.Reader as Reader
+import Control.Monad.Trans.Compose
 --import Control.Monad.Except
 
 import Text.Read hiding (lift)
@@ -82,10 +83,10 @@ defaultFilePathSourceArgs = FilePathSourceArgs
 instance Default FilePathSourceArgs where
     def = defaultFilePathSourceArgs
     
-instance HaapMonad m => HaapStack (ReaderT FilePathSourceArgs) m where
-    liftStack = lift
+--instance HaapMonad m => HaapStack (ReaderT FilePathSourceArgs) m where
+--    liftStack = lift
 
 instance (MonadIO m,HaapMonad m) => HasPlugin FilePathSource (ReaderT FilePathSourceArgs) m where
     liftPlugin = id
-instance (MonadIO m,HaapStack t2 m,HaapPluginT (ReaderT FilePathSourceArgs) m (t2 m)) => HasPlugin FilePathSource (ComposeT (ReaderT FilePathSourceArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+--instance (MonadIO m,HaapStack t2 m,HaapPluginT (ReaderT FilePathSourceArgs) m (t2 m)) => HasPlugin FilePathSource (ComposeT (ReaderT FilePathSourceArgs) t2) m where
+--    liftPlugin m = ComposeT $ hoistPluginT liftStack m

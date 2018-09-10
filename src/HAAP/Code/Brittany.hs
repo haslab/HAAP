@@ -5,7 +5,7 @@ This module provides the @Brittany@ plugin that invokes the external _brittany_ 
 
 -}
 
-{-# LANGUAGE EmptyDataDecls, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE EmptyDataDecls, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
 
 module HAAP.Code.Brittany where
 
@@ -37,13 +37,13 @@ instance HaapPlugin Brittany where
 
     usePlugin getArgs m = do
         args <- getArgs
-        x <- mapHaapMonad (flip Reader.runReaderT args . unComposeT) m
+        x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
 instance HaapMonad m => HasPlugin Brittany (ReaderT BrittanyArgs) m where
     liftPlugin = id
-instance (HaapStack t2 m,HaapPluginT (ReaderT BrittanyArgs) m (t2 m)) => HasPlugin Brittany (ComposeT (ReaderT BrittanyArgs) t2) m where
-    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin Brittany (ComposeT (ReaderT BrittanyArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
 
 data BrittanyArgs = BrittanyArgs
     { brittanySandbox :: Sandbox

@@ -54,7 +54,7 @@ import Data.Bifunctor (bimap)
 import Data.Binary
 import qualified Data.ByteString.Lazy as BS
 import Data.Maybe
-import Text.Read
+import Text.Read hiding (lift)
 import qualified Data.Text.IO as T
 
 import System.IO
@@ -67,7 +67,7 @@ runBaseSh = runBaseShWith def
 runBaseSh' :: (MonadIO m,HaapStack t m,NFData a) => Sh a -> Haap t m a
 runBaseSh' = runBaseShWith' def
 
-runSh :: (MonadIO m,HaapPureLiftT (Haap t) m Sh,HaapPureRestoreT (Haap t) m) => Haap t Sh a -> Haap t m a
+runSh :: (MonadIO m,HaapPureStack t m Sh) => Haap t Sh a -> Haap t m a
 runSh = runShWith def
 
 runBaseShWith :: (MonadIO m,HaapStack t m) => IOArgs -> Sh a -> Haap t m a
@@ -78,14 +78,14 @@ runBaseShWith' :: (MonadIO m,HaapStack t m,NFData a) => IOArgs -> Sh a -> Haap t
 runBaseShWith' ioargs msh = do
     haapLiftIO $ forceM $ runShCoreIO ioargs msh
 
-runShWith :: (MonadIO m,HaapPureLiftT (Haap t) m Sh,HaapPureRestoreT (Haap t) m) => IOArgs -> Haap t Sh a -> Haap t m a
+runShWith :: (MonadIO m,HaapPureStack t m Sh) => IOArgs -> Haap t Sh a -> Haap t m a
 runShWith ioargs msh = do
-    st <- liftWithPluginT $ \run -> do
+    st <- liftWith' $ \run -> do
         st <- liftIO $ runShCoreIO ioargs $ run msh
         return st
-    restorePluginT $ return st
+    restoreT' $ return st
 
-runShWithTimeout :: (MonadIO m,HaapPureLiftT (Haap t) m Sh,HaapPureRestoreT (Haap t) m) => Int -> Haap t Sh a -> Haap t m a
+runShWithTimeout :: (MonadIO m,HaapPureStack t m Sh) => Int -> Haap t Sh a -> Haap t m a
 runShWithTimeout timeout m = runShWith args m
     where
     args = def { ioTimeout = Just timeout }
@@ -112,10 +112,10 @@ hiddenSh = \m -> catchAnySh (hide m) (const $ return $ error "result is hidden!"
 -- * Shelly utilities
 
 liftSh :: HaapStack t Sh => Sh a -> Haap t Sh a
-liftSh m = liftStack m
+liftSh m = lift m
 
-liftShOp :: (HaapPurePluginT t Sh) => (Sh (StPluginT (Haap t) a) -> Sh (StPluginT (Haap t) c)) -> Haap t Sh a -> Haap t Sh c
-liftShOp f m = liftWithPluginT (\run -> f $ run m) >>= restorePluginT . return
+liftShOp :: (HaapPureStack t Sh Sh) => (Sh (StT' (Haap t) a) -> Sh (StT' (Haap t) c)) -> Haap t Sh a -> Haap t Sh c
+liftShOp f m = liftWith' (\run -> f $ run m) >>= restoreT' . return
 
 orErrorWritePage :: (HaapStack t m,Pretty a,MonadIO m) => FilePath -> a -> Haap t m a -> Haap t m a
 orErrorWritePage path def m = orDo go $ do
