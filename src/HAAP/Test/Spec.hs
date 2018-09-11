@@ -17,7 +17,7 @@ import HAAP.Pretty
 import HAAP.Shelly
 import HAAP.Plugin
 
-import Test.QuickCheck.Property as QuickCheck hiding (Result)
+import Test.QuickCheck.Property as QuickCheck hiding (Result(..))
 import Test.QuickCheck as QuickCheck
 import Test.QuickCheck.Gen as QuickCheck
 import Test.QuickCheck.Random as QuickCheck
@@ -113,6 +113,16 @@ instance Pretty FailureReason where
     pretty NoReason = text "no reason"
     pretty (Reason str) = text "reason" <+> string str
     pretty (ExpectedButGot msg x y) = pretty msg $+$ nest 4 (text "expected:" <+> string x $+$ text "got:" <+> string y)
+
+instance Pretty Result where
+    pretty res = case res of
+        Success {} -> "OK"
+        GaveUp {} -> string "gave up:" <+> string (output res)
+        Failure {} -> string "failed:" <+> string (reason res)
+                  $+$ maybe mempty (\e -> string "exception:" <+> pretty e) (theException res)
+                  $+$ string "output:" <+> string (output res)
+                  $+$ string "test case:" <+> hsep (map string $ failingLabels res) <+> hsep (map string $ failingTestCase res) 
+        NoExpectedFailure {} -> string "failed:" <+> string (output res)
 
 runSpec :: (MonadIO m,HasPlugin Spec t m) => HaapSpec -> Haap t m HaapTestTableRes
 runSpec spec = do
@@ -363,7 +373,7 @@ haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
     return ()
 haapSpecProperty ioargs (HaapSpecTestResult io) = monadicIO $ do
     res <- run $ runSpecIO ioargs "test" io
-    unless (isSuccessResult res) $ fail $ show res
+    unless (isSuccessResult res) $ fail $ prettyString res
     QuickCheck.assert (isSuccessResult res)
 
 -- HUnit code
@@ -380,9 +390,8 @@ assertMaybe :: (HasCallStack, PrettyIO a)
 assertMaybe preface gotten = case gotten of
     Nothing -> return ()
     Just actual -> do
-        prefaceMsg <- if null preface then return Nothing else return $ Just preface
         actualMsg <- prettyStringIO actual
-        throwIO $ HUnit.HUnitFailure location $ HUnit.ExpectedButGot prefaceMsg "" actualMsg
+        throwIO $ HUnit.HUnitFailure location $ HUnit.Reason $ preface ++ ": got...\n" ++ actualMsg
 
 assertEqualWith :: (HasCallStack, PrettyIO a)
                               => String -- ^ The message prefix
@@ -398,9 +407,9 @@ assertEqualWith preface eq expected actual = unless (actual `eq` expected) $ do
 
 assertResult :: (HasCallStack) => Result -> Assertion
 assertResult res = unless (isSuccessResult res) $ do
-    throwIO $ HUnit.HUnitFailure location $ HUnit.Reason $ show res
+    throwIO $ HUnit.HUnitFailure location $ HUnit.Reason $ prettyString res
     
-c (Success {}) = True
+isSuccessResult (Success {}) = True
 isSuccessResult _ = False
 
 

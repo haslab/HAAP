@@ -8,10 +8,10 @@ RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
 RUN apt-get -qqy install -y nodejs
 
 #configure locale
-RUN echo "LANG=en_AU.UTF-8" > /etc/default/locale
-RUN echo "en_AU.UTF-8 UTF-8" > /etc/locale.gen
+RUN echo "LANG=pt_PT.UTF-8" > /etc/default/locale
+RUN echo "pt_PT.UTF-8 UTF-8" > /etc/locale.gen
 RUN /usr/sbin/locale-gen
-ENV LANG en_AU.UTF-8
+ENV LANG pt_PT.UTF-8
 ENV LC_ALL C.UTF-8
 
 #configure path
