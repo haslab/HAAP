@@ -60,8 +60,11 @@ import qualified Data.ByteString.Char8 as B8
 import Data.CallStack
 import Data.Default
 import qualified Data.Text as T
+import Data.Binary
 
 import Text.Read hiding (lift)
+
+import GHC.Generics
 
 import Safe
 
@@ -411,5 +414,4 @@ assertResult res = unless (isSuccessResult res) $ do
     
 isSuccessResult (Success {}) = True
 isSuccessResult _ = False
-
 
