@@ -45,12 +45,12 @@ import Safe
 import GHC.Generics (Generic)
 
 -- sourcegraph
-import Analyse.Module
-import Analyse.Everything
-import Parsing
-import Parsing.Types as SG
-import Analyse.GraphRepr
-import Analyse.Utils
+import Language.Haskell.SourceGraph.Analyse.Module
+import Language.Haskell.SourceGraph.Analyse.Everything
+import Language.Haskell.SourceGraph.Parsing
+import Language.Haskell.SourceGraph.Parsing.Types as SG
+import Language.Haskell.SourceGraph.Analyse.GraphRepr
+import Language.Haskell.SourceGraph.Analyse.Utils
 
 data SGReport = SGReport
     { maxCC :: Int -- maximum cyclomatic complexity

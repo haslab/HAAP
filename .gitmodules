@@ -1,3 +1,15 @@
 [submodule "packages/debug"]
 	path = packages/debug
 	url = https://github.com/hpacheco/debug
+[submodule "packages/gloss-window"]
+	path = packages/gloss-window
+	url = https://github.com/hpacheco/gloss-window
+[submodule "packages/Graphalyze"]
+	path = packages/Graphalyze
+	url = https://github.com/hpacheco/Graphalyze
+[submodule "packages/SourceGraph"]
+	path = packages/SourceGraph
+	url = https://github.com/hpacheco/SourceGraph
+[submodule "packages/homplexity"]
+	path = packages/homplexity
+	url = https://github.com/hpacheco/homplexity
