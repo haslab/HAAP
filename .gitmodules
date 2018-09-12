@@ -13,3 +13,6 @@
 [submodule "packages/homplexity"]
 	path = packages/homplexity
 	url = https://github.com/hpacheco/homplexity
+[submodule "packages/snaplet-acid-state"]
+	path = packages/snaplet-acid-state
+	url = https://github.com/hpacheco/snaplet-acid-state
