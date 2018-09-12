@@ -181,22 +181,23 @@ runHpcReport defa m = do
                 report <- orLogDefault def $ liftIO $ E.evaluate $ force $ HpcReport (parseHpcItem xs 0) (parseHpcItem xs 1) (parseHpcItem xs 5) (parseHpcItem xs 6) (parseHpcItem xs 7)
                 return (x,report)
 
-useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Pretty a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,FilePath)
+useAndRunHpc :: (MonadIO m,HasPlugin Hakyll t m,Pretty a) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,Maybe FilePath)
 useAndRunHpc args x m = usePlugin_ (return args) $ runHpc x m
 
-runHpc :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin HPC t m,Pretty a) => a -> (IOResult -> Haap t m a) -> Haap t m (a,FilePath)
+runHpc :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin HPC t m,Pretty a) => a -> (IOResult -> Haap t m a) -> Haap t m (a,Maybe FilePath)
 runHpc def m = do
     hpc <- liftHaap $ liftPluginProxy (Proxy::Proxy HPC) $ Reader.ask
     hp <- getHakyllP
     let (dir,exec) = splitFileName (hpcExecutable hpc)
-    let html = maybe "" id (hpcHtmlPath hpc) </> exec </> "hpc_index.html"
-    let outhtml = hakyllRoute hp $ html
-    orErrorHakyllPage outhtml (def,outhtml) $ do
+    let html = fmap (</> exec </> "hpc_index.html") (hpcHtmlPath hpc) 
+    let outhtml = fmap (hakyllRoute hp) html
+    let onError = maybe id (\o -> orErrorHakyllPage o (def,Just o)) outhtml
+    onError $ do
         tmp <- getProjectTmpPath
         let ghc = (hpcGHC hpc)
         let io = (hpcIO hpc)
         let io' = io 
-        let ghc' = ghc { ghcMake = True, ghcHpc = True, ghcRTS = hpcRTS hpc, ghcIO = io' }
+        let ghc' = ghc { ghcMake = True, ghcHpc = isJust (hpcHtmlPath hpc), ghcRTS = hpcRTS hpc, ghcIO = io' }
         do
             hpcCleanup dir exec
                 
@@ -210,8 +211,8 @@ runHpc def m = do
             if (isJust $ hpcHtmlPath hpc)
                 then do
                     let destdir = dirToRoot dir </> tmp </> maybe "" id (hpcHtmlPath hpc) </> exec
-                    orErrorHakyllPage outhtml () $ do
-                        orErrorWritePage (tmp </> html) mempty $ runBaseSh $ do
+                    orErrorHakyllPage (fromJust outhtml) () $ do
+                        orErrorWritePage (tmp </> fromJust html) mempty $ runBaseSh $ do
                             shCd dir
                             shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
                         
@@ -223,7 +224,7 @@ runHpc def m = do
                                     file <- getResourceFilePath
                                     getResourceString >>= liftCompiler (asTagSoupHTML $ addLegend file . tagSoupChangeLinkUrls (hakyllRoute hp)) >>= hakyllCompile hp
                     return (x,outhtml)
-                else return (x,"")
+                else return (x,outhtml)
 
 addLegend :: FilePath -> TagHtml -> TagHtml
 addLegend file html = if isInfixOf ".hs" file

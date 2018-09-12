@@ -1,0 +1,3 @@
+[submodule "packages/debug"]
+	path = packages/debug
+	url = https://github.com/hpacheco/debug

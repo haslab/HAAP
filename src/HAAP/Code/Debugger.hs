@@ -30,7 +30,7 @@ import Control.Monad.Reader as Reader
 import System.FilePath
 import System.Directory
 
-import Debug.Hoed.Extras
+import Debug.Hoed.Algorithmic
 
 data Debugger
 
@@ -90,12 +90,18 @@ runDebugger = do
                 shCp (debuggerInstrumentedPath h </> file) (tmp </> debuggerHtmlPath h </> file)
             
             let imports = concatMap (\modu -> "import " ++ modu ++ "\n") (debuggerModules h)
-            let mainfile = imports ++ "\n"
-                        ++ "import Debug.Hoed.Extras" ++ "\n"
+            let mainfile = "{-# LANGUAGE PackageImports #-}" ++ "\n"
+                        ++ imports ++ "\n"
+                        ++ "import \"Hoed\" Debug.Hoed (runO',defaultHoedOptions,HoedAnalysis(..))" ++ "\n"
+                        ++ "import \"debug\" Debug.Hoed" ++ "\n" 
+                        ++ "import \"debug\" Debug.Hoed.Algorithmic" ++ "\n"
+                        ++ "import \"debug\" Debug.Hoed.Graphical" ++ "\n"
                         ++ "main = do" ++ "\n"
                         ++ "  let prog = " ++ debuggerProgram h ++ "\n"
-                        ++ "  let args = defaultHoedExtrasArgs { jshood = Deploy, jshoedb = Deploy, debug = Deploy, datapath = Just (return " ++ show htmldatapath ++ ")}" ++ "\n"
-                        ++ "  runHoedExtrasO args (print prog)" ++ "\n"
+                        ++ "  h <- runO' defaultHoedOptions (print prog)" ++ "\n"
+                        ++ "  debugSaveTrace \"debug.html\" (convert $ hoedCompTree h)" ++ "\n"
+                        ++ "  debugGraphicalOutputToFile \"jshood.html\" h" ++ "\n"
+                        ++ "  debugAlgorithmicOutput " ++ show htmldatapath ++ " " ++ show "." ++ " h" ++ "\n"
             
             shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") (T.pack mainfile)
             
@@ -110,12 +116,12 @@ runDebugger = do
         
         let debugPath  = debuggerHtmlPath h </> "debug.html"
         let jshoodPath = debuggerHtmlPath h </> "jshood.html"
-        let jshoedPath = debuggerHtmlPath h </> "jshoedb.html"
+        let jshoedPath = debuggerHtmlPath h </> "jshoed.html"
         
         hakyllRules $ do
             -- copy the debugger data files
             let globdata = (fromGlob $ "debug" </> "img" </> "*.png")
-                      .||. (fromGlob $ "debug" </> "web/JsHoedb.jsexe" </> "*.js")
+                      .||. (fromGlob $ "debug" </> "JsHoed.jsexe" </> "*.js")
             match globdata $ do
                 route   $ idRoute`composeRoutes` funRoute (hakyllRoute hp)
                 compile $ copyFileCompiler
@@ -132,8 +138,11 @@ runDebugger = do
 
 copyDebuggerFiles :: (MonadIO m,HaapStack t m) => Configuration -> Haap t m ()
 copyDebuggerFiles cfg = do
-    datapath <- runBaseIO' $ hoedExtrasDataPath
-    xs <- runBaseIO' $ listDirectory datapath
-    runBaseSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> "debug" </> x)    
+    let outpath = providerDirectory cfg </> "debug"
+    runBaseIO' $ copyDebugAlgorithmicFiles outpath
+    
+    --datapath <- runBaseIO' $ debugHtmlDataPath
+    --xs <- runBaseIO' $ listDirectory datapath
+    --runBaseSh $ forM_ xs $ \x -> shCpRecursive (datapath </> x) (providerDirectory cfg </> "debug" </> x)    
     
     
