@@ -19,3 +19,6 @@
 [submodule "packages/snap-extras"]
 	path = packages/snap-extras
 	url = https://github.com/hpacheco/snap-extras
+[submodule "packages/Hoed"]
+	path = packages/Hoed
+	url = https://github.com/hpacheco/Hoed

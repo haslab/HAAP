@@ -65,10 +65,10 @@ data Usage = Usage
 data UsageArgs = UsageArgs
     { usageFiles :: [(FilePath,String)] -- a list of Haskell files (with their module names) to analyze
     , usageIgnores :: String -> String -> Bool -- ignore predicate: receives name and module
-    , usageImportPaths :: [FilePath] -- aaa list of addityional import paths (similar to ghc's -i parameter)
+    , usageImportPaths :: [FilePath] -- a list of additional import paths (similar to ghc's -i parameter)
     }
  
-runUsage :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m Usage
+runUsage :: (MonadIO m) => UsageArgs -> m Usage
 runUsage u = liftIO $ do
     
     -- compiler flags
