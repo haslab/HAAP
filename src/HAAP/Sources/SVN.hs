@@ -95,7 +95,7 @@ instance Ord SVNSourceInfo where
     compare x y = compare (svnRevision x) (svnRevision y)
 
 instance Pretty SVNSourceInfo where
-    pretty = viaShow
+    pretty svn = pretty (svnRevision svn) <+> ";" <+> pretty (svnAuthor svn) <+> ";" <+> pretty (svnDate svn)
 
 data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
