@@ -116,6 +116,7 @@ instance Pretty FailureReason where
     pretty NoReason = text "no reason"
     pretty (Reason str) = text "reason" <+> string str
     pretty (ExpectedButGot msg x y) = pretty msg $+$ nest 4 (text "expected:" <+> string x $+$ text "got:" <+> string y)
+    pretty (Error mberr ex) = pretty mberr $+$ nest 4 (text "exception:" <+> pretty ex)
 
 instance Pretty Result where
     pretty res = case res of
