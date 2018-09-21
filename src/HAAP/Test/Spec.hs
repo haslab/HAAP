@@ -5,7 +5,7 @@ This module provides the @Spec@ plugin to run test specifications.
 -}
 
 
-{-# LANGUAGE OverloadedStrings, DeriveGeneric, StandaloneDeriving, TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, GADTs, ScopedTypeVariables, DeriveTraversable #-}
+{-# LANGUAGE ViewPatterns, OverloadedStrings, DeriveGeneric, StandaloneDeriving, TypeOperators, FlexibleInstances, UndecidableInstances, MultiParamTypeClasses, EmptyDataDecls, FlexibleContexts, TypeFamilies, GADTs, ScopedTypeVariables, DeriveTraversable #-}
 
 module HAAP.Test.Spec where
 
@@ -239,6 +239,9 @@ haapNewExample = do
 haapTestRes :: Either SomeException FailureReason -> HaapTestRes
 haapTestRes (Left some) = case fromException some of
     Nothing -> HaapTestError $ prettyText some
+    Just (HaapSpecMessage msg) -> HaapTestMessage msg
+haapTestRes (Right msg@(Error _ some)) = case fromException some of
+    Nothing -> HaapTestError $ prettyText msg
     Just (HaapSpecMessage msg) -> HaapTestMessage msg
 haapTestRes (Right msg) = HaapTestError $ prettyText msg
 
