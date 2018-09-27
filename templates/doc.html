@@ -5,8 +5,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href=$projectpath$/css/normalize.css>
-    <link rel="stylesheet" href=$projectpath$/css/style.css>
+    <link rel="stylesheet" href="$projectpath$/css/normalize.css">
+    <link rel="stylesheet" href="$projectpath$/css/style.css">
+    <script src="$projectpath$/js/run_prettify.js"></script>
     <title>$title$</title>
 </head>
 
@@ -17,10 +18,10 @@
         <h2>$name$</h2>
     
         <h3>Haddock output</h3>
-        <pre><code>$stdout$</code></pre>
+        <pre class="prettyprint default">$stdout$</pre>
     
         <h3>Haddock errors</h3>
-        <pre><code>$stderr$</code></pre>
+        <pre class="prettyprint default">$stderr$</pre>
     
         <h3>Haddock documentation</h3>
         <p><a href=$link$>haddock</a></p>

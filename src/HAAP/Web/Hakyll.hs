@@ -167,7 +167,10 @@ orErrorHakyllPage page def m = orDo go m
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (prettyString e) >>= hakyllCompile hp
+            compile $ do
+                let errCtx = constField "errorMessage" (prettyString e)
+                             `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
 
 orErrorHakyllPage' :: (MonadIO m,HaapStack t m,Pretty a) => HakyllArgs -> FilePath -> a -> Haap t m a -> Haap t m a
@@ -177,7 +180,10 @@ orErrorHakyllPage' hakyllargs page def m = orDo go m
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (prettyString e) >>= hakyllCompile hp
+            compile $ do
+                let errCtx = constField "errorMessage" (prettyString e)
+                           `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
 
 orErrorHakyllPageWith :: (MonadIO m,HaapStack t m,Pretty a) => (forall a . Haap (HakyllT :..: t) m a -> Haap t m a) -> FilePath -> a -> Haap t m a -> Haap t m a
@@ -187,7 +193,10 @@ orErrorHakyllPageWith runHakyll page def m = orDo go m
         hp <- getHakyllP
         hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
-            compile $ makeItem (prettyString e) >>= hakyllCompile hp
+            compile $ do
+                let errCtx = constField "errorMessage" (prettyString e)
+                           `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
 
 getHakyllP :: (HasPlugin Hakyll t m) => Haap t m HakyllP
