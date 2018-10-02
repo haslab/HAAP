@@ -150,8 +150,14 @@ getProjectGroup gname = do
 getProjectTasks :: HaapStack t m => Haap t m [Task]
 getProjectTasks = liftM projectTasks getProject
 
+getProjectTasksWith :: HaapStack t m => (Task -> Bool) -> Haap t m [Task]
+getProjectTasksWith p = liftM (filter p . projectTasks) getProject
+
 getProjectTaskFiles :: HaapStack t m => Haap t m [HaapFile]
 getProjectTaskFiles = liftM (concatMap taskFiles) getProjectTasks
+
+getProjectTaskFilesWith :: HaapStack t m => (Task ->Bool) -> Haap t m [HaapFile]
+getProjectTaskFilesWith p = liftM (concatMap taskFiles) (getProjectTasksWith p)
 
 type HaapMonad m = (Monad m,MonadCatch m,MonadThrow m)
 type HaapStack t m = (HaapMonad m,HaapMonad (t m),MonadTrans t,MFunctor' t m)

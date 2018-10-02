@@ -44,12 +44,12 @@ class (HaapPlugin s,Ord (SourceInfo s)) => HaapSource s where
     sourcePath s = ""
 
 -- | pushes project files to the group's local copy of the source; returns the files to be commited to version control system
-populateGroupSource :: (MonadIO m,HasPlugin s t m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
-populateGroupSource ctx overwriteStudentFiles g s = do
+populateGroupSource :: (MonadIO m,HasPlugin s t m,HaapSource s) => (Task -> Bool) -> HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
+populateGroupSource predtask ctx overwriteStudentFiles g s = do
     logEvent "populating source"
     ppath <- getProjectPath
     let spath = sourcePath s
-    files <- getProjectTaskFiles
+    files <- getProjectTaskFilesWith predtask
     remotefiles <- runBaseSh $ forM files $ \file -> do
         --Sh.liftIO $ putStrLn $ "populating file " ++ show file
         --let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles
@@ -70,10 +70,10 @@ populateGroupSource ctx overwriteStudentFiles g s = do
             else return []
     return $ concat remotefiles
 
-listGroupSourceFiles :: (MonadIO m,HasPlugin s t m,HaapSource s) => HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
-listGroupSourceFiles ctx ignoreLibrary g s = do
+listGroupSourceFiles :: (MonadIO m,HasPlugin s t m,HaapSource s) => (Task -> Bool) -> HaapContext -> Bool -> Group -> Source s -> Haap t m [FilePath]
+listGroupSourceFiles predtask ctx ignoreLibrary g s = do
     let spath = sourcePath s
-    hfiles <- getProjectTaskFiles
+    hfiles <- getProjectTaskFilesWith predtask
     let mkIgnore f = applyTemplate (makeTemplate $ haapRemoteFile f) ctx
     let isIgnore t = not (isStudent t) && (if isInstructor t then ignoreLibrary else True)
     ignorefiles <- runBaseIO' $ mapM (canonicalizePath . (spath </>) . mkIgnore) $ filter (isIgnore . haapFileType) hfiles
