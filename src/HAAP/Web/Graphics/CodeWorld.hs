@@ -122,7 +122,7 @@ runCodeWorld = do
         
         if resOk res
             then addMessageToError (prettyText res) $ do
-                hakyllFocus ["templates",tmp </> destfolder,destfolder] $ hakyllRules $ do 
+                hakyllFocus ["templates",tmp </> destfolder] $ hakyllRules $ do 
                     let message = text "=== Compiling ===" $+$ pretty res $+$ text "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)

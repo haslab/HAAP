@@ -130,7 +130,7 @@ runHaapHakyllT args m = do
                 rules
             let ignore fp = trace ("ignore?" ++ fp ++" "++ show b1 ++ " " ++ show b2) (b1 || b2)
                     where
-                    b1 = not $ any (`isPrefixOf` fp) noignores
+                    b1 = not $ any (\p -> p `isPrefixOf` fp || fp `isPrefixOf` p) noignores
                     b2 = ignoreFile (hakyllCfg args) fp
             let cfg = (hakyllCfg args) { ignoreFile = ignore }
             let build = withArgs ["build"] $ hakyllWithExitCode cfg datarules
