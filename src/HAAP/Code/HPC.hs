@@ -216,7 +216,7 @@ runHpc def m = do
                             shCd dir
                             shCommandWith io' "hpc" ["markup",exec,"--destdir="++destdir]
                         
-                        hakyllRules $ do
+                        hakyllFocus [tmp </> fromJust (hpcHtmlPath hpc) </> exec] $ hakyllRules $ do
                             -- copy the hpc generated documentation
                             match (fromGlob $ tmp </> fromJust (hpcHtmlPath hpc) </> exec </> "*") $ do
                                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)

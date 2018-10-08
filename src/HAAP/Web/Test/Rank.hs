@@ -37,7 +37,7 @@ renderHaapSpecRank rank = do
 renderHaapRankScores :: (HasPlugin Rank t m,HasPlugin Hakyll t m,Pretty a,Score score) => HaapRank t m a score -> HaapRankRes a score -> Haap t m FilePath
 renderHaapRankScores rank scores = do
     hp <- getHakyllP
-    hakyllRules $ create [fromFilePath $ rankPath rank] $ do
+    hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath $ rankPath rank] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let headerCtx = field "header" (return . itemBody)

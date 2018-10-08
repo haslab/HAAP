@@ -34,7 +34,7 @@ renderHaapSpecs path title notes specs = do
 renderHaapTest :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath -> T.Text -> T.Text -> HaapTestTableRes -> Haap t m FilePath
 renderHaapTest path title notes spec = do
     hp <- getHakyllP
-    hakyllRules $ create [fromFilePath path] $ do
+    hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let classCtx i = case snd (itemBody i) of
@@ -59,7 +59,7 @@ renderHaapTest path title notes spec = do
 renderHaapTests :: (HasPlugin Hakyll t m,HasPlugin Spec t m) => FilePath ->  T.Text -> T.Text -> [(T.Text,HaapTestTableRes)] -> Haap t m FilePath
 renderHaapTests path title notes specs = do
     hp <- getHakyllP
-    hakyllRules $ create [fromFilePath path] $ do
+    hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath path] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let classCtx i = case snd (itemBody i) of

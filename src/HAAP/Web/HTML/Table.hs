@@ -40,7 +40,7 @@ data HaapTable = HaapTable
 renderHaapTable :: HasPlugin Hakyll t m => HaapTable -> Haap t m FilePath
 renderHaapTable t = do
     hp <- getHakyllP
-    hakyllRules $ create [fromFilePath $ haapTablePath t] $ do
+    hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath $ haapTablePath t] $ do
         route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
         compile $ do
             let headerCtx = field "header" (return . itemBody)

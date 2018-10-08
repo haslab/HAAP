@@ -122,7 +122,7 @@ runGhcjs hsFile hmtlPath = do
         
         if resOk res
             then addMessageToError (prettyText res) $ do
-                hakyllRules $ do 
+                hakyllFocus [tmp </> destfolder] $ hakyllRules $ do 
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile $ getResourceString >>= hakyllCompile hp

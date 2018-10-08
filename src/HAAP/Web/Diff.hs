@@ -43,7 +43,7 @@ runDiff diff = do
     let homerrorpath = diffHtmlPath diff
     orErrorHakyllPage homerrorpath homerrorpath $ do
         tmp <- getProjectTmpPath
-        hakyllRules $ do
+        hakyllFocus ["templates"] $ hakyllRules $ do
             -- copy the generated documentation
             create [fromFilePath $ diffHtmlPath diff] $ do
                 route $  idRoute `composeRoutes` funRoute (hakyllRoute hp)

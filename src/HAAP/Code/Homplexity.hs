@@ -71,7 +71,7 @@ runHomplexity = do
 --        runIO $ putStrLn $ show $ resStderr res
 --        runIO $ putStrLn $ show $ resStdout res
         let messages = parseMessages $ lines (Text.unpack $ resStdout res) ++ lines (Text.unpack $ resStderr res)
-        hakyllRules $ do
+        hakyllFocus ["templates"] $ hakyllRules $ do
             -- copy the homplexity generated documentation
             create [fromFilePath $ homplexityHtmlPath h] $ do
                 route $  idRoute `composeRoutes` funRoute (hakyllRoute hp)

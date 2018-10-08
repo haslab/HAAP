@@ -54,7 +54,7 @@ runGHCWall wall = do
             shCd $ ghcWallPath wall
             shGhcWith ghcargs files
         let messages = parseMessages $ splitWhen isEmptyLine $ lines (Text.unpack $ resStdout res `Text.append` resStderr res)
-        hakyllRules $ do
+        hakyllFocus ["templates"] $ hakyllRules $ do
             -- copy the generated documentation
             create [fromFilePath $ ghcWallHtmlPath wall] $ do
                 route $  idRoute `composeRoutes` funRoute (hakyllRoute hp)

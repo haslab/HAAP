@@ -103,7 +103,7 @@ runXterm = do
             then addMessageToError (prettyText res) $ do
                 
                 getHakyllArgs >>= copyXtermDataFiles . hakyllCfg
-                hakyllRules $ do 
+                hakyllFocus ["templates",tmp </> destfolder] $ hakyllRules $ do 
                     let message = renderDocString $ text "=== Compiling ===" $+$ pretty res $+$ text "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)

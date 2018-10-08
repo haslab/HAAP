@@ -69,7 +69,7 @@ runHLint = do
             shCommandWith ioArgs "hlint" (extras++["--report="++html]++files)
 --        runIO $ putStrLn $ show $ resStderr res
 --        runIO $ putStrLn $ show $ resStdout res
-        hakyllRules $ do
+        hakyllFocus [tmp </> hlintHtmlPath h] $ hakyllRules $ do
             -- copy the hlint generated documentation
             match (fromGlob $ tmp </> hlintHtmlPath h) $ do
                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)

@@ -22,3 +22,6 @@
 [submodule "packages/Hoed"]
 	path = packages/Hoed
 	url = https://github.com/hpacheco/Hoed
+[submodule "packages/hakyll"]
+	path = packages/hakyll
+	url = https://github.com/hpacheco/hakyll

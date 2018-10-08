@@ -118,7 +118,7 @@ runDebugger = do
         let jshoodPath = debuggerHtmlPath h </> "jshood.html"
         let jshoedPath = debuggerHtmlPath h </> "jshoed.html"
         
-        hakyllRules $ do
+        hakyllFocus ["debug",tmp </> debuggerHtmlPath h] $ hakyllRules $ do
             -- copy the debugger data files
             let globdata = (fromGlob $ "debug" </> "img" </> "*.png")
                       .||. (fromGlob $ "debug" </> "JsHoed.jsexe" </> "*.js")

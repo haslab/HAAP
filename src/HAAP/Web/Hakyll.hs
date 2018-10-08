@@ -17,6 +17,7 @@ import HAAP.Pretty as PP
 import HAAP.Plugin
 import HAAP.Shelly
 import HAAP.Utils
+import HAAP.Log
 
 import System.FilePath
 import System.Directory
@@ -49,10 +50,13 @@ import Data.Functor.Contravariant
 import Data.Default
 import Data.Proxy
 import Data.Semigroup
+import Data.List
 
 import Hakyll
 
 import Paths_HAAP
+
+--import Debug.Trace
 
 -- * Hakyll plugin
 
@@ -65,6 +69,9 @@ data HakyllArgs = HakyllArgs
     , hakyllMatch :: Bool
     , hakyllP :: HakyllP
     }
+
+-- Hakyll focuses (add specific ignoreFiles to speed-up hakyll "Creating provider..." step)
+type HakyllF = [FilePath]
 
 instance Default HakyllArgs where
     def = defaultHakyllArgs
@@ -93,8 +100,8 @@ instance Monoid (Rules ()) where
     mempty = return ()
     mappend x y = x >> y
 
-newtype HakyllT m a = HakyllT { unHakyllT :: RWST HakyllArgs (Rules ()) HakyllP m a }
-  deriving (Functor,Applicative,Monad,MonadTrans,MFunctor,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules ()))
+newtype HakyllT m a = HakyllT { unHakyllT :: RWST HakyllArgs (Rules (),HakyllF) HakyllP m a }
+  deriving (Functor,Applicative,Monad,MonadTrans,MFunctor,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules (),HakyllF))
 
 instance HaapMonad m => HasPlugin Hakyll HakyllT m where
     liftPlugin = id
@@ -104,20 +111,31 @@ instance (HaapStack t2 m) => HasPlugin Hakyll (ComposeT HakyllT t2) m where
 morphHakyllT :: (forall b . m b -> n b) -> HakyllT m a -> HakyllT n a
 morphHakyllT f (HakyllT m) = HakyllT $ RWS.mapRWST f m
 
+hakyllFocus :: HasPlugin Hakyll t m => HakyllF -> Haap t m a -> Haap t m a
+hakyllFocus fs m = do
+    liftPluginProxy (Proxy::Proxy Hakyll) $ Writer.tell (mempty,fs)
+    m
+
 hakyllRules :: HasPlugin Hakyll t m => Rules () -> Haap t m ()
-hakyllRules r = liftPluginProxy (Proxy::Proxy Hakyll) $ Writer.tell r
+hakyllRules r = liftPluginProxy (Proxy::Proxy Hakyll) $ Writer.tell (r,[])
 
 runHaapHakyllT :: (HaapStack t m,MonadIO m) => PluginI Hakyll -> Haap (HakyllT :..: t) m a -> Haap t m a
 runHaapHakyllT args m = do
     let go :: (MonadIO m,HaapStack t m) => forall b . (HakyllT :..: t) m b -> t m b
         go (ComposeT (HakyllT m)) = do
-            (e,hp,rules) <- RWS.runRWST m (args) (hakyllP args)
+            (e,hp,(rules,noignores)) <- RWS.runRWST m (args) (hakyllP args)
             let datarules = do
                 matchDataTemplates
                 when (hakyllMatch args) $ matchDataCSSs >> matchDataJSs
                 rules
-            let build = withArgs ["build"] $ hakyllWithExitCode (hakyllCfg args) datarules
-            let clean = withArgs ["clean"] $ hakyllWithExitCode (hakyllCfg args) datarules
+            let ignore fp = b1 || b2 --trace ("ignore?" ++ fp ++" "++ show b1 ++ " " ++ show b2) (b1 || b2)
+                    where
+                    b1 = not $ any (`isPrefixOf` fp) noignores
+                    b2 = ignoreFile (hakyllCfg args) fp
+            let cfg = (hakyllCfg args) { ignoreFile = ignore }
+            let build = withArgs ["build"] $ hakyllWithExitCode cfg datarules
+            let clean = withArgs ["clean"] $ hakyllWithExitCode cfg datarules
+            lift $ liftIO $ putStrLn $ "Running Hakyll without ignoring... " ++ prettyString noignores 
             lift $ liftIO $ hakyllIO hp $ if (hakyllClean args)
                 then clean >> build
                 else build
@@ -165,7 +183,7 @@ orErrorHakyllPage page def m = orDo go m
   where
     go e = do
         hp <- getHakyllP
-        hakyllRules $ create [fromFilePath page] $ do
+        hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
                 let errCtx = constField "errorMessage" (prettyString e)
@@ -178,7 +196,7 @@ orErrorHakyllPage' hakyllargs page def m = orDo go m
   where
     go e = useHakyll hakyllargs $ do
         hp <- getHakyllP
-        hakyllRules $ create [fromFilePath page] $ do
+        hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
                 let errCtx = constField "errorMessage" (prettyString e)
@@ -191,7 +209,7 @@ orErrorHakyllPageWith runHakyll page def m = orDo go m
   where
     go e = runHakyll $ do
         hp <- getHakyllP
-        hakyllRules $ create [fromFilePath page] $ do
+        hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
                 let errCtx = constField "errorMessage" (prettyString e)

@@ -98,8 +98,8 @@ runHaddocks allfiles = do
         orErrorWritePage (addExtension (tmp </> show i) "html") mempty $ runBaseSh $ do
         shCd $ haddockPath h
         shCommandWith ioArgs "haddock" (extras++["-h","-o",html]++files)
-    hakyllRules $ do
-        forM_ (zip [0..] allres) $ \(i,_) -> do
+    forM_ (zip [0..] allres) $ \(i,_) -> do
+        hakyllFocus [tmp </> haddockHtmlPath h </> show i] $ hakyllRules $ do
             -- copy the haddock generated documentation
             match (fromGlob $ (tmp </> haddockHtmlPath h </> show i) </> "*.html") $ do
                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
@@ -112,6 +112,7 @@ runHaddocks allfiles = do
                 route   $ relativeRoute tmp
                 compile $ copyFileCompiler
         -- generate a documentation page with the haddock report and a link to the documentation
+    hakyllFocus ["templates"] $ hakyllRules $ do
         let mkName (_,files,_) = sepByStr " " files
         create [fromFilePath indexhtml] $ do
             route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)

@@ -26,7 +26,7 @@ import Data.Text.Prettyprint.Doc.Render.Text
 
 logEvent :: (MonadIO m,HaapStack t m,HasCallStack) => T.Text -> Haap t m ()
 logEvent msg = do
-    liftHaap $ lift $ liftIO $ putDoc (text msg)
+    liftHaap $ lift $ liftIO $ putDoc (text msg <> "\n")
     Writer.tell $ DList.singleton $ HaapEvent callStack (msg <> "\n")
     
 logError :: (MonadIO m,HaapStack t m,HasCallStack) => SomeException -> Haap t m ()
