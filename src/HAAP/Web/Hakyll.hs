@@ -56,7 +56,7 @@ import Hakyll
 
 import Paths_HAAP
 
---import Debug.Trace
+import Debug.Trace
 
 -- * Hakyll plugin
 
@@ -229,6 +229,9 @@ loadAndApplyHTMLTemplate :: Identifier -> Context a -> Item a -> Compiler (Item 
 loadAndApplyHTMLTemplate iden ctx item = do
     i <- loadAndApplyTemplate iden ctx item
     return i
+
+traceRoute :: Routes
+traceRoute = customRoute $ \iden -> trace ("traceRoute " ++ show iden) (toFilePath iden)
 
 relativeRoute :: FilePath -> Routes
 relativeRoute prefix = customRoute $ \iden -> makeRelative (prefix) (toFilePath iden)

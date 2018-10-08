@@ -68,7 +68,7 @@ data CWDrawType
     | CWDrawFullscreen
 
 data CodeWorldArgs = CodeWorldArgs
-    { cwExecutable :: Either FilePath FilePath -- graphical web applications to compile with ghjs and codeworld libraries, or a link to an existing runmain.js file
+    { cwExecutable :: Either FilePath FilePath -- graphical web applications to compile with ghcjs and codeworld libraries, or a link to an existing runmain.js file
     , cwTitle :: T.Text
     , cwTemplate :: CWTemplate 
     , cwGHCJS :: GHCJSArgs
@@ -125,14 +125,14 @@ runCodeWorld = do
                 hakyllFocus ["templates",tmp </> destfolder] $ hakyllRules $ do 
                     let message = text "=== Compiling ===" $+$ pretty res $+$ text "=== Running ==="
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
-                        route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
+                        route   $ traceRoute `composeRoutes` relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile $ getResourceString >>= hakyllCompile hp
                     let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
                                    .||. fromGlob (tmp </> destfolder </> "*.externs")
                                    .||. fromGlob (tmp </> destfolder </> "*.webapp")
                                    .||. fromGlob (tmp </> destfolder </> "*.stats")
                     when (isLeft $ cwExecutable cw) $ match auxFiles $ do
-                        route   $ relativeRoute tmp
+                        route $ traceRoute `composeRoutes` relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile copyFileCompiler
                     let runpath = case cwExecutable cw of
                                     Left _ -> "."
