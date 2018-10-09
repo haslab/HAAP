@@ -114,6 +114,7 @@ newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap ::
 
 deriving instance (Monad (t m),MonadCatch (ComposeT (RWST Project HaapLog ()) t m)) => MonadCatch (Haap t m)
 deriving instance (Monad (t m),MonadThrow (ComposeT (RWST Project HaapLog ()) t m)) => MonadThrow (Haap t m)
+deriving instance (Monad (t m),MonadMask (ComposeT (RWST Project HaapLog ()) t m)) => MonadMask (Haap t m)
 
 mapHaapMonad :: (t1 m (a,(),HaapLog) -> t2 n (b,(),HaapLog)) -> Haap t1 m a -> Haap t2 n b
 mapHaapMonad f (Haap (ComposeT m)) = Haap $ ComposeT $ RWS.mapRWST f m
@@ -167,6 +168,7 @@ liftHaap m = Haap $ ComposeT $ lift m
 
 deriving instance MonadCatch (t1 (t2 m)) => MonadCatch (ComposeT t1 t2 m)
 deriving instance MonadThrow (t1 (t2 m)) => MonadThrow (ComposeT t1 t2 m)
+deriving instance MonadMask (t1 (t2 m)) => MonadMask (ComposeT t1 t2 m)
 
 instance MonadTrans t => MonadTrans (Haap t) where
     lift = Haap . lift

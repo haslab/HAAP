@@ -101,7 +101,7 @@ instance Monoid (Rules ()) where
     mappend x y = x >> y
 
 newtype HakyllT m a = HakyllT { unHakyllT :: RWST HakyllArgs (Rules (),HakyllF) HakyllP m a }
-  deriving (Functor,Applicative,Monad,MonadTrans,MFunctor,MonadIO,MonadCatch,MonadThrow,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules (),HakyllF))
+  deriving (Functor,Applicative,Monad,MonadTrans,MFunctor,MonadIO,MonadCatch,MonadThrow,MonadMask,MonadReader HakyllArgs,MonadState HakyllP,MonadWriter (Rules (),HakyllF))
 
 instance HaapMonad m => HasPlugin Hakyll HakyllT m where
     liftPlugin = id
