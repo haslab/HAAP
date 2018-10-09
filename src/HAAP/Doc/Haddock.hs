@@ -97,9 +97,9 @@ runHaddocks allfiles = do
     allres <- forM (zip [0..] allfiles) $ \(i,files) -> do
         orErrorWritePage (addExtension (tmp </> show i) "html") mempty $ runBaseSh $ do
         shCd $ haddockPath h
-        shCommandWith ioArgs "haddock" (extras++["-h","-o",html]++files)
+        shCommandWith ioArgs "haddock" (extras++["-h","-o",html </> show i]++files)
     forM_ (zip [0..] allres) $ \(i,_) -> do
-        hakyllFocus [tmp </> haddockHtmlPath h </> show i] $ hakyllRules $ do
+        hakyllFocus [tmp </> haddockHtmlPath h] $ hakyllRules $ do
             -- copy the haddock generated documentation
             match (fromGlob $ (tmp </> haddockHtmlPath h </> show i) </> "*.html") $ do
                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
@@ -120,7 +120,7 @@ runHaddocks allfiles = do
                 let haddockCtx = field "name" (return . mkName . itemBody)
                        `mappend` field "stdout" (return . Text.unpack . resStdout . thr3 . itemBody)
                        `mappend` field "stderr" (return . Text.unpack . resStderr . thr3 . itemBody)
-                       `mappend` field "link" (\item -> return $ hakyllRoute hp $ addExtension (takeFileName (haddockHtmlPath h) </> (show $ fst3 $ itemBody item)) "html")
+                       `mappend` field "link" (\item -> return $ hakyllRoute hp $ addExtension (takeFileName (haddockHtmlPath h) </> (show $ fst3 $ itemBody item) </> "index") "html")
                 let docCtx = constField "title" (haddockTitle h)
                            `mappend` constField "projectpath" (dirToRoot $ haddockPath h)
                            `mappend` listField "haddocks" haddockCtx (mapM makeItem $ zip3 [0..] allfiles allres)      
