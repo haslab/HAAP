@@ -144,7 +144,8 @@ runHaapHakyllT args m = do
             --        (\(err::SomeException) -> clean >> build)
             return e
     when (hakyllCopy args) $ copyDataFiles (hakyllCfg args)
-    e <- mapHaapMonad go m
+    let datapaths = if hakyllMatch args then ["js","css"] else []
+    e <- mapHaapMonad go $ hakyllFocus datapaths m
     return e
     
 
