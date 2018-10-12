@@ -52,6 +52,9 @@ import Data.Proxy
 import Data.Semigroup
 import Data.List
 
+import qualified Text.Blaze.Html as H
+import qualified Text.Blaze.Html.Renderer.Pretty as H
+
 import Hakyll
 
 import Paths_HAAP
@@ -187,7 +190,7 @@ orErrorHakyllPage page def m = orDo go m
         hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
-                let errCtx = constField "errorMessage" (prettyString e)
+                let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                              `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
@@ -200,7 +203,7 @@ orErrorHakyllPage' hakyllargs page def m = orDo go m
         hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
-                let errCtx = constField "errorMessage" (prettyString e)
+                let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                            `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
@@ -213,7 +216,7 @@ orErrorHakyllPageWith runHakyll page def m = orDo go m
         hakyllFocus ["templates"] $ hakyllRules $ create [fromFilePath page] $ do
             route $ idRoute `composeRoutes` (funRoute $ hakyllRoute hp)
             compile $ do
-                let errCtx = constField "errorMessage" (prettyString e)
+                let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                            `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
         return def
