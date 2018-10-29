@@ -59,6 +59,7 @@ data DebuggerArgs = DebuggerArgs
     , debuggerInstrumentedPath :: FilePath -- path relative to the project path of lareaady instrumented debug files
     , debuggerInstrumentedFiles :: [FilePath] -- debug files relative to the instrumented path
     , debuggerModules :: [String] -- a list of modules to import or the source code
+    , debuggerImports :: String -- a list of imports to prefix the file
     , debuggerProgram :: String
     , debuggerHtmlPath :: FilePath
     }
@@ -89,25 +90,27 @@ runDebugger = do
                 shMkDir $ takeDirectory (tmp </> debuggerHtmlPath h </> file)
                 shCp (debuggerInstrumentedPath h </> file) (tmp </> debuggerHtmlPath h </> file)
             
-            let imports = concatMap (\modu -> "import " ++ modu ++ "\n") (debuggerModules h)
+            let imports = debuggerImports h ++ concatMap (\modu -> "import " ++ modu ++ "\n") (debuggerModules h)
             let mainfile = "{-# LANGUAGE PackageImports #-}" ++ "\n"
                         ++ imports ++ "\n"
-                        ++ "import \"Hoed\" Debug.Hoed (runO',defaultHoedOptions,HoedAnalysis(..))" ++ "\n"
-                        ++ "import \"debug\" Debug.Hoed" ++ "\n" 
-                        ++ "import \"debug\" Debug.Hoed.Algorithmic" ++ "\n"
-                        ++ "import \"debug\" Debug.Hoed.Graphical" ++ "\n"
+                        ++ "import qualified \"Hoed\" Debug.Hoed as Hoed" ++ "\n"
+                        ++ "import qualified \"debug\" Debug.Hoed as Debug" ++ "\n" 
+                        ++ "import qualified \"debug\" Debug.Hoed.Algorithmic as Debug" ++ "\n"
+                        ++ "import qualified \"debug\" Debug.Hoed.Graphical as Debug" ++ "\n"
+                        ++ "import qualified Prelude" ++ "\n"
                         ++ "main = do" ++ "\n"
                         ++ "  let prog = " ++ debuggerProgram h ++ "\n"
-                        ++ "  h <- runO' defaultHoedOptions (print prog)" ++ "\n"
-                        ++ "  debugSaveTrace \"debug.html\" (convert $ hoedCompTree h)" ++ "\n"
-                        ++ "  debugGraphicalOutputToFile \"jshood.html\" h" ++ "\n"
-                        ++ "  debugAlgorithmicOutput " ++ show htmldatapath ++ " " ++ show "." ++ " h" ++ "\n"
+                        ++ "  h <- Hoed.runO' Hoed.defaultHoedOptions (Prelude.print prog)" ++ "\n"
+                        ++ "  Debug.debugSaveTrace \"debug.html\" (Debug.convert $ Hoed.hoedCompTree h)" ++ "\n"
+                        ++ "  Debug.debugGraphicalOutputToFile \"jshood.html\" h" ++ "\n"
+                        ++ "  Debug.debugAlgorithmicOutput " ++ show htmldatapath ++ " " ++ show "." ++ " h" ++ "\n"
             
             shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") (T.pack mainfile)
             
         let dir = (tmp </> debuggerHtmlPath h)
         iores <- orIOResult $ runBaseSh $ do
             shCd dir
+            shRm "Main"
             shGhcWith (ghcArgs { ghcMake = True }) ["Main.hs"]
         addMessageToError (prettyText iores) $ runBaseSh $ do
             shCd dir

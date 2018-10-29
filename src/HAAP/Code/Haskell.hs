@@ -79,6 +79,11 @@ parseModuleFileName file = do
     m <- parseHaskellFile file
     return $ moduleName m
 
+moduleImports :: Module loc -> [ImportDecl loc]
+moduleImports (Module _ _ _ i _) = i
+moduleImports (XmlPage {}) = []
+moduleImports (XmlHybrid _ _ _ i _ _ _ _ _) = i
+
 moduleName :: Module loc -> String
 moduleName (Module _ n _ _ _) = maybe "Main" moduleHeadName n
 moduleName (XmlPage l n _ _ _ _ _) = moduleNameString n
