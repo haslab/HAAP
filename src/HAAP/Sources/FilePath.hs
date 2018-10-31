@@ -86,7 +86,7 @@ instance Default FilePathSourceArgs where
 --instance HaapMonad m => HaapStack (ReaderT FilePathSourceArgs) m where
 --    liftStack = lift
 
-instance (MonadIO m,HaapMonad m) => HasPlugin FilePathSource (ReaderT FilePathSourceArgs) m where
+instance (HaapMonad m) => HasPlugin FilePathSource (ReaderT FilePathSourceArgs) m where
     liftPlugin = id
---instance (MonadIO m,HaapStack t2 m,HaapPluginT (ReaderT FilePathSourceArgs) m (t2 m)) => HasPlugin FilePathSource (ComposeT (ReaderT FilePathSourceArgs) t2) m where
---    liftPlugin m = ComposeT $ hoistPluginT liftStack m
+instance (HaapStack t2 m) => HasPlugin FilePathSource (ComposeT (ReaderT FilePathSourceArgs) t2) m where
+    liftPlugin m = ComposeT $ hoist' lift m
