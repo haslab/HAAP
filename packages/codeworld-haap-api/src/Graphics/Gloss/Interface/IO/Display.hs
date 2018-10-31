@@ -4,7 +4,7 @@ module Graphics.Gloss.Interface.IO.Display
         ( module Graphics.Gloss.Data.Display
         , module Graphics.Gloss.Data.Picture
         , module Graphics.Gloss.Data.Color
-        , displayIO)
+        , displayIO,displayFitScreenIO)
 where
 import Graphics.Gloss.Data.Display
 import Graphics.Gloss.Data.Picture
@@ -54,5 +54,14 @@ displayIO
 
 displayIO display backColor makePicture
  =     makePicture >>= \p -> CW.drawingOf (displayCWPicture display backColor p)
+ 
+displayFitScreenIO
+        :: Display -> Display                -- ^ Display mode.
+        -> Color                  -- ^ Background color.
+        -> IO Picture             -- ^ Action to produce the current picture.
+        -> IO ()
+
+displayFitScreenIO screen display backColor makePicture
+ =     makePicture >>= \p -> CW.drawingOf (displayCWPicture screen backColor $ fitScreenPicture screen display p)
 
 
