@@ -67,6 +67,7 @@ renderHaapTourneyDB t db = do
         rank = HaapRank
                     tourneysPath
                     (tourneyTitle t)
+                    (tourneyNotes t)
                     (tourneyPlayerTag t)
                     (Just headers)
                     "Classificação Média"

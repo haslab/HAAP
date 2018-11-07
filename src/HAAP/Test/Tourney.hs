@@ -87,6 +87,7 @@ class (Ord a,Pretty a) => TourneyPlayer a where
 data HaapTourney t m db a r = HaapTourney
     { tourneyMax :: Int -- maximum number of table entries for the tournament
     , tourneyTitle :: T.Text
+    , tourneyNotes :: T.Text
     , tourneyBestOf :: Int -> Int -- number of matches per round; run the same match to the best of n wins
     , tourneyPlayerTag :: T.Text
     , tourneyPlayers :: Either [a] [[a]] -- must be unique (left = unpaiared players, right = paired players)

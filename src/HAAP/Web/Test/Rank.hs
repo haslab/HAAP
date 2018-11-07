@@ -52,6 +52,7 @@ renderHaapRankScores rank scores = do
                        `mappend` field "class" (return . scoreClass . Just . thr3 . itemBody)
             let pageCtx :: Context String
                 pageCtx = constField "title" (T.unpack $ rankTitle rank)
+                        `mappend` constField "notes" (T.unpack $ rankNotes rank)
                         `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp $ rankPath rank)
                         `mappend` constField "idtag" (T.unpack $ rankIdTag rank)
                         `mappend` constField "ranktag" (T.unpack $ rankTag rank)

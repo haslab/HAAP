@@ -115,6 +115,7 @@ instance Pretty MaybeFloatScore where
 data HaapRank t m a score = HaapRank
     { rankPath :: FilePath
     , rankTitle :: T.Text
+    , rankNotes :: T.Text
     , rankIdTag :: T.Text
     , rankHeaders :: Maybe [T.Text]
     , rankTag :: T.Text
@@ -135,6 +136,7 @@ runHaapRank rank = do
 data HaapSpecRank t m a score = HaapSpecRank
     { sRankPath :: FilePath
     , sRankTitle :: T.Text
+    , sRankNotes :: T.Text
     , sRankIdTag :: T.Text
     , sRankTag :: T.Text
     , sRankIds :: [a]
@@ -146,7 +148,7 @@ runHaapSpecRank :: (MonadIO m,HasPlugin Rank t m,HasPlugin Spec t m,Pretty a,Sco
 runHaapSpecRank r = runHaapRank (haapSpecRank r)
 
 haapSpecRank :: (MonadIO m,HasPlugin Spec t m,HasPlugin Rank t m) => HaapSpecRank t m a score -> HaapRank t m a score
-haapSpecRank r = HaapRank (sRankPath r) (sRankTitle r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
+haapSpecRank r = HaapRank (sRankPath r) (sRankTitle r) (sRankNotes r) (sRankIdTag r) Nothing (sRankTag r) (sRankIds r) rSc
     where
     rSc a = do
         table <- runSpec (sRankSpec r a)
