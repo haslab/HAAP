@@ -6,7 +6,7 @@ This module provides the @GHC@ plugin runs the _ghc_ Haskell compiler.
 -}
 
 
-{-# LANGUAGE EmptyDataDecls, TypeOperators, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE EmptyDataDecls, TypeOperators, OverloadedStrings, GeneralizedNewtypeDeriving, TypeFamilies, UndecidableInstances, FlexibleContexts, MultiParamTypeClasses, FlexibleInstances #-}
 
 module HAAP.Compiler.GHC where
     
@@ -14,6 +14,8 @@ import HAAP.IO
 import HAAP.Core
 import HAAP.Shelly
 import HAAP.Plugin
+import HAAP.Pretty
+import HAAP.Log
 
 import Data.Default
 
@@ -25,6 +27,8 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Compose
 import Control.Monad.Morph
+
+import System.FilePath
 
 import Data.Proxy
 
@@ -77,3 +81,19 @@ shGhcWith ghc ins = shCommandWith (ghcIO ghc) "ghc" $ addArgs (ghcArgs ghc) $ ad
     addRTS False cmds = cmds
     addArgs xs ys = ys ++ xs
     addMake cmds = if ghcMake ghc then "--make":cmds else cmds
+    
+useAndRunGhcExec :: (MonadIO m,HaapStack t m) => GHCArgs -> FilePath -> (IOResult -> Haap (ReaderT GHCArgs :..: t) m a) -> Haap t m (a)
+useAndRunGhcExec args ghcexec m = usePlugin_ (return args) $ runGhcExec ghcexec m
+
+runGhcExec :: (MonadIO m,HasPlugin GHC t m) => FilePath -> (IOResult -> Haap t m a) -> Haap t m a
+runGhcExec ghcexec m = do
+    ghc <- liftHaap $ liftPluginProxy (Proxy::Proxy GHC) $ Reader.ask
+    let (dir,exec) = splitFileName ghcexec
+    let ghc' = ghc { ghcMake = True }
+    logEvent $ "Compiling GHC executable " <> prettyText ghcexec
+    ghcres <- orIOResult $ runBaseSh $ do
+        shCd dir
+        res <- shGhcWith ghc' [exec]
+        return $! res
+    m ghcres
+    
