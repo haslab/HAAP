@@ -102,6 +102,7 @@ data SVNSourceArgs = SVNSourceArgs
     , svnAcceptConflicts :: Bool
     , svnDay :: Maybe Day
     , svnHidden :: Bool
+    , svnClean :: Bool
     }
   deriving (Show,Data,Typeable)
 
@@ -133,7 +134,7 @@ instance HaapSource SVN where
     
     sourcePath = svnPath
 
-defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing True
+defaultSVNSourceArgs = SVNSourceArgs "system commit" True Nothing True False
 
 instance Default SVNSourceArgs where
     def = defaultSVNSourceArgs
@@ -175,7 +176,7 @@ getSVNSource s = do
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
         return $ res { resExitCode = if okRes then 0 else (-1) }
-    ignoreError $ if (exists)
+    ignoreError $ if (exists && not (svnClean args))
         then do
             ok <- update
             unless (resOk ok) (checkout >> return ())
