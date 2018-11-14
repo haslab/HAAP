@@ -5,10 +5,10 @@ This module provides basic metrics of data type and higher-order functions usage
 
 -}
 
-{-# LANGUAGE TupleSections, CPP #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, DeriveGeneric, CPP #-}
 
 module HAAP.Code.Analysis.Usage
-    ( Usage(..),UsageArgs(..),runUsage
+    ( Usage(..),UsageArgs(..),runUsage,UsageReport(..),usageReport
     ) where
 
 import HAAP.IO
@@ -38,6 +38,8 @@ import ConLike
 import TyCon
 import InstEnv
 
+import Control.DeepSeq
+import Data.Default
 import Data.Maybe
 import Data.Map (Map(..))
 import qualified Data.Map as Map
@@ -46,6 +48,8 @@ import qualified Data.Set as Set
 import Control.Monad
 import Data.Generics hiding (TyCon,tyConName)
 import Control.Monad.IO.Class
+import qualified GHC.Generics as GHC
+import Data.Csv (encodeDefaultOrderedByName,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),header,namedRecord)
  
 -- whether it is higher-order entity or not
 type IsHO = Bool
@@ -61,6 +65,97 @@ data Usage = Usage
     , usedClasses :: Set String -- used classes imported from external modules
     , instancesClasses :: Map String (String,IsHO) -- instances defined per class
 }
+
+data UsageReport = UsageReport
+    { usageDefinedFunctionsNonHO :: Int
+    , usageDefinedFunctionsHO :: Int
+    , usageUsedFunctionsNonHO :: Int
+    , usageUsedFunctionsHO :: Int
+    , usageDefinedTypeSynonymsNonHO :: Int
+    , usageDefinedTypeSynonymsHO :: Int
+    , usageDefinedDataTypesNonHO :: Int
+    , usageDefinedDataTypesHO :: Int
+    , usageDefinedClasses :: Int
+    , usageUsedClasses :: Int
+    , usageDefinedClassInstancesNonHO :: Int
+    , usageDefinedClassInstancesHO :: Int
+    }
+  deriving (Show,GHC.Generic)
+    
+instance NFData UsageReport where
+
+instance DefaultOrdered UsageReport where
+    headerOrder _ = header
+        ["usageDefinedFunctionsNonHO"
+        ,"usageDefinedFunctionsHO"
+        ,"usageUsedFunctionsNonHO"
+        ,"usageUsedFunctionsHO"
+        ,"usageDefinedTypeSynonymsNonHO"
+        ,"usageDefinedTypeSynonymsHO"
+        ,"usageDefinedDataTypesNonHO"
+        ,"usageDefinedDataTypesHO"
+        ,"usageDefinedClasses"
+        ,"usageUsedClasses"
+        ,"usageDefinedClassInstancesNonHO"
+        ,"usageDefinedClassInstancesHO"
+        ]
+
+instance ToNamedRecord UsageReport where
+    toNamedRecord (UsageReport x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12) = namedRecord
+        ["usageDefinedFunctionsNonHO" .= x1
+        ,"usageDefinedFunctionsHO" .= x2
+        ,"usageUsedFunctionsNonHO" .= x3
+        ,"usageUsedFunctionsHO" .= x4
+        ,"usageDefinedTypeSynonymsNonHO" .= x5
+        ,"usageDefinedTypeSynonymsHO" .= x6
+        ,"usageDefinedDataTypesNonHO" .= x7
+        ,"usageDefinedDataTypesHO" .= x8
+        ,"usageDefinedClasses" .= x9
+        ,"usageUsedClasses" .= x10
+        ,"usageDefinedClassInstancesNonHO" .= x11
+        ,"usageDefinedClassInstancesHO" .= x12
+        ]
+instance FromNamedRecord UsageReport where
+    parseNamedRecord m = UsageReport <$>
+        m .: "usageDefinedFunctionsNonHO"
+        <*> m .: "usageDefinedFunctionsHO"
+        <*> m .: "usageUsedFunctionsNonHO"
+        <*> m .: "usageUsedFunctionsHO"
+        <*> m .: "usageDefinedTypeSynonymsNonHO"
+        <*> m .: "usageDefinedTypeSynonymsHO"
+        <*> m .: "usageDefinedDataTypesNonHO"
+        <*> m .: "usageDefinedDataTypesHO"
+        <*> m .: "usageDefinedClasses"
+        <*> m .: "usageUsedClasses"
+        <*> m .: "usageDefinedClassInstancesNonHO"
+        <*> m .: "usageDefinedClassInstancesHO"
+
+instance Default UsageReport where
+    def = UsageReport (-1) (-1) (-1) (-1) (-1) (-1) (-1) (-1) (-1) (-1) (-1) (-1)
+
+    
+usageReport :: Usage -> UsageReport
+usageReport u = UsageReport
+    { usageDefinedFunctionsNonHO = Map.size defFunsNHO
+    , usageDefinedFunctionsHO = Map.size defFunsHO
+    , usageUsedFunctionsNonHO = Map.size useFunsNHO
+    , usageUsedFunctionsHO = Map.size useFunsHO
+    , usageDefinedTypeSynonymsNonHO = Map.size defsynsNHO
+    , usageDefinedTypeSynonymsHO = Map.size defsynsHO
+    , usageDefinedDataTypesNonHO = Map.size defdatasNHO
+    , usageDefinedDataTypesHO = Map.size defdatasHO
+    , usageDefinedClasses = Set.size $ definedClasses u
+    , usageUsedClasses = Set.size $ usedClasses u
+    , usageDefinedClassInstancesNonHO = Map.size instsHO
+    , usageDefinedClassInstancesHO = Map.size instsNHO
+    }
+  where
+    (defFunsHO,defFunsNHO) = Map.partition id $ definedFunctions u
+    (useFunsHO,useFunsNHO) = Map.partition id $ usedFunctions u
+    (defsyns,defdatas) = Map.partition fst $ definedTypes u
+    (defsynsHO,defsynsNHO) = Map.partition snd defsyns
+    (defdatasHO,defdatasNHO) = Map.partition snd defdatas 
+    (instsHO,instsNHO) = Map.partition snd $ instancesClasses u
 
 data UsageArgs = UsageArgs
     { usageFiles :: [(FilePath,String)] -- a list of Haskell files (with their module names) to analyze
