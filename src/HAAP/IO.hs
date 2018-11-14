@@ -194,7 +194,7 @@ ioCommandWith ioargs name args = addHiddenIO $ do
         putStrLn $ "Running IO: " ++ unwords cmds
         putStrLn $ stderr
         putStrLn $ stdout
-    return $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack stderr)
+    evaluate $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack stderr)
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
@@ -203,10 +203,10 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-    addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> evaluateM $! mempty) else m
+    addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> mempty) else m
 
 haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
-haapLiftIO io = catchAny (evaluateM $! lift $ liftIO io) (\e -> throw $ HaapIOException e)
+haapLiftIO io = catchAny (lift $! liftIO $! evaluateM $! io) (\e -> throw $ HaapIOException e)
 
 runIOCore :: MonadIO m => IOArgs -> IO a -> m a
 runIOCore args io = case ioTimeout args of
@@ -251,7 +251,7 @@ orDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
 orMaybeIO :: IO a -> IO (Maybe a)
-orMaybeIO m = catchAny (evaluateM $! liftM Just m) (\err -> return Nothing)
+orMaybeIO m = catchAny (evaluateM $ liftM Just m) (\err -> return Nothing)
 
 orError :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either a SomeException)
 orError m = orDo (return . Right) (liftM Left m)
@@ -269,7 +269,7 @@ orLogError :: (MonadIO m,IsString str,HaapStack t m) => Haap t m str -> Haap t m
 orLogError m = orDo (\e -> logEvent (prettyText e) >> return (fromString $ prettyString e)) m
 
 forceHaap :: (NFData a,HaapStack t m,MonadIO m) => a -> Haap t m a
-forceHaap x = liftIO $! E.evaluate $! force x
+forceHaap x = liftIO $ E.evaluate $ force x
 
 forceM :: (MonadIO m,NFData a) => m a -> m a
 forceM m = do
@@ -277,14 +277,14 @@ forceM m = do
     liftIO $! E.evaluate $! DeepSeq.force x
     
 evaluate :: MonadIO m => a -> m a
-evaluate = return
---evaluate x = liftIO $! E.evaluate $! x
+--evaluate = return
+evaluate x = liftIO $! E.evaluate $! x
     
 evaluateM :: MonadIO m => m a -> m a
-evaluateM m = m
---evaluateM m = do
---    !x <- m
---    liftIO $! E.evaluate $! x
+--evaluateM m = m
+evaluateM m = do
+    !x <- m
+    liftIO $! E.evaluate x
 
 equalPathIO :: FilePath -> FilePath -> IO Bool
 equalPathIO x y = do
