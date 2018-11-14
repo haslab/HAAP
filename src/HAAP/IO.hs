@@ -277,13 +277,14 @@ forceM m = do
     liftIO $! E.evaluate $! DeepSeq.force x
     
 evaluate :: MonadIO m => a -> m a
-evaluate x = do
-    liftIO $! E.evaluate $! x
+evaluate = return
+--evaluate x = liftIO $! E.evaluate $! x
     
 evaluateM :: MonadIO m => m a -> m a
-evaluateM m = do
-    !x <- m
-    liftIO $! E.evaluate $! x
+evaluateM m = m
+--evaluateM m = do
+--    !x <- m
+--    liftIO $! E.evaluate $! x
 
 equalPathIO :: FilePath -> FilePath -> IO Bool
 equalPathIO x y = do
