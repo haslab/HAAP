@@ -44,6 +44,7 @@ import Control.Monad.Reader (MonadReader(..))
 --import Control.Monad.Catch (MonadCatch,MonadThrow)
 import Control.Monad.Trans
 import Control.Exception.Safe
+import Control.Exception (evaluate)
 import Control.Monad.Trans.Control
 
 import Data.Functor.Contravariant
@@ -219,7 +220,7 @@ orErrorHakyllPageWith runHakyll page def m = orDo go m
                 let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                            `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
-        return def
+        return $! def
 
 getHakyllP :: (HasPlugin Hakyll t m) => Haap t m HakyllP
 getHakyllP = liftHaap $ liftPluginProxy (Proxy::Proxy Hakyll) $ State.get

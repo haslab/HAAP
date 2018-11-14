@@ -33,6 +33,7 @@ import Control.Monad
 --import Control.Monad.Catch (MonadCatch(..),MonadThrow(..))
 import Control.DeepSeq
 import Control.Exception.Safe
+import Control.Exception (evaluate)
 
 --import System.Timeout
 import System.FilePath
@@ -188,7 +189,7 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
         stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
         stderr <- if ioHidden ioargs then return (T.pack "hidden") else Sh.lastStderr
         exit <- Sh.lastExitCode
-        return $! force $! IOResult exit stdout stderr
+        liftIO $! evaluate $! force $! IOResult exit stdout stderr
       where
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds

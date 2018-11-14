@@ -23,6 +23,8 @@ import Data.Proxy
 
 import Control.Monad.Reader as Reader
 import Control.DeepSeq
+import Control.Exception.Safe
+import Control.Exception (evaluate)
 
 import System.FilePath
 
