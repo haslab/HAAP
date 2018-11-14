@@ -24,7 +24,6 @@ import Data.Proxy
 import Control.Monad.Reader as Reader
 import Control.DeepSeq
 import Control.Exception.Safe
-import Control.Exception (evaluate)
 
 import System.FilePath
 
@@ -70,7 +69,7 @@ runHomplexity = do
 --        let html = dirToRoot (homplexityPath h) </> tmp </> homplexityHtmlPath h
         !res <- orErrorWritePage (tmp </> homplexityHtmlPath h) mempty $ runBaseSh $ do
             shCd $ homplexityPath h
-            shCommandWith ioArgs "homplexity" (extras++files)
+            evaluateM $! shCommandWith ioArgs "homplexity" (extras++files)
 --        runIO $! eval $! force res
         --runIO $ putStrLn $ show $ resStderr res
         --runIO $ putStrLn $ show $ resStdout res
@@ -86,7 +85,7 @@ runHomplexity = do
                     let homCtx = constField "projectpath" (fileToRoot $ hakyllRoute hp $ homplexityHtmlPath h)
                                `mappend` listField "messages" msgCtx (mapM makeItem messages)
                     makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx >>= hakyllCompile hp
-        return $! (hakyllRoute hp $ homplexityHtmlPath h)
+        evaluate $! (hakyllRoute hp $ homplexityHtmlPath h)
       
 parseMessages [] = []
 parseMessages (x:xs)

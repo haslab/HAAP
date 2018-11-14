@@ -33,7 +33,6 @@ import Control.Monad
 --import Control.Monad.Catch (MonadCatch(..),MonadThrow(..))
 import Control.DeepSeq
 import Control.Exception.Safe
-import Control.Exception (evaluate)
 
 --import System.Timeout
 import System.FilePath
@@ -189,7 +188,7 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
         stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
         stderr <- if ioHidden ioargs then return (T.pack "hidden") else Sh.lastStderr
         exit <- Sh.lastExitCode
-        liftIO $! evaluate $! force $! IOResult exit stdout stderr
+        evaluate $! force $! IOResult exit stdout stderr
       where
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds
@@ -348,5 +347,5 @@ catchAnySh :: Sh a -> (SomeException -> Sh a) -> Sh a
 catchAnySh = catchSh
 
 catchSh :: (Exception e) => Sh a -> (e -> Sh a) -> Sh a
-catchSh f g = f `Sh.catch_sh` \e ->
+catchSh f g = (evaluateM f) `Sh.catch_sh` \e ->
     if isSyncException e then g e else throw e

@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides basic IO functionalities.
 -}
 
-{-# LANGUAGE FlexibleContexts, DeriveGeneric, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, FlexibleContexts, DeriveGeneric, ScopedTypeVariables #-}
 
 module HAAP.IO where
 
@@ -21,7 +21,7 @@ import qualified Control.Monad.Reader as Reader
 --import Control.Monad.Catch
 --import Control.Monad.Except
 import Control.Monad
-import qualified Control.Exception as E (evaluate)
+import qualified Control.Exception as E
 import Control.Exception.Safe
 
 import Data.Default
@@ -45,7 +45,7 @@ import System.Directory
 import System.Environment
 import System.FilePath.GlobPattern
 
-
+import Control.Monad.IO.Class
 import Control.Concurrent.Async
 import Control.Concurrent (threadDelay)
 
@@ -203,10 +203,10 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-    addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> return $ mempty) else m
+    addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> evaluateM $! mempty) else m
 
 haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
-haapLiftIO io = catchAny (lift $ liftIO io) (\e -> throw $ HaapIOException e)
+haapLiftIO io = catchAny (evaluateM $! lift $ liftIO io) (\e -> throw $ HaapIOException e)
 
 runIOCore :: MonadIO m => IOArgs -> IO a -> m a
 runIOCore args io = case ioTimeout args of
@@ -223,58 +223,67 @@ runBaseIO' = runBaseIOWith' (defaultIOArgs)
 runIO' :: (HaapPureStack t m IO,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
 runIO' = runIOWith' (defaultIOArgs)
 
-orEither :: HaapStack t m => Haap t m a -> Haap t m (Either SomeException a)
+orEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
 orLogEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orLogEither m = orDo (\e -> logEvent (prettyText e) >> return (Left e)) (liftM Right m)
 
-orMaybe :: HaapStack t m => Haap t m a -> Haap t m (Maybe a)
+orMaybe :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Maybe a)
 orMaybe m = orDo (\e -> return Nothing) (liftM Just m)
 
 orLogMaybe :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Maybe a)
 orLogMaybe m = orDo (\e -> logEvent (prettyText e) >> return Nothing) (liftM Just m)
 
-orDo :: HaapStack t m => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
-orDo ex m = catchAny m ex
+orDo :: (MonadIO m,HaapStack t m) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
+orDo ex m = catchAny (evaluateM m) ex
 
 orLogDo :: (MonadIO m,HaapStack t m) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
 orLogDo f m = orDo (\e -> logEvent (prettyText e) >> f e) m
 
 orDoIO :: (SomeException -> IO a) -> IO a -> IO a
-orDoIO ex m = catchAny m ex
+orDoIO ex m = catchAny (evaluateM m) ex
 
 orLogDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orLogDefault a m = orDo (\e -> logEvent (prettyText e) >> return a) m
 
-orDefault :: HaapStack t m => a -> Haap t m a -> Haap t m a
+orDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
 orMaybeIO :: IO a -> IO (Maybe a)
-orMaybeIO m = catchAny (liftM Just m) (\err -> return Nothing)
+orMaybeIO m = catchAny (evaluateM $! liftM Just m) (\err -> return Nothing)
 
-orError :: HaapStack t m => Haap t m a -> Haap t m (Either a SomeException)
+orError :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either a SomeException)
 orError m = orDo (return . Right) (liftM Left m)
 
-orDo' :: (HaapStack t m,NFData a) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
+orDo' :: (MonadIO m,HaapStack t m,NFData a) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
 orDo' ex m = catchAny (forceM m) ex
 
 ignoreError :: (MonadIO m,HaapStack t m) => Haap t m () -> Haap t m ()
-ignoreError m = orDo (\e -> logEvent (prettyText e)) m
+ignoreError m = orDo' (\e -> logEvent (prettyText e)) m
 
-addMessageToError :: HaapStack t m => T.Text -> Haap t m a -> Haap t m a
+addMessageToError :: (MonadIO m,HaapStack t m) => T.Text -> Haap t m a -> Haap t m a
 addMessageToError msg m = orDo (\e -> throw $ HaapException $ msg <> prettyText e) m
 
 orLogError :: (MonadIO m,IsString str,HaapStack t m) => Haap t m str -> Haap t m str
 orLogError m = orDo (\e -> logEvent (prettyText e) >> return (fromString $ prettyString e)) m
 
 forceHaap :: (NFData a,HaapStack t m,MonadIO m) => a -> Haap t m a
-forceHaap x = liftIO $ E.evaluate $ force x
+forceHaap x = liftIO $! E.evaluate $! force x
 
-forceM :: (Monad m,NFData a) => m a -> m a
+forceM :: (MonadIO m,NFData a) => m a -> m a
 forceM m = do
-    x <- m
-    return $! DeepSeq.force x
+    !x <- m
+    liftIO $! E.evaluate $! DeepSeq.force x
+    
+evaluate :: MonadIO m => a -> m a
+evaluate x = do
+    liftIO $! E.evaluate $! x
+    
+evaluateM :: MonadIO m => m a -> m a
+evaluateM m = do
+    !x <- m
+    liftIO $! E.evaluate $! x
 
 equalPathIO :: FilePath -> FilePath -> IO Bool
 equalPathIO x y = do
@@ -287,7 +296,7 @@ forAllIO num gen f = do
     xs <- generate $ vectorOf num gen
     mapM f xs
 
-orIOResult :: HaapStack t m => Haap t m IOResult -> Haap t m IOResult
+orIOResult :: (MonadIO m,HaapStack t m) => Haap t m IOResult -> Haap t m IOResult
 orIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (prettyText err)) m
 
 -- timeout from System.Timeout sometimes fails to halt the computation, so we wrap it as an async computation

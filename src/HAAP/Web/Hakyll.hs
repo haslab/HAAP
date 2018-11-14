@@ -44,7 +44,6 @@ import Control.Monad.Reader (MonadReader(..))
 --import Control.Monad.Catch (MonadCatch,MonadThrow)
 import Control.Monad.Trans
 import Control.Exception.Safe
-import Control.Exception (evaluate)
 import Control.Monad.Trans.Control
 
 import Data.Functor.Contravariant
@@ -183,7 +182,7 @@ matchDataCSSs = do
         route idRoute
         compile compressCssCompiler
 
-orErrorHakyllPage :: (HasPlugin Hakyll t m,Pretty a) => FilePath -> a -> Haap t m a -> Haap t m a
+orErrorHakyllPage :: (MonadIO m,HasPlugin Hakyll t m,Pretty a) => FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPage page def m = orDo go m
   where
     go e = do
