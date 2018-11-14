@@ -193,7 +193,7 @@ orErrorHakyllPage page def m = orDo go m
                 let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                              `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
-        return def
+        return $! def
 
 orErrorHakyllPage' :: (MonadIO m,HaapStack t m,Pretty a) => HakyllArgs -> FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPage' hakyllargs page def m = orDo go m
@@ -206,7 +206,7 @@ orErrorHakyllPage' hakyllargs page def m = orDo go m
                 let errCtx = constField "errorMessage" (H.renderHtml $ H.toHtml $ prettyString e)
                            `mappend` constField "projectpath" (fileToRoot $ hakyllRoute hp page)
                 makeItem "" >>= loadAndApplyHTMLTemplate "templates/error.html" errCtx >>= hakyllCompile hp
-        return def
+        return $! def
 
 orErrorHakyllPageWith :: (MonadIO m,HaapStack t m,Pretty a) => (forall a . Haap (HakyllT :..: t) m a -> Haap t m a) -> FilePath -> a -> Haap t m a -> Haap t m a
 orErrorHakyllPageWith runHakyll page def m = orDo go m

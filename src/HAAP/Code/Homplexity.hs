@@ -5,7 +5,7 @@ This module provides the @Homplexity@ plugin that invokes the external _homplexi
 
 -}
 
-{-# LANGUAGE EmptyDataDecls, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE BangPatterns, EmptyDataDecls, TypeOperators, TypeFamilies, FlexibleInstances, FlexibleContexts, UndecidableInstances, MultiParamTypeClasses, OverloadedStrings #-}
 
 module HAAP.Code.Homplexity where
 
@@ -22,6 +22,7 @@ import qualified Data.Text as Text
 import Data.Proxy
 
 import Control.Monad.Reader as Reader
+import Control.DeepSeq
 
 import System.FilePath
 
@@ -65,12 +66,13 @@ runHomplexity = do
         let extras = homplexityArgs h
         let files = homplexityFiles h
 --        let html = dirToRoot (homplexityPath h) </> tmp </> homplexityHtmlPath h
-        res <- orErrorWritePage (tmp </> homplexityHtmlPath h) mempty $ runBaseSh $ do
+        !res <- orErrorWritePage (tmp </> homplexityHtmlPath h) mempty $ runBaseSh $ do
             shCd $ homplexityPath h
             shCommandWith ioArgs "homplexity" (extras++files)
---        runIO $ putStrLn $ show $ resStderr res
---        runIO $ putStrLn $ show $ resStdout res
-        let messages = parseMessages $ lines (Text.unpack $ resStdout res) ++ lines (Text.unpack $ resStderr res)
+--        runIO $! eval $! force res
+        --runIO $ putStrLn $ show $ resStderr res
+        --runIO $ putStrLn $ show $ resStdout res
+        let !messages = parseMessages $ lines (Text.unpack $ resStdout res) ++ lines (Text.unpack $ resStderr res)
         hakyllFocus ["templates"] $ hakyllRules $ do
             -- copy the homplexity generated documentation
             create [fromFilePath $ homplexityHtmlPath h] $ do
@@ -82,7 +84,7 @@ runHomplexity = do
                     let homCtx = constField "projectpath" (fileToRoot $ hakyllRoute hp $ homplexityHtmlPath h)
                                `mappend` listField "messages" msgCtx (mapM makeItem messages)
                     makeItem "" >>= loadAndApplyHTMLTemplate "templates/homplexity.html" homCtx >>= hakyllCompile hp
-        return (hakyllRoute hp $ homplexityHtmlPath h)
+        return $! (hakyllRoute hp $ homplexityHtmlPath h)
       
 parseMessages [] = []
 parseMessages (x:xs)

@@ -76,7 +76,7 @@ runBaseShWith ioargs msh = do
 
 runBaseShWith' :: (MonadIO m,HaapStack t m,NFData a) => IOArgs -> Sh a -> Haap t m a
 runBaseShWith' ioargs msh = do
-    haapLiftIO $ forceM $ runShCoreIO ioargs msh
+    haapLiftIO $! forceM $! runShCoreIO ioargs msh
 
 runShWith :: (MonadIO m,HaapPureStack t m Sh) => IOArgs -> Haap t Sh a -> Haap t m a
 runShWith ioargs msh = do
@@ -188,7 +188,7 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
         stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
         stderr <- if ioHidden ioargs then return (T.pack "hidden") else Sh.lastStderr
         exit <- Sh.lastExitCode
-        return $ force $ IOResult exit stdout stderr
+        return $! force $! IOResult exit stdout stderr
       where
         addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
         addTimeout Nothing cmds = cmds
