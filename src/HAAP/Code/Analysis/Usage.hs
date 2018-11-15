@@ -8,7 +8,7 @@ This module provides basic metrics of data type and higher-order functions usage
 {-# LANGUAGE OverloadedStrings, TupleSections, DeriveGeneric, CPP #-}
 
 module HAAP.Code.Analysis.Usage
-    ( Usage(..),UsageArgs(..),runUsage,UsageReport(..),usageReport
+    ( Usage(..),UsageArgs(..),runUsage,UsageReport(..),usageReport,runUsageReport
     ) where
 
 import HAAP.IO
@@ -21,7 +21,7 @@ import HAAP.Shelly
 -- GHC imports
 import GHC.Paths ( libdir )
 import GHC.LanguageExtensions
-import GHC
+import GHC hiding (def)
 import Outputable
 import DynFlags
 import SrcLoc
@@ -162,8 +162,11 @@ data UsageArgs = UsageArgs
     , usageIgnores :: String -> String -> Bool -- ignore predicate: receives name and module
     , usageImportPaths :: [FilePath] -- a list of additional import paths (similar to ghc's -i parameter)
     }
- 
-runUsage :: (MonadIO m) => UsageArgs -> m Usage
+
+runUsageReport :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m UsageReport
+runUsageReport args = orLogDefault def (usageReport <$> runUsage args)
+     
+runUsage :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m Usage
 runUsage u = liftIO $ do
     
     -- compiler flags
