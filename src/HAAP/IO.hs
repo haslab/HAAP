@@ -120,7 +120,7 @@ instance Pretty IOResult where
            $+$ string "Exit Code:" <+> pretty (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 60) False Nothing NoSandbox True [] Nothing False
+defaultIOArgs = IOArgs (Just 120) False Nothing NoSandbox True [] Nothing False
 
 hiddenIOArgs :: IOArgs
 hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
