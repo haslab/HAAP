@@ -48,7 +48,7 @@ newtype ScoredTourneyPlayer a r = ScoredTourneyPlayer (a,r)
 instance Pretty a => Pretty (ScoredTourneyPlayer a r) where
     pretty (ScoredTourneyPlayer x) = pretty $ fst x
 
-renderHaapTourney :: (PluginK db t m,MonadIO m,HasPlugin Rank t m,HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,NFData a,HaapDB db,TourneyPlayer a) => HaapTourney t m db a r -> Haap t m FilePath
+renderHaapTourney :: (Show a,PluginK db t m,MonadIO m,HasPlugin Rank t m,HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t m,NFData a,HaapDB db,TourneyPlayer a) => HaapTourney t m db a r -> Haap t m FilePath
 renderHaapTourney tourney = do
     (tourneyno,tourneydb,tourneyTree,tourneyTime) <- runHaapTourney tourney
     let db = tourneyDB tourneydb

@@ -192,7 +192,7 @@ playerPos 1 xs = error $ "playerPos1 " ++ show xs
 playerPos roundno [x] = nextRound roundno + 1
 playerPos roundno (x:xs) = playerPos (nextRound roundno) xs
 
-runHaapTourney :: (HasPlugin Tourney t m,PluginK db t m,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => HaapTourney t m db a r -> Haap t m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
+runHaapTourney :: (Show a,HasPlugin Tourney t m,PluginK db t m,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => HaapTourney t m db a r -> Haap t m (Int,HaapTourneyDB a,TourneyTree a r,ZonedTime)
 runHaapTourney (tourney::HaapTourney t m db a r) = do
     --logEvent "haaptourney"
     let players = tourneyPlayers tourney
@@ -216,7 +216,7 @@ runHaapTourney (tourney::HaapTourney t m db a r) = do
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: (MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
+pairPlayers :: (Show a,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
 pairPlayers _ (Right players) tourneySize = return players
 pairPlayers _ (Left players) tourneySize = do
     players' <- runBaseIO' $ shuffleM players
