@@ -139,6 +139,7 @@ getTourneySize :: HasDB db t m => Proxy db -> [a] -> Haap t m Int
 getTourneySize _ (length -> n)
     | n <= 4 = return 4
     | n <= 16 = return 16
+    | n <= 32 = return 32
     | n <= 64 = return 64
     | n <= 128 = return 128
     | n <= 256 = return 256
@@ -148,6 +149,7 @@ tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
 tourneyDiv 128 = 64
 tourneyDiv 64 = 16
+tourneyDiv 32 = 4
 tourneyDiv 16 = 4
 tourneyDiv 4 = 1
 tourneyDiv n = error $ "tourneyDiv " ++ show n
@@ -156,6 +158,7 @@ roundWinners :: Int -> Int
 roundWinners 256 = 1
 roundWinners 128 = 2
 roundWinners 64 = 1
+roundWinners 32 = 2
 roundWinners 16 = 1
 roundWinners 4 = 1
 roundWinners n = error $ "unsupported roundWinners " ++ show n
@@ -164,6 +167,7 @@ roundLosers :: Int -> [Int]
 roundLosers 256 = [65,66,67]
 roundLosers 128 = [33,65]
 roundLosers 64 = [17,18,19]
+roundLosers 32 = [5,6,7]
 roundLosers 16 = [5,6,7]
 roundLosers 4 = [2,3,4]
 roundLosers n = error $ "unsupported roundLosers " ++ show n
@@ -172,6 +176,7 @@ nextRound :: Int -> Int
 nextRound 256 = 64
 nextRound 128 = 64
 nextRound 64 = 16
+nextRound 32 = 4
 nextRound 16 = 4
 nextRound 4 = 1
 nextRound n = error $ "nextRound " ++ show n
