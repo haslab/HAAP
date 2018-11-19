@@ -149,7 +149,7 @@ tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
 tourneyDiv 128 = 64
 tourneyDiv 64 = 16
-tourneyDiv 32 = 4
+tourneyDiv 32 = 16
 tourneyDiv 16 = 4
 tourneyDiv 4 = 1
 tourneyDiv n = error $ "tourneyDiv " ++ show n
@@ -165,9 +165,9 @@ roundWinners n = error $ "unsupported roundWinners " ++ show n
 
 roundLosers :: Int -> [Int]
 roundLosers 256 = [65,66,67]
-roundLosers 128 = [33,65]
+roundLosers 128 = [33,34]
 roundLosers 64 = [17,18,19]
-roundLosers 32 = [5,6,7]
+roundLosers 32 = [17,18]
 roundLosers 16 = [5,6,7]
 roundLosers 4 = [2,3,4]
 roundLosers n = error $ "unsupported roundLosers " ++ show n
@@ -176,7 +176,7 @@ nextRound :: Int -> Int
 nextRound 256 = 64
 nextRound 128 = 64
 nextRound 64 = 16
-nextRound 32 = 4
+nextRound 32 = 16
 nextRound 16 = 4
 nextRound 4 = 1
 nextRound n = error $ "nextRound " ++ show n
