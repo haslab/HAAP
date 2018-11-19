@@ -139,14 +139,14 @@ getTourneySize :: HasDB db t m => Proxy db -> [a] -> Haap t m Int
 getTourneySize _ (length -> n)
     | n <= 4 = return 4
     | n <= 16 = return 16
-    | n <= 32 = return 32
+    | n <= 64 = return 64
     | n <= 128 = return 128
     | n <= 256 = return 256
     | otherwise = throw $ HaapException $ "unsupported tourney size " <> prettyText n
 
 tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
-tourneyDiv 128 = 32
+tourneyDiv 128 = 64
 tourneyDiv 64 = 16
 tourneyDiv 16 = 4
 tourneyDiv 4 = 1
