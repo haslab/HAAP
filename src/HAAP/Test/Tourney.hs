@@ -223,10 +223,10 @@ pairPlayers _ (Left players) tourneySize = do
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
     bots <- runBaseIO' $ replicateM (tourneySize-length players') defaultPlayer
     let by = fromIntegral (length bots + length randoms) / fromIntegral (tourneyDiv tourneySize)
-    let xxs = pair (tourneySize `div` 4) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
+    let xxs = pair (tourneyDiv tourneySize) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
     if validaMatches xxs
         then return xxs
-        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> prettyText (tourneyDiv tourneySize) <> prettyText xxs
+        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (tourneyDiv tourneySize) <> " " <> prettyText (show xxs)
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
     
