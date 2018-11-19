@@ -229,7 +229,7 @@ pairPlayers _ (Left players) tourneySize = do
         then return xxs
         else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (show xxs)
   where
-    validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
+    validaMatches xs = all ((==4) . length) xs && length xs == (tourneySize `div` 4)
     
     pair :: Int -> [a] -> [a] -> [[a]]
     pair potsize xs ys = toMatrix potsize (ys ++ xs)
