@@ -219,31 +219,25 @@ runHaapTourney (tourney::HaapTourney t m db a r) = do
 pairPlayers :: (Show a,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
 pairPlayers _ (Right players) tourneySize = return players
 pairPlayers _ (Left players) tourneySize = do
+    logEvent $ "Pairing for tourney size " <> prettyText tourneySize <> " -> " <> prettyText (tourneyDiv tourneySize)
     players' <- runBaseIO' $ shuffleM players
     let (randoms,nonrandoms) = partition isDefaultPlayer players'
     bots <- runBaseIO' $ replicateM (tourneySize-length players') defaultPlayer
-    let by = fromIntegral (length bots + length randoms) / fromIntegral (tourneyDiv tourneySize)
-    let xxs = pair (tourneyDiv tourneySize) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
+    logEvent $ "Pairing " <> prettyText (length nonrandoms) <> " + " <> prettyText (length randoms) <> " players with " <> prettyText (length bots) <> " bots"
+    let xxs = pair (tourneyDiv tourneySize) nonrandoms (randoms++bots) 
     if validaMatches xxs
         then return xxs
-        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (tourneyDiv tourneySize) <> " " <> prettyText (show xxs)
+        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (show xxs)
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
     
     pair :: Int -> [a] -> [a] -> [[a]]
     pair potsize xs ys = toMatrix potsize (ys ++ xs)
     toMatrix :: Int -> [a] -> [[a]]
-    toMatrix rowsize [] = replicate rowsize []
-    toMatrix rowsize xs = map (uncurry (:)) $ zip xs1 (toMatrix rowsize xs2)
-        where (xs1,xs2) = splitAt rowsize xs
+    toMatrix potsize [] = replicate potsize []
+    toMatrix potsize xs = map (uncurry (:)) $ zip xs1 (toMatrix potsize xs2)
+        where (xs1,xs2) = splitAt potsize xs
     
-    --pair :: Float -> Float -> [a] -> [a] -> [[a]]
-    --pair by acc xs ys | length xs + length ys == 4 = [xs++ys]
-    --pair by acc xs ys = (x++y) : pair by (by+acc-fromIntegral n) xs' ys'
-    --    where
-    --    n::Int = round (by+acc)
-    --    (y,ys') = splitAt n ys
-    --    (x,xs') = splitAt (4-n) xs
 
 -- (tourney no, round no,match no,partial rankings)
 type PlaySt t m db a r = (HaapTourney t m db a r,Int,Int,Int,HaapTourneySt' a)
