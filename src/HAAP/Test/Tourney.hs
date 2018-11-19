@@ -150,6 +150,7 @@ tourneyDiv 128 = 32
 tourneyDiv 64 = 16
 tourneyDiv 16 = 4
 tourneyDiv 4 = 1
+tourneyDiv n = error $ "tourneyDiv " ++ show n
 
 roundWinners :: Int -> Int
 roundWinners 256 = 1
