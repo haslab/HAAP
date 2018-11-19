@@ -226,7 +226,7 @@ pairPlayers _ (Left players) tourneySize = do
     let xxs = pair (tourneySize `div` 4) nonrandoms (randoms++bots) --pair by 0 nonrandoms (randoms++bots)
     if validaMatches xxs
         then return xxs
-        else throw $ HaapException $ "pairPlayers: " <> prettyText xxs <> "\n" <> prettyText (length xxs)
+        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> prettyText (tourneyDiv tourneySize) <> prettyText xxs
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneyDiv tourneySize)
     
