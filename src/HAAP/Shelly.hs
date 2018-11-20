@@ -90,6 +90,9 @@ runShWithTimeout timeout m = runShWith args m
     where
     args = def { ioTimeout = Just timeout }
 
+runShCoreIO' :: NFData a => IOArgs -> Sh a -> IO a
+runShCoreIO' args sh = forceM $ runShCoreIO args sh
+
 runShCoreIO :: IOArgs -> Sh a -> IO a
 runShCoreIO args sh = case ioTimeout args of
     Nothing -> io
