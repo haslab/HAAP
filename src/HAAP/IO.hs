@@ -300,6 +300,9 @@ forAllIO num gen f = do
 orIOResult :: (MonadIO m,HaapStack t m) => Haap t m IOResult -> Haap t m IOResult
 orIOResult m = orDo (\err -> return $ IOResult (-1) Text.empty (prettyText err)) m
 
+orIOResult' :: (MonadIO m,HaapStack t m) => Haap t m IOResult -> Haap t m IOResult
+orIOResult' m = orDo' (\err -> evaluate $! force $! IOResult (-1) Text.empty (prettyText err)) m
+
 -- timeout from System.Timeout sometimes fails to halt the computation, so we wrap it as an async computation
 --timeoutIO :: Int -> IO a -> IO (Maybe a)
 --timeoutIO i f = liftM join $ asyncTimeout i $ timeout i f
