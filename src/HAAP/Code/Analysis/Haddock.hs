@@ -27,6 +27,7 @@ import Data.Set (Set(..))
 import qualified Data.Set as Set
 import Data.Generics hiding (Generic)
 import Data.List as List
+import Data.List.Split
 import qualified Data.Text as Text
 import Data.Default
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
@@ -171,7 +172,7 @@ runHaddockCoverage files = orLogDefault def $ do
 hadCoverage :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Maybe (Int,Int))
 hadCoverage file = orLogMaybe $ do
     modname <- parseModuleFileName file
-    res <- orIOResult $ runBaseSh $ do
+    res <- orIOResult' $ runBaseSh' $ do
         shCd $ takeDirectory file
         shCommand "haddock" [takeFileName file]
     let coverage = filterHad (lines $ Text.unpack $ resStdout res) modname
@@ -181,7 +182,7 @@ filterHad :: [String] -> String -> (Int,Int)
 filterHad l s = x
     where
     g :: String -> (Int, Int)
-    g a = (readNote "filterHad" $ atNote "filterHad" (words a) 2, readNote "filterHad" $ initNote "filterHad" $ atNote "filterHad" (words a) 4)
+    g a = let (_:x:y:_) = splitOneOf "/()" a in (readNote "filterHad" x,readNote "filterHad" y)
     x = headNote ("filterHad:"++show l ++"\n"++show s) $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
 
 
