@@ -113,7 +113,7 @@ runGhcjs hsFile hmtlPath = do
                 let destfolder = addExtension destdir "jsexe"
                 return (destdir,destfolder)
         
-        res <- orIOResult $ runBaseShWith (io) $ do
+        res <- orIOResult $ runBaseShWith' (io) $ do
                 let (dir,exec) = splitFileName hsFile
                 let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)

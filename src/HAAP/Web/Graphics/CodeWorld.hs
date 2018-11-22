@@ -106,7 +106,7 @@ runCodeWorld = do
             Right htmldir -> return (cwHtmlPath cw,cwHtmlPath cw)
         
         res <- case cwExecutable cw of
-            Left cwexec -> orIOResult $ runBaseShWith (io) $ do
+            Left cwexec -> orIOResult $ runBaseShWith' (io) $ do
                 let (dir,exec) = splitFileName cwexec
                 let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)

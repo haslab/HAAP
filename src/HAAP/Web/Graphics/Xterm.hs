@@ -87,7 +87,7 @@ runXterm = do
             Right htmldir -> return (xtHtmlPath xt,xtHtmlPath xt)
         
         res <- case xtExecutable xt of
-            Left xtexec -> orIOResult $ runBaseShWith (io) $ do
+            Left xtexec -> orIOResult $ runBaseShWith' (io) $ do
                 let (dir,exec) = splitFileName xtexec
                 let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)

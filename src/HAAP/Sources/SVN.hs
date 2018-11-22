@@ -162,11 +162,11 @@ getSVNSource s = do
                     Nothing -> []
                     Just day -> ["-r","{" ++ showGregorian day ++ "}"]
     exists <- orLogDefault False $ runBaseIO $ doesDirectoryExist path
-    let checkout = runBaseShWith (svnIOArgs args) $ do
+    let checkout = runBaseShWith' (svnIOArgs args) $ do
         shCd dir
         shRm name
         shCommandWith (svnIOArgs args) "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
-    let update = runBaseShWith (svnIOArgs args) $ do
+    let update = runBaseShWith' (svnIOArgs args) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["cleanup"]
@@ -191,13 +191,13 @@ getSVNSourceInfo s = do
     --logEvent "svn plugin"
     args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
     --logEvent "svn info"
-    info <- orIOResult $ runBaseShWith (svnIOArgs args) $ do
+    info <- orIOResult $ runBaseShWith' (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["info","--non-interactive","--username",user,"--password",pass]
     --logEvent "svn parseInfo"
     rev <- parseInfo (resStdout info) (resStderr info)
     --logEvent "svn log"
-    logRev <- orIOResult $ runBaseShWith (svnIOArgs args) $ do
+    logRev <- orIOResult $ runBaseShWith' (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     --logEvent "svn parseLogRev"
@@ -227,7 +227,7 @@ putSVNSource files s = do
     let pass = svnPass s
     let path = svnPath s
     let msg = svnCommitMessage args
-    orIOResult $ runBaseShWith (svnIOArgs args) $ do
+    orIOResult $ runBaseShWith' (svnIOArgs args) $ do
         shCd path
         forM_ files $ \file -> shCommandWith_ (svnIOArgs args) "svn" ["add","--force","--parents",file]
         shCommandWith (svnIOArgs args) "svn" ["commit","-m",show msg,"--non-interactive","--username",user,"--password",pass]

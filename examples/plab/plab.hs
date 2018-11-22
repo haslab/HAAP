@@ -401,7 +401,7 @@ script = do
                     let tourneyioargs folder = ioargs { ioSandbox = Sandbox $ Just $ dirToRoot folder </> sandboxcfg, ioTimeout = Just 120 }
                     let ghcargs folder = def { ghcRTS = True, ghcArgs = [], ghcSafe = False, ghcIO = tourneyioargs folder }
                     let (dir,path) = splitFileName (groupFile p)
-                    iores <- orIOResult $ runBaseShWith (tourneyioargs dir) $ do
+                    iores <- orIOResult $ runBaseShWith' (tourneyioargs dir) $ do
                         shCd dir
                         shGhcWith (ghcargs dir) [path]
                     if (resOk iores)
@@ -463,13 +463,13 @@ script = do
                                     `mappend` fieldContext "bot3" (tourneyGroupBot p3 3)
                                     `mappend` fieldContext "bot4" (tourneyGroupBot p4 4)
                             let simulatefile = "Simulate.hs"
-                            haapRetry 2 $ runBaseShWith (tourneyioargs folder) $ do
+                            haapRetry 2 $ runBaseShWith' (tourneyioargs folder) $ do
                                 shLoadApplyAndCopyTemplate simulatectx ("oracle/SimulateT6Match.hs") (folder </> simulatefile)
-                            ghcres <- orIOResult $ runBaseShWith (tourneyioargs folder) $ do
+                            ghcres <- orIOResult $ runBaseShWith' (tourneyioargs folder) $ do
                                 shCd folder
                                 shGhcWith (ghcargs folder) [simulatefile]
                             (frames,positions) :: (Frames,[Int]) <- addMessageToError (pretty ghcres) $ do
-                                runBaseShWith (tourneyioargs folder) $ do
+                                runBaseShWith' (tourneyioargs folder) $ do
                                     shCd folder
                                     exec <- shExec "Simulate"
                                     shCommandToFileWith_ (tourneyioargs folder) exec (rts) (folder </> "bin")
@@ -488,7 +488,7 @@ script = do
                                            `mappend` fieldContext "frames" (show frames)
                                            `mappend` fieldContext "players" (show players)
                                     let animatefile = "Animate.hs"
-                                    haapRetry 2 $ runBaseShWith (tourneyioargs folder) $ do
+                                    haapRetry 2 $ runBaseShWith' (tourneyioargs folder) $ do
                                         shLoadApplyAndCopyTemplate animatectx ("oracle/AnimateT6Match.hs") (folder </> animatefile)
                                     
                                     -- T6 match viewer
@@ -503,7 +503,7 @@ script = do
                     let render link = return link
                     let delete tno = do
                         runBaseSh $ shRm $ projtmp </> "t6" </> "tourney" ++ pretty tno
-                        orIOResult $ runBaseShWith (ioargs) $ shCommandWith ioargs "rsync" ["-vr","--delete","$(mktemp -d)/","plab@web.lsd.di.uminho.pt:public/tourneys/t6/tourney" ++ pretty tno]
+                        orIOResult $ runBaseShWith' (ioargs) $ shCommandWith ioargs "rsync" ["-vr","--delete","$(mktemp -d)/","plab@web.lsd.di.uminho.pt:public/tourneys/t6/tourney" ++ pretty tno]
                         return ()
                     let t6Tourney = HaapTourney 10 "Task 6" t6bestof "Group" tourneyplayersLR "tourneys/t6" lnsTourney match render delete
                     withHakyllP hp0 $ useRank $ useTourney $ renderHaapTourney t6Tourney
@@ -608,7 +608,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                             let hpcpath1 = Just (ghtml </> "hpcT1")
                             let hpcT1 = HpcArgs (gsrcpath </> "RunT1") (ghcargs) (ghcioargs) hpcpath1 True
                             (specT1path,hpcT1path) <- useAndRunHpc hpcT1 gt1html $ \ghcT1res -> orErrorHakyllPage gt1html (hakyllRoute hp $ ghtml </> "t1.html") $ addMessageToError (pretty ghcT1res) $ do
-                                testsT1 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
+                                testsT1 <- haapRetry 2 $ runBaseShWith' (testsioargs) $ do
                                         shCd $ gsrcpath
                                         exec <- shExec "RunT1"
                                         shPipeWith testsioargs exec ("testes":rts) ()
@@ -635,7 +635,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                             let hpcpath2 = Just (ghtml </> "hpcT2")
                             let hpcT2 = HpcArgs (gsrcpath </> "RunT2") (ghcargs) (ghcioargs) hpcpath2 True
                             (specT2path,hpcT2path) <- useAndRunHpc hpcT2 gt2html $ \ghcT2res -> orErrorHakyllPage gt2html (hakyllRoute hp $ ghtml </> "t2.html") $ addMessageToError (pretty ghcT2res) $ do
-                                testsT2 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
+                                testsT2 <- haapRetry 2 $ runBaseShWith' (testsioargs) $ do
                                         shCd $ gsrcpath
                                         exec <- shExec "RunT2"
                                         shPipeWith testsioargs exec ("testes":rts) ()
@@ -666,7 +666,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                             let hpcpath3 = Just (ghtml </> "hpcT3")
                             let hpcT3 = HpcArgs (gsrcpath </> "RunT3") (ghcargs) (ghcioargs) hpcpath3 True
                             (specT3path,hpcT3path) <- useAndRunHpc hpcT3 gt3html $ \ghcT3res -> orErrorHakyllPage gt3html (hakyllRoute hp $ ghtml </> "t3.html") $ addMessageToError (pretty ghcT3res) $ do
-                                testsT3 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
+                                testsT3 <- haapRetry 2 $ runBaseShWith' (testsioargs) $ do
                                         shCd $ gsrcpath
                                         exec <- shExec "RunT3"
                                         shPipeWith testsioargs exec ("testes":rts) ()
@@ -716,7 +716,7 @@ groupFeedback run ghcjsargs cwioargs ioargs mapviewerpath collisionviewerpath mo
                             let hpcpath4 = Just (ghtml </> "hpcT4")
                             let hpcT4 = HpcArgs (gsrcpath </> "RunT4") (ghcargs) (ghcioargs) hpcpath4 True
                             (specT4path,hpcT4path) <- useAndRunHpc hpcT4 gt4html $ \ghcT4res -> orErrorHakyllPage gt4html (hakyllRoute hp $ ghtml </> "t4.html") $ addMessageToError (pretty ghcT4res) $ do
-                                testsT4 <- haapRetry 2 $ runBaseShWith (testsioargs) $ do
+                                testsT4 <- haapRetry 2 $ runBaseShWith' (testsioargs) $ do
                                         shCd $ gsrcpath
                                         exec <- shExec "RunT4"
                                         shPipeWith testsioargs exec ("testes":rts) ()

@@ -250,6 +250,9 @@ orDoIO ex m = catchAny (evaluateM m) ex
 orLogDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orLogDefault a m = orDo (\e -> logEvent (prettyText e) >> return a) m
 
+orLogDefault' :: (NFData a,MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
+orLogDefault' a m = orDo' (\e -> logEvent (prettyText e) >> return a) m
+
 orDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
