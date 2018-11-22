@@ -173,9 +173,9 @@ shCommandToFileWith_ ioargs name args file = do
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
-    handle h = do
-        bs <- liftIO $ BS.hGetContents h
-        liftIO $ BS.writeFile file bs
+    handle h = liftIO $! do
+        bs <- forceM $! BS.hGetContents h
+        forceM $! BS.writeFile file bs
 
 shCommand :: String -> [String] -> Sh IOResult
 shCommand = shCommandWith defaultIOArgs

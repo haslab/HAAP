@@ -4,7 +4,7 @@ HAAP: Haskell Automated Assessment Platform
 This module provides basic IO functionalities.
 -}
 
-{-# LANGUAGE BangPatterns, FlexibleContexts, DeriveGeneric, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, StandaloneDeriving, FlexibleContexts, DeriveGeneric, ScopedTypeVariables #-}
 
 module HAAP.IO where
 
@@ -226,6 +226,9 @@ runIO' = runIOWith' (defaultIOArgs)
 orEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
+orEither' :: (NFData a,MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
+orEither' m = orDo' (\e -> return $ Left e) (liftM Right m)
+
 orLogEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orLogEither m = orDo (\e -> logEvent (prettyText e) >> return (Left e)) (liftM Right m)
 
@@ -257,7 +260,7 @@ orError :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either a SomeExc
 orError m = orDo (return . Right) (liftM Left m)
 
 orDo' :: (MonadIO m,HaapStack t m,NFData a) => (SomeException -> Haap t m a) -> Haap t m a -> Haap t m a
-orDo' ex m = catchAny (forceM m) ex
+orDo' ex m = catchAny (forceM m) (ex)
 
 ignoreError :: (MonadIO m,HaapStack t m) => Haap t m () -> Haap t m ()
 ignoreError m = orDo' (\e -> logEvent (prettyText e)) m
@@ -313,6 +316,6 @@ timeoutIO i f =
   withAsync (threadDelay i) $ \a2 ->
   liftM (either Just (const Nothing)) $ race (wait a1) (wait a2)
 
-
-
+instance NFData SomeException where
+    rnf (SomeException e) = rnf (show e)
 
