@@ -26,6 +26,7 @@ import Data.SafeCopy
 import Data.Time.Format
 import Data.Time.LocalTime
 import Data.Time.Calendar
+import Data.Time.Clock
 import Data.Maybe
 import Data.Proxy
 import qualified Data.Text as T
@@ -100,7 +101,7 @@ instance Pretty SVNSourceInfo where
 data SVNSourceArgs = SVNSourceArgs
     { svnCommitMessage :: String
     , svnAcceptConflicts :: Bool
-    , svnDay :: Maybe Day
+    , svnCheckoutRevision :: Maybe (Either UTCTime Int)
     , svnHidden :: Bool
     , svnClean :: Bool
     }
@@ -150,6 +151,12 @@ instance (HaapStack t2 m) => HasPlugin SVN (ComposeT (ReaderT SVNSourceArgs) t2)
 svnIOArgs :: SVNSourceArgs -> IOArgs
 svnIOArgs args = (if svnHidden args then hiddenIOArgs else defaultIOArgs) { ioTimeout = Nothing }
     
+parseSvnUTCTime :: Monad m => String -> m UTCTime
+parseSvnUTCTime = parseTimeM True defaultTimeLocale "%FT%T"
+
+showSvnUTCTime :: UTCTime -> String
+showSvnUTCTime = formatTime defaultTimeLocale "%FT%T"
+    
 getSVNSource :: (MonadIO m,HasPlugin SVN t m) => SVNSource -> Haap t m ()
 getSVNSource s = do
     args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
@@ -158,20 +165,21 @@ getSVNSource s = do
     let path = svnPath s
     let repo = svnRepository s
     let (dir,name) = splitFileName path
-    let date = case svnDay args of
+    let rev = case svnCheckoutRevision args of
                     Nothing -> []
-                    Just day -> ["-r","{" ++ showGregorian day ++ "}"]
+                    Just (Left utc) -> ["-r","{" ++ showSvnUTCTime utc ++ "}"]
+                    Just (Right i) -> ["-r",show i]
     exists <- orLogDefault False $ runBaseIO $ doesDirectoryExist path
     let checkout = runBaseShWith' (svnIOArgs args) $ do
         shCd dir
         shRm name
-        shCommandWith (svnIOArgs args) "svn" $ ["checkout",repo,"--non-interactive"] ++ date ++ [name,"--username",user,"--password",pass]
+        shCommandWith (svnIOArgs args) "svn" $ ["checkout",repo,"--non-interactive"] ++ rev ++ [name,"--username",user,"--password",pass]
     let update = runBaseShWith' (svnIOArgs args) $ do
         let conflicts = if svnAcceptConflicts args then ["--accept","theirs-full"] else []
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["cleanup"]
-        when (isJust $ svnDay args) $ shCommandWith_ (svnIOArgs args) "svn" ["revert","-R","."]
-        res <- shCommandWith (svnIOArgs args) "svn" (["update","--non-interactive"] ++ date ++ ["--username",user,"--password",pass]++conflicts)
+        when (isJust $ svnCheckoutRevision args) $ shCommandWith_ (svnIOArgs args) "svn" ["revert","-R","."]
+        res <- shCommandWith (svnIOArgs args) "svn" (["update","--non-interactive"] ++ rev ++ ["--username",user,"--password",pass]++conflicts)
         let okRes = resOk res
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStdout res)
                     && not (isInfixOf "Summary of conflicts" $ Text.unpack $ resStderr res)
