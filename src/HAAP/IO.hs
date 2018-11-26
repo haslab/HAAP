@@ -223,6 +223,10 @@ runBaseIO' = runBaseIOWith' (defaultIOArgs)
 runIO' :: (HaapPureStack t m IO,MonadIO m,NFData a) => Haap t IO a -> Haap t m a
 runIO' = runIOWith' (defaultIOArgs)
 
+orRetry' :: (NFData a,MonadIO m,HaapStack t m) => Int -> Haap t m a -> Haap t m a
+orRetry' 0 m = m
+orRetry' n m = orDo' (\e -> orRetry' (pred n) m) m
+
 orEither :: (MonadIO m,HaapStack t m) => Haap t m a -> Haap t m (Either SomeException a)
 orEither m = orDo (\e -> return $ Left e) (liftM Right m)
 
