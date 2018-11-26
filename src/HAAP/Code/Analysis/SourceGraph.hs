@@ -19,6 +19,10 @@ import qualified Data.Text as Text
 import Data.Traversable
 import Data.List
 import Data.Csv
+import Data.Set (Set(..))
+import qualified Data.Set as Set
+import Data.Map (Map(..))
+import qualified Data.Map as Map
 import Data.Maybe
 import qualified Data.Map as Map
 import Data.Graph.Inductive.Graph
@@ -99,31 +103,40 @@ instance Default SGReport where
 
 -- * library
 
-runSourceGraph :: (MonadIO m,HaapStack t m) => Bool -> [FilePath] -> Haap t m SGReport
-runSourceGraph ignoreDatas files = orLogDefault def $ do
-    (_,ms) <- liftIO $ parseHaskellFiles files
-    let ccs = map (cycleCompModule ignoreDatas) (Map.elems ms)
-    let gcc = cycleCompModules ignoreDatas ms
-    let mcalls = moduleCalls ms
-    return $ SGReport (maximumDef 0 ccs) gcc mcalls
+data SourceGraphArgs = SourceGraphArgs
+    { ignoreNode :: Entity -> Bool -- graph nodes to ignore for the analysis
+    , ignoreEdge :: CallType -> Bool -- graph edges to ignore for the analysis
+    , rootEntities :: Maybe (Set Entity) -- analyze only the code slice starting from the given names
+    }
 
-cycleCompModule :: Bool -> ParsedModule -> Int
-cycleCompModule ignoreDatas m = cc
+type SGraph = GraphData Entity CallType
+
+runSourceGraph :: (MonadIO m,HaapStack t m) => SourceGraphArgs -> [FilePath] -> Haap t m SGReport
+runSourceGraph args files = orLogDefault def $ do
+    (_,ms) <- liftIO $ parseHaskellFiles files
+    let cg = codeGraph args ms
+    let mgs = moduleGraphs args ms
+    
+    let mccs = map cyclomaticComplexity $ Map.elems mgs 
+    let gcc = cyclomaticComplexity cg
+    let mcalls = moduleCalls cg
+    
+    return $ SGReport (maximumDef 0 mccs) gcc mcalls
+
+codeGraph :: SourceGraphArgs -> ParsedModules -> SGraph
+codeGraph args ms = g
+    where
+    mns = Map.keys ms
+    g = sliceGraph args $ filterGraph args $ graphData $ collapsedHData $ codeToGraph mns ms
+    
+moduleGraphs :: SourceGraphArgs -> ParsedModules -> Map ModName SGraph
+moduleGraphs args = Map.map (moduleGraph args)
+
+moduleGraph :: SourceGraphArgs -> ParsedModule -> SGraph
+moduleGraph args m = g
     where
     (_,(n,_,fd)) = moduleToGraph m
-    ignores = if ignoreDatas
-        then updateGraph (labfilter $ not . isData . eType)
-        else id
-    cc = cyclomaticComplexity $ ignores $ graphData $ collapsedHData fd
-
-cycleCompModules :: Bool -> ParsedModules -> Int
-cycleCompModules ignoreDatas m = cc
-    where
-    cd = codeToGraph (Map.keys m) m
-    ignores = if ignoreDatas
-        then updateGraph (labfilter $ not . isData . eType)
-        else id
-    cc = cyclomaticComplexity $ ignores $ graphData $ collapsedHData cd
+    g = sliceGraph args $ filterGraph args $ graphData $ collapsedHData fd
 
 cyclomaticComplexityGr :: DynGraph gr => gr a b -> Int
 cyclomaticComplexityGr gd = e - n + 2*p
@@ -132,17 +145,34 @@ cyclomaticComplexityGr gd = e - n + 2*p
       n = noNodes gd
       e = length $ labEdges gd
 
-moduleCalls :: ParsedModules -> Int
-moduleCalls ms = length es
+moduleCalls :: SGraph -> Int
+moduleCalls cg = length es
     where
-    mns = Map.keys ms
-    g::AGr Entity CallType = graph $ graphData $ collapsedHData $ codeToGraph mns ms
+    g = graph cg
     es = filter isInterModuleCall $ edges g
     isInterModuleCall (x,y) = case (lab g x,lab g y) of
         (Just x',Just y') -> inModule x' /= inModule y'
         otherwise -> False
     
+filterGraph :: SourceGraphArgs -> SGraph -> SGraph
+filterGraph args g = updateGraph (filteredges . filternodes) g
+    where
+    filternodes = labfilter $ not . ignoreNode args
+    filteredges = efilter $ \(_,_,e) -> not $ ignoreEdge args e
+    
 -- * slicing
+
+sliceGraph :: SourceGraphArgs -> SGraph -> SGraph
+sliceGraph args sg = case rootEntities args of
+    Nothing -> sg
+    Just starts -> sg'
+        where
+        g = graph sg
+        lnodes = labNodes g
+        start_lnodes = filter (flip Set.member starts . snd) lnodes
+        slice = accessibleFrom g (map fst start_lnodes)
+        lslice = map (\i -> (i,fromJust $ lab g i)) slice
+        sg' = updateGraph (subgraph (map fst lslice)) sg
 
 runSlice :: (MonadIO m,HaapStack t m) => [FilePath] -> (String -> Bool) -> (String -> Bool) -> Haap t m ([Decl SrcSpanInfo],Int,Int)
 runSlice file = runSliceWith file Nothing (Just [])
