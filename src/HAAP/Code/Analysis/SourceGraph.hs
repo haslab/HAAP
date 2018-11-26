@@ -53,7 +53,8 @@ import Language.Haskell.SourceGraph.Analyse.GraphRepr
 import Language.Haskell.SourceGraph.Analyse.Utils
 
 data SGReport = SGReport
-    { maxCC :: Int -- maximum cyclomatic complexity
+    { maxModuleCC :: Int -- maximum cyclomatic complexity
+    , globalCC :: Int -- global cyclomatic complexity
     , numInterModuleCalls :: Int -- number of inter-module function calls
     }
   deriving (Show,Generic)
@@ -61,15 +62,15 @@ data SGReport = SGReport
 instance NFData SGReport where
 
 instance DefaultOrdered SGReport where
-    headerOrder _ = header ["maxCC","numInterModuleCalls"]
+    headerOrder _ = header ["maxModuleCC","globalCC","numInterModuleCalls"]
 
 instance ToNamedRecord SGReport where
-    toNamedRecord (SGReport x y) = namedRecord ["maxCC" .= x,"numInterModuleCalls" .= y]
+    toNamedRecord (SGReport x x2 y) = namedRecord ["maxModuleCC" .= x,"globalCC" .= x2,"numInterModuleCalls" .= y]
 instance FromNamedRecord SGReport where
-    parseNamedRecord m = SGReport <$> m .: "maxCC" <*> m .: "numInterModuleCalls"
+    parseNamedRecord m = SGReport <$> m .: "maxModuleCC" <*> m .: "globalCC" <*> m .: "numInterModuleCalls"
 
 instance Default SGReport where
-    def = SGReport (-1) (-1)
+    def = SGReport (-1) (-1) (-1)
 
 
 -- * tool
@@ -98,18 +99,31 @@ instance Default SGReport where
 
 -- * library
 
-runSourceGraph :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m SGReport
-runSourceGraph files = orLogDefault def $ do
+runSourceGraph :: (MonadIO m,HaapStack t m) => Bool -> [FilePath] -> Haap t m SGReport
+runSourceGraph ignoreDatas files = orLogDefault def $ do
     (_,ms) <- liftIO $ parseHaskellFiles files
-    let ccs = map cycleCompModule (Map.elems ms)
+    let ccs = map (cycleCompModule ignoreDatas) (Map.elems ms)
+    let gcc = cycleCompModules ignoreDatas ms
     let mcalls = moduleCalls ms
-    return $ SGReport (maximumDef 0 ccs) mcalls
+    return $ SGReport (maximumDef 0 ccs) gcc mcalls
 
-cycleCompModule :: ParsedModule -> Int
-cycleCompModule m = cc
+cycleCompModule :: Bool -> ParsedModule -> Int
+cycleCompModule ignoreDatas m = cc
     where
     (_,(n,_,fd)) = moduleToGraph m
-    cc = cyclomaticComplexity . graphData $ collapsedHData fd
+    ignores = if ignoreDatas
+        then updateGraph (labfilter $ not . isData . eType)
+        else id
+    cc = cyclomaticComplexity $ ignores $ graphData $ collapsedHData fd
+
+cycleCompModules :: Bool -> ParsedModules -> Int
+cycleCompModules ignoreDatas m = cc
+    where
+    cd = codeToGraph (Map.keys m) m
+    ignores = if ignoreDatas
+        then updateGraph (labfilter $ not . isData . eType)
+        else id
+    cc = cyclomaticComplexity $ ignores $ graphData $ collapsedHData cd
 
 cyclomaticComplexityGr :: DynGraph gr => gr a b -> Int
 cyclomaticComplexityGr gd = e - n + 2*p
