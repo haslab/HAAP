@@ -106,10 +106,17 @@ instance Default SGReport where
 data SourceGraphArgs = SourceGraphArgs
     { ignoreNode :: Entity -> Bool -- graph nodes to ignore for the analysis
     , ignoreEdge :: CallType -> Bool -- graph edges to ignore for the analysis
-    , rootEntities :: Maybe (Set Entity) -- analyze only the code slice starting from the given names
+    , rootEntities :: Maybe (Set EntityName) -- analyze only the code slice starting from the given names
     }
 
 type SGraph = GraphData Entity CallType
+
+isNormalCall :: CallType -> Bool
+isNormalCall NormalCall = True
+isNormalCall _ = False
+
+isNormalEntity :: Entity -> Bool
+isNormalEntity e = eType e == NormalEntity
 
 runSourceGraph :: (MonadIO m,HaapStack t m) => SourceGraphArgs -> [FilePath] -> Haap t m SGReport
 runSourceGraph args files = orLogDefault def $ do
@@ -169,7 +176,7 @@ sliceGraph args sg = case rootEntities args of
         where
         g = graph sg
         lnodes = labNodes g
-        start_lnodes = filter (flip Set.member starts . snd) lnodes
+        start_lnodes = filter (flip Set.member starts . SG.name . snd) lnodes
         slice = accessibleFrom g (map fst start_lnodes)
         lslice = map (\i -> (i,fromJust $ lab g i)) slice
         sg' = updateGraph (subgraph (map fst lslice)) sg
