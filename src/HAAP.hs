@@ -53,6 +53,7 @@ module HAAP
     , module HAAP.Web.Diff
     , module HAAP.Code.Brittany
     , module HAAP.Code.Debugger
+    , module HAAP.Parse.IndentTree
     ) where
 
 import HAAP.Core
@@ -104,5 +105,6 @@ import HAAP.Web.Graphics.Xterm
 import HAAP.Web.Diff
 import HAAP.Code.Brittany
 import HAAP.Code.Debugger
+import HAAP.Parse.IndentTree
 
 

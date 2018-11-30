@@ -118,28 +118,28 @@ isNormalCall _ = False
 isNormalEntity :: Entity -> Bool
 isNormalEntity e = eType e == NormalEntity
 
-runSourceGraph :: (MonadIO m,HaapStack t m) => SourceGraphArgs -> [FilePath] -> Haap t m SGReport
+runSourceGraph :: (MonadIO m,HaapStack t m) => SourceGraphArgs -> [FilePath] -> Haap t m (SGReport,Set Entity)
 runSourceGraph args files = orLogDefault def $ do
     (_,ms) <- liftIO $ parseHaskellFiles files
-    let cg = codeGraph args ms
+    let (cg,slices) = codeGraph args ms
     let mgs = moduleGraphs args ms
     
-    let mccs = map cyclomaticComplexity $ Map.elems mgs 
+    let mccs = map (cyclomaticComplexity . fst) $ Map.elems mgs 
     let gcc = cyclomaticComplexity cg
     let mcalls = moduleCalls cg
     
-    return $ SGReport (maximumDef 0 mccs) gcc mcalls
+    return (SGReport (maximumDef 0 mccs) gcc mcalls,slices)
 
-codeGraph :: SourceGraphArgs -> ParsedModules -> SGraph
+codeGraph :: SourceGraphArgs -> ParsedModules -> (SGraph,Set Entity)
 codeGraph args ms = g
     where
     mns = Map.keys ms
     g = sliceGraph args $ filterGraph args $ graphData $ collapsedHData $ codeToGraph mns ms
     
-moduleGraphs :: SourceGraphArgs -> ParsedModules -> Map ModName SGraph
+moduleGraphs :: SourceGraphArgs -> ParsedModules -> Map ModName (SGraph,Set Entity)
 moduleGraphs args = Map.map (moduleGraph args)
 
-moduleGraph :: SourceGraphArgs -> ParsedModule -> SGraph
+moduleGraph :: SourceGraphArgs -> ParsedModule -> (SGraph,Set Entity)
 moduleGraph args m = g
     where
     (_,(n,_,fd)) = moduleToGraph m
@@ -169,10 +169,10 @@ filterGraph args g = updateGraph (filteredges . filternodes) g
     
 -- * slicing
 
-sliceGraph :: SourceGraphArgs -> SGraph -> SGraph
+sliceGraph :: SourceGraphArgs -> SGraph -> (SGraph,Set Entity)
 sliceGraph args sg = case rootEntities args of
-    Nothing -> sg
-    Just starts -> sg'
+    Nothing -> (sg,Set.empty)
+    Just starts -> (sg',Set.fromList $ map snd lslice)
         where
         g = graph sg
         lnodes = labNodes g

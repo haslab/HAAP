@@ -82,10 +82,10 @@ runDebugger = do
     let debuggererrorpath = addExtension (debuggerHtmlPath h) "html"
     orErrorHakyllPage debuggererrorpath (debuggererrorpath,debuggererrorpath,debuggererrorpath) $ do
         --let html = dirToRoot (debuggerPath h) </> tmp </> debuggerHtmlPath h
-        runBaseSh $ do
-            forM_ (debuggerFiles h) $ \file -> do
+        pperrs <- runBaseSh $ do
+            pperrs <- forM (debuggerFiles h) $ \file -> do
                 shMkDir $ takeDirectory (tmp </> debuggerHtmlPath h </> file)
-                shCommandToFileWith_ ioargs "debug-pp" [(debuggerPath h </> file)] (tmp </> debuggerHtmlPath h </> file)
+                shCommandToFileWith ioargs "debug-pp" [(debuggerPath h </> file)] (tmp </> debuggerHtmlPath h </> file)
             forM_ (debuggerInstrumentedFiles h) $ \file -> do
                 shMkDir $ takeDirectory (tmp </> debuggerHtmlPath h </> file)
                 shCp (debuggerInstrumentedPath h </> file) (tmp </> debuggerHtmlPath h </> file)
@@ -106,9 +106,10 @@ runDebugger = do
                         ++ "  Debug.debugAlgorithmicOutput " ++ show htmldatapath ++ " " ++ show "." ++ " h" ++ "\n"
             
             shWriteFile' (tmp </> debuggerHtmlPath h </> "Main.hs") (T.pack mainfile)
+            return pperrs
             
         let dir = (tmp </> debuggerHtmlPath h)
-        iores <- orIOResult $ runBaseSh $ do
+        iores <- addMessageToError (T.unlines $ map prettyText pperrs) $ orIOResult $ runBaseSh $ do
             shCd dir
             shRm "Main"
             shGhcWith (ghcArgs { ghcMake = True }) ["Main.hs"]

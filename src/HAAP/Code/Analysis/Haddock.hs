@@ -15,6 +15,7 @@ import HAAP.Utils
 import HAAP.IO
 import HAAP.Code.Haskell
 import HAAP.Shelly
+import HAAP.Parse.IndentTree
 
 import Language.Haskell.Exts.Parser
 import Language.Haskell.Exts.Comments
@@ -23,8 +24,12 @@ import Documentation.Haddock.Types
 import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.SrcLoc
 
+import Data.Char
+import Data.Tree
 import Data.Set (Set(..))
 import qualified Data.Set as Set
+import Data.Map (Map(..))
+import qualified Data.Map as Map
 import Data.Generics hiding (Generic)
 import Data.List as List
 import Data.List.Split
@@ -44,6 +49,12 @@ import qualified Control.Exception as E
 import System.FilePath
 
 import Safe
+
+import Text.ParserCombinators.Parsec.Char as P
+import Text.ParserCombinators.Parsec.Number as P
+import Text.ParserCombinators.Parsec.Combinator as P
+import Text.ParserCombinators.Parsec.Prim as P
+import Text.ParserCombinators.Parsec.Error as P
 
 import GHC.Generics (Generic)
 
@@ -82,7 +93,12 @@ instance DefaultOrdered HaddockStats where
         [addPrefixHeader "haddockComments" (headerOrder (undefined::Fraction))
         ,addPrefixHeader "haddockCoverage" (headerOrder (undefined::Fraction))
         ]
-        
+       
+instance Semigroup Fraction where
+    (<>) = mappend
+instance Monoid Fraction where
+    mempty = Fraction 0 0
+    mappend (Fraction x1 y1) (Fraction x2 y2) = Fraction (x1+x2) (y1+y2)
 instance Default Fraction where
     def = Fraction (-1) (-1)
 
@@ -104,11 +120,11 @@ instance FromNamedRecord HaddockStats where
 instance Default HaddockStats where
     def = HaddockStats def def
 
-runHaddockStats :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m HaddockStats
+runHaddockStats :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (HaddockStats,Map String (Set String))
 runHaddockStats files = do
     comments <- runHaddockComments files
-    coverage <- runHaddockCoverage files
-    return $ HaddockStats comments coverage
+    (coverage,missings) <- runHaddockCoverageFiles files
+    return (HaddockStats comments coverage,missings)
 
 -- returns (number of special annotations,total size of comments)
 runHaddockComments :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
@@ -162,28 +178,86 @@ parseFileComments file = runBaseIO' $ do
         ParseOk (_::Module SrcSpanInfo,comments) -> return $ map (commentString) comments
         ParseFailed _ _ -> return []
 
-runHaddockCoverage :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
-runHaddockCoverage files = orLogDefault def $ do
-    ccs <- mapM (hadCoverage) files
+runHaddockCoverageFiles :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (Fraction,Map String (Set String))
+runHaddockCoverageFiles files = orLogDefault def $ do
+    ccs <- mapM runHaddockCoverageFile files
     let ccs' = catMaybes ccs
-    let (cc1,cc2) = List.foldr (\(v1,v2) (w1,w2) -> (v1+w1,v2+w2)) (0,0) ccs'
-    return $ Fraction cc1 cc2
+    let (cc1,cc2) = List.foldr mappend (mempty,Map.empty) ccs'
+    return (cc1,cc2)
 
-hadCoverage :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Maybe (Int,Int))
-hadCoverage file = orLogMaybe $ do
+runHaddockCoverageFile :: (MonadIO m,HaapStack t m) => FilePath -> Haap t m (Maybe (Fraction,Map String (Set String)))
+runHaddockCoverageFile file = orLogMaybe $ do
     modname <- parseModuleFileName file
+    let filename = takeFileName file
     res <- orIOResult' $ runBaseSh' $ do
         shCd $ takeDirectory file
-        shCommand "haddock" [takeFileName file]
-    let coverage = filterHad (lines $ Text.unpack $ resStdout res) modname
-    liftIO $ E.evaluate $ force coverage
+        shCommand "haddock" [filename]
+    let (coverage,missings) = parseHaddockOutput (Text.unpack $ resStdout res) filename modname
+    liftIO $ E.evaluate $ force (coverage,Map.singleton modname missings)
 
-filterHad :: [String] -> String -> (Int,Int)
-filterHad l s = x
-    where
-    g :: String -> (Int, Int)
-    g a = let (_:x:y:_) = splitOneOf "/()" a in (readNote "filterHad" x,readNote "filterHad" y)
-    x = headNote ("filterHad:"++show l ++"\n"++show s) $ List.map g $ List.filter (isInfixOf ("'" ++ s ++ "'")) l
+parseHaddockOutput :: String -> FilePath -> String -> (Fraction,Set String)
+parseHaddockOutput str filepath modname = if oks+length missings==total
+    then res
+    else error $ "parseHaddockOutput: " ++ show modname ++ "\n" ++ show forest ++ "\n" ++ show res
+  where
+    res@(Fraction oks total,missings) = parseForest forest
+    Right forest = parseIndentedForest str
+    
+    parseForest :: Forest String -> (Fraction,Set String)
+    parseForest (Node lbl ts:xs) = case parseCoverageLabel lbl of
+        Right fr -> (fr,parseMissings xs)
+        Left err -> parseForest ts `mappend` parseForest xs
+    parseForest [] = (Fraction 0 0,Set.empty)
+    
+    parseMissings :: Forest String -> Set String
+    parseMissings (Node "Missing documentation for:" ms:_) = parseMissings' ms 
+    parseMissings xs = Set.empty
+    parseMissings' :: Forest String -> Set String
+    parseMissings' [] = Set.empty
+    parseMissings' (Node x ts:xs) = case parseMissing x of
+        Left err -> error $ "parseMissings' " ++ show filepath ++ " " ++ show x
+        Right m -> Set.insert m $ parseMissings' xs
+    
+    parseCoverageLabel :: String -> Either P.ParseError Fraction
+    parseCoverageLabel = P.parse parserCoverageLabel ""
+    --100% ( 36 / 36) in 'Tarefa0_2018li1g088'
+    parserCoverageLabel = do
+        P.int
+        P.char '%'
+        P.spaces
+        P.char '('
+        P.spaces 
+        x <- P.int
+        P.spaces
+        P.char '/'
+        P.spaces
+        y <- P.int
+        P.spaces
+        P.char ')'
+        P.spaces
+        P.string "in"
+        P.spaces
+        P.string "'"
+        P.string modname
+        P.string "'"
+        P.spaces
+        return $ Fraction x y
+    
+    parseMissing :: String -> Either P.ParseError String
+    parseMissing = P.parse parserMissing ""
+    --t2_1 (Tarefa0_2018li1g088.hs:17)
+    parserMissing = do
+        funname <- P.many1 $ P.satisfy (not . isSpace)
+        P.spaces
+        P.char '('
+        P.string filepath
+        P.char ':'
+        line <- P.int
+        P.char ')'
+        P.spaces
+        return funname
+
+
 
 
 
