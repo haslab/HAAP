@@ -158,6 +158,26 @@ shCommandWith_ ioargs name args  = do
     addSandbox NoSandbox cmds = cmds
     addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+
+shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
+shCommandToFileWith_ ioargs name args file = do
+    forM_ (ioStdin ioargs) Sh.setStdin
+    forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+    let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
+    Sh.runHandle (shFromFilePath $ head cmds) (map T.pack $ tail cmds) handle
+    
+  where
+    addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
+    addTimeout Nothing cmds = cmds
+    addTimeout (Just secs) cmds = ["timeout",prettyString secs++"s"]++cmds
+--    addRedir cmds = if ioHidden ioargs then cmds ++ ["2>/dev/null"] else cmds
+    addSandbox NoSandbox cmds = cmds
+    addSandbox (Sandbox Nothing) cmds = ["cabal","exec","--"]++cmds
+    addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
+    handle stdout = liftIO $! do
+        bs <- forceM $! BS.hGetContents stdout
+        forceM $! BS.writeFile file bs
+        return ()
     
 shCommandToFileWith :: IOArgs -> String -> [String] -> FilePath -> Sh IOResult
 shCommandToFileWith ioargs name args file = do
