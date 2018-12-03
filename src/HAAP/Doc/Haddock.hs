@@ -54,6 +54,7 @@ data HaddockArgs = HaddockArgs
     , haddockArgs :: [String]
     , haddockPath :: FilePath -- path relative to the project where to execute the haddock command
     , haddockFiles :: [FilePath] -- relative to the path where haddock is executed
+    , haddockExtraDirs :: [FilePath] -- additional files to be copied to the haddock html folder
     , haddockHtmlPath :: FilePath -- relative to the project path
     }
 
@@ -99,7 +100,12 @@ runHaddocks allfiles = do
         shCd $ haddockPath h
         shCommandWith ioArgs "haddock" (extras++["-h","-o",html </> show i]++files)
     forM_ (zip [0..] allres) $ \(i,_) -> do
-        hakyllFocus [tmp </> haddockHtmlPath h] $ hakyllRules $ do
+        let dirs = map (haddockPath h </>) (haddockExtraDirs h)
+        hakyllFocus ((tmp </> haddockHtmlPath h):dirs) $ hakyllRules $ do
+            forM dirs $ \dir -> do
+                match (fromGlob (dir </> "**")) $ do
+                    route $ relativeRoute (haddockPath h) `composeRoutes` addToRoute (haddockHtmlPath h </> show i)
+                    compile copyFileCompiler
             -- copy the haddock generated documentation
             match (fromGlob $ (tmp </> haddockHtmlPath h </> show i) </> "*.html") $ do
                 route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
