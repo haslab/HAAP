@@ -36,6 +36,8 @@ import Control.Monad.IO.Class
 import Control.Exception.Safe
 import Control.Monad
 
+import GHC.Stack hiding (SrcLoc(..))
+
 instance Pretty SrcLoc where
     pretty = unsafeViaShow
 
@@ -43,7 +45,7 @@ instance Show a => Pretty (ParseResult a) where
     pretty (ParseOk x) = string "parsing ok:" <+> string (show x)
     pretty (ParseFailed l s) = string "parsing failed at" <+> string (show l) PP.<> char ':' <+> string s
 
-parseHaskellWith :: (Parseable a,MonadIO m,HaapStack t m) => String -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m a
+parseHaskellWith :: (HasCallStack,Parseable a,MonadIO m,HaapStack t m) => String -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m a
 parseHaskellWith str arg_exts arg_fix = do
     let mb = readExtensions str
     let mblang = join $ fmap fst mb
@@ -53,9 +55,11 @@ parseHaskellWith str arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        (ParseFailed loc err) -> throw $ HaapException $ prettyText loc <> ": " <> prettyText err
+        (ParseFailed loc err) -> do
+            let stack = callStack
+            throw $ HaapException stack $ prettyText loc <> ": " <> prettyText err
 
-parseHaskellFileWith :: (MonadIO m,HaapStack t m) => FilePath -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m (Module SrcSpanInfo)
+parseHaskellFileWith :: (HasCallStack,MonadIO m,HaapStack t m) => FilePath -> Maybe [Extension] -> Maybe [H.Fixity] -> Haap t m (Module SrcSpanInfo)
 parseHaskellFileWith file arg_exts arg_fix = do
     str <- runBaseIO' $ readFile file
     let mb = readExtensions str
@@ -66,7 +70,9 @@ parseHaskellFileWith file arg_exts arg_fix = do
     let res = parseWithMode mode'' str
     case res of
         ParseOk m -> return m
-        err -> throw $ HaapException $ prettyText err
+        err -> do
+            let stack = callStack 
+            throw $ HaapException stack $ prettyText err
 
 parseHaskell :: (Parseable a,MonadIO m,HaapStack t m) => String -> Haap t m a
 parseHaskell str = parseHaskellWith str Nothing Nothing

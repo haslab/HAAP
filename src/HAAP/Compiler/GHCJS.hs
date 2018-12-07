@@ -38,6 +38,8 @@ import System.FilePath
 import System.Directory
 import System.Process
 
+import GHC.Stack
+
 data GHCJS
 
 instance HaapPlugin GHCJS where
@@ -99,7 +101,7 @@ ioGhcjsWith ghc ins = do
     addSafe False cmds = cmds
     addArgs xs ys = ys ++ xs
     
-runGhcjs :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin GHCJS t m) => FilePath -> FilePath -> Haap t m FilePath
+runGhcjs :: (HasCallStack,MonadIO m,HasPlugin Hakyll t m,HasPlugin GHCJS t m) => FilePath -> FilePath -> Haap t m FilePath
 runGhcjs hsFile hmtlPath = do
     hp <- getHakyllP
     ghcjs <- liftPluginProxy (Proxy::Proxy GHCJS) $ Reader.ask
@@ -107,6 +109,7 @@ runGhcjs hsFile hmtlPath = do
         tmp <- getProjectTmpPath
         -- compile files with ghcjs
         let io = ghcjsIO ghcjs
+        let stack = maybe callStack id (ioCallStack io)
         (destdir,destfolder) <- do
                 let exec = takeFileName hsFile
                 let destdir = dropExtension (hmtlPath </> exec)
@@ -135,4 +138,4 @@ runGhcjs hsFile hmtlPath = do
                         compile copyFileCompiler
                     
                 return (hakyllRoute hp $ destfolder </> "all.js")
-            else throw $ HaapException $ prettyText res
+            else throw $ HaapException stack $ prettyText res

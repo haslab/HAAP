@@ -119,9 +119,9 @@ deriving instance (Monad (t m),MonadMask (ComposeT (RWST Project HaapLog ()) t m
 mapHaapMonad :: (t1 m (a,(),HaapLog) -> t2 n (b,(),HaapLog)) -> Haap t1 m a -> Haap t2 n b
 mapHaapMonad f (Haap (ComposeT m)) = Haap $ ComposeT $ RWS.mapRWST f m
 
-data HaapException = HaapException T.Text
+data HaapException = HaapException CallStack T.Text
                    | HaapTimeout CallStack Int
-                   | HaapIOException SomeException
+                   | HaapIOException CallStack SomeException
   deriving (Typeable,Show,Generic)
 
 type HaapLog = DList HaapEvent 

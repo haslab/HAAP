@@ -70,15 +70,15 @@ runBaseSh' = runBaseShWith' def
 runSh :: (MonadIO m,HaapPureStack t m Sh) => Haap t Sh a -> Haap t m a
 runSh = runShWith def
 
-runBaseShWith :: (MonadIO m,HaapStack t m) => IOArgs -> Sh a -> Haap t m a
+runBaseShWith :: (HasCallStack,MonadIO m,HaapStack t m) => IOArgs -> Sh a -> Haap t m a
 runBaseShWith ioargs msh = do
     haapLiftIO $ runShCoreIO ioargs msh
 
-runBaseShWith' :: (MonadIO m,HaapStack t m,NFData a) => IOArgs -> Sh a -> Haap t m a
+runBaseShWith' :: (HasCallStack,MonadIO m,HaapStack t m,NFData a) => IOArgs -> Sh a -> Haap t m a
 runBaseShWith' ioargs msh = do
     haapLiftIO $! forceM $! runShCoreIO ioargs msh
 
-runShWith :: (MonadIO m,HaapPureStack t m Sh) => IOArgs -> Haap t Sh a -> Haap t m a
+runShWith :: (HasCallStack,MonadIO m,HaapPureStack t m Sh) => IOArgs -> Haap t Sh a -> Haap t m a
 runShWith ioargs msh = do
     st <- liftWith' $ \run -> do
         st <- liftIO $ runShCoreIO ioargs $ run msh
@@ -90,16 +90,17 @@ runShWithTimeout timeout m = runShWith args m
     where
     args = def { ioTimeout = Just timeout }
 
-runShCoreIO' :: NFData a => IOArgs -> Sh a -> IO a
+runShCoreIO' :: HasCallStack => NFData a => IOArgs -> Sh a -> IO a
 runShCoreIO' args sh = forceM $ runShCoreIO args sh
 
-runShCoreIO :: IOArgs -> Sh a -> IO a
+runShCoreIO :: HasCallStack => IOArgs -> Sh a -> IO a
 runShCoreIO args sh = case ioTimeout args of
     Nothing -> io
     Just secs -> do
+        let stack = maybe callStack id (ioCallStack args)
         mb <- timeoutIO (secs * 10^6) io
         case mb of
-            Nothing -> error $ prettyString $ HaapTimeout callStack secs
+            Nothing -> error $ prettyString $ HaapTimeout stack secs
             Just a -> return a
   where
     io = Sh.shelly $ silent $ Sh.escaping (ioEscaping args) sh

@@ -38,6 +38,8 @@ import System.Process
 
 import qualified Shelly as Sh
 
+import GHC.Stack
+
 --import Codec.Picture.Metadata
 --import Codec.Picture
 
@@ -67,7 +69,7 @@ data XtermArgs = XtermArgs
 useAndRunXterm :: (MonadIO m,HasPlugin Hakyll t m) => XtermArgs -> Haap t m FilePath
 useAndRunXterm args = usePlugin_ (return args) $ runXterm
 
-runXterm :: (MonadIO m,HasPlugin Hakyll t m,HasPlugin Xterm t m) => Haap t m FilePath
+runXterm :: (HasCallStack,MonadIO m,HasPlugin Hakyll t m,HasPlugin Xterm t m) => Haap t m FilePath
 runXterm = do
     hp <- getHakyllP
     xt <- liftHaap $ liftPluginProxy (Proxy::Proxy Xterm) $ Reader.ask
@@ -78,6 +80,7 @@ runXterm = do
         -- compile files with ghcjs
         let ghcjs = xtGHCJS xt
         let io = xtIO xt
+        let stack = maybe callStack id (ioCallStack io)
         (destdir,destfolder) <- case xtExecutable xt of
             Left xtexec -> do
                 let exec = takeFileName xtexec
@@ -129,7 +132,7 @@ runXterm = do
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile xtCtx >>= hakyllCompile hp
                     matchXtermFiles
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throw $ HaapException $ prettyText res
+            else throw $ HaapException stack $ prettyText res
 
 instance HaapMonad m => HasPlugin Xterm (ReaderT XtermArgs) m where
     liftPlugin = id

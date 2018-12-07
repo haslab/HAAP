@@ -57,7 +57,8 @@ import Data.Typeable
 import Data.Knob as Knob
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
-import Data.CallStack
+--import Data.CallStack (SrcLoc)
+import GHC.Stack
 import Data.Default
 import qualified Data.Text as T
 import Data.Binary
@@ -249,7 +250,7 @@ runHaapTestTable :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> HaapTestTa
 runHaapTestTable args tests = orDo (\e -> return $ fmapDefault (const $ HaapTestError $ prettyText e) tests) $ do
     forM tests $ \(i,spec) -> runHaapTest args i spec
     
-runHaapTest :: (MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> Int -> Hspec.Spec -> Haap t m HaapTestRes
+runHaapTest :: (HasCallStack,MonadIO m,HasPlugin Spec t m) => HaapSpecArgs -> Int -> Hspec.Spec -> Haap t m HaapTestRes
 runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ prettyText e) $ do
     let ioargs = specIO args
     outknob <- addMessageToError ("initializing test knob" <> prettyText ex) $ runBaseIOWith (ioargs) $ newKnob (B.pack [])
@@ -270,7 +271,9 @@ runHaapTest args ex test = orDo (\e -> return $ HaapTestError $ prettyText e) $ 
 
     let outstr = B8.unpack outbstr
     res <- case readMaybe outstr :: Maybe HaapTestRes of
-        Nothing -> throw $ HaapException $ T.pack $ "failed to parse hspec output: " ++ outstr
+        Nothing -> do
+            let stack = maybe callStack id (ioCallStack ioargs)
+            throw $ HaapException stack $ T.pack $ "failed to parse hspec output: " ++ outstr
         Just res -> return res
     return res
 
@@ -386,7 +389,7 @@ haapSpecProperty ioargs (HaapSpecTestResult io) = monadicIO $ do
 -- HUnit code
 
 location :: HasCallStack => Maybe SrcLoc
-location = case reverse callStack of
+location = case reverse (getCallStack callStack) of
   (_, loc) : _ -> Just loc
   [] -> Nothing
 

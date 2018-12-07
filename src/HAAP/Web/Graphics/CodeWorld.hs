@@ -38,6 +38,8 @@ import System.Process
 
 import qualified Shelly as Sh
 
+import GHC.Stack
+
 --import Codec.Picture.Metadata
 --import Codec.Picture
 
@@ -97,6 +99,7 @@ runCodeWorld = do
         -- compile files with ghcjs
         let ghcjs = cwGHCJS cw
         let io = cwIO cw
+        let stack = maybe callStack id (ioCallStack io)
         (destdir,destfolder) <- case cwExecutable cw of
             Left cwexec -> do
                 let exec = takeFileName cwexec
@@ -160,7 +163,7 @@ runCodeWorld = do
                             makeItem "" >>= loadAndApplyHTMLTemplate tpltfile cwCtx >>= hakyllCompile hp
                     
                 return (hakyllRoute hp $ destfolder </> "run.html")
-            else throw $ HaapException $ prettyText res
+            else throw $ HaapException stack $ prettyText res
 
 instance HaapMonad m => HasPlugin CodeWorld (ReaderT CodeWorldArgs) m where
     liftPlugin = id

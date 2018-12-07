@@ -81,6 +81,7 @@ data IOArgs = IOArgs
     , ioEnv :: [(String,FilePath)] -- additional environment variables
     , ioCmd :: Maybe String -- environment command (such as env, bash)
     , ioHidden :: Bool -- run without reporting errors 
+    , ioCallStack :: Maybe CallStack -- callstack to be passed to errors
     }
 
 addIOCmd :: Maybe String -> IOArgs -> IOArgs
@@ -120,7 +121,7 @@ instance Pretty IOResult where
            $+$ string "Exit Code:" <+> pretty (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 120) False Nothing NoSandbox True [] Nothing False
+defaultIOArgs = IOArgs (Just 120) False Nothing NoSandbox True [] Nothing False Nothing
 
 hiddenIOArgs :: IOArgs
 hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }
@@ -138,18 +139,18 @@ runBaseIOWithTimeout timeout m = runBaseIOWith (args) m
     where
     args = def { ioTimeout = Just timeout }
 
-runBaseIOWith :: (HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
+runBaseIOWith :: (HasCallStack,HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
 runBaseIOWith args io = do
     haapLiftIO $ runIOCore args io
 
-runIOWith :: (HaapPureStack t m IO,MonadIO m) => IOArgs -> Haap t IO a -> Haap t m a
+runIOWith :: (HasCallStack,HaapPureStack t m IO,MonadIO m) => IOArgs -> Haap t IO a -> Haap t m a
 runIOWith args io = do
     st <- liftWith' $ \run -> do
         st <- runIOCore args $ run io
         return st
     restoreT' $ return st
 
-runBaseIOWith' :: (NFData a,HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
+runBaseIOWith' :: (HasCallStack,NFData a,HaapStack t m,MonadIO m) => IOArgs -> IO a -> Haap t m a
 runBaseIOWith' args io = do
     haapLiftIO $ forceM $ runIOCore args io
 
@@ -190,11 +191,12 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     let stdin = maybe [] Text.unpack $ ioStdin ioargs
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     (exit,stdout,stderr) <- readProcessWithExitCode (head cmds) (tail cmds) stdin
+    let runmsg = if (ioSilent ioargs || ioHidden ioargs) then "" else "Running IO: " ++ unwords cmds
     unless (ioSilent ioargs || ioHidden ioargs) $ do
-        putStrLn $ "Running IO: " ++ unwords cmds
+        putStrLn runmsg
         putStrLn $ stderr
         putStrLn $ stdout
-    evaluate $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack stderr)
+    evaluate $ IOResult (exitCode exit) (Text.pack stdout) (Text.pack $ runmsg ++ "\n" ++ stderr)
   where
     addEnv cmd = case ioCmd ioargs of { Nothing -> cmd; Just env -> env:cmd }
     addTimeout Nothing cmds = cmds
@@ -205,16 +207,17 @@ ioCommandWith ioargs name args = addHiddenIO $ do
     addSandbox (Sandbox (Just cfg)) cmds = ["cabal","--sandbox-config-file="++cfg,"exec","--"]++cmds
     addHiddenIO m = if ioHidden ioargs then Sh.catchany m (\err -> mempty) else m
 
-haapLiftIO :: (HaapStack t m,MonadIO m) => IO a -> Haap t m a
-haapLiftIO io = catchAny (lift $! liftIO $! evaluateM $! io) (\e -> throw $ HaapIOException e)
+haapLiftIO :: (HasCallStack,HaapStack t m,MonadIO m) => IO a -> Haap t m a
+haapLiftIO io = catchAny (lift $! liftIO $! evaluateM $! io) (\e -> throw $ HaapIOException callStack e)
 
-runIOCore :: MonadIO m => IOArgs -> IO a -> m a
+runIOCore :: (HasCallStack,MonadIO m) => IOArgs -> IO a -> m a
 runIOCore args io = case ioTimeout args of
     Nothing -> liftIO $ io
     Just secs -> do
+        let stack = maybe callStack id (ioCallStack args)
         mb <- liftIO $ timeoutIO (secs * 10^6) io
         case mb of
-            Nothing -> error $ prettyString $ HaapTimeout callStack secs
+            Nothing -> error $ prettyString $ HaapTimeout stack secs
             Just a -> return a
 
 runBaseIO' :: (HaapStack t m,MonadIO m,NFData a) => IO a -> Haap t m a
@@ -276,8 +279,8 @@ orDo' ex m = catchAny (forceM m) (ex)
 ignoreError :: (MonadIO m,HaapStack t m) => Haap t m () -> Haap t m ()
 ignoreError m = orDo' (\e -> logEvent (prettyText e)) m
 
-addMessageToError :: (MonadIO m,HaapStack t m) => T.Text -> Haap t m a -> Haap t m a
-addMessageToError msg m = orDo (\e -> throw $ HaapException $ msg <> prettyText e) m
+addMessageToError :: (HasCallStack,MonadIO m,HaapStack t m) => T.Text -> Haap t m a -> Haap t m a
+addMessageToError msg m = orDo (\e -> throw $ HaapException callStack $ msg <> prettyText e) m
 
 orLogError :: (MonadIO m,IsString str,HaapStack t m) => Haap t m str -> Haap t m str
 orLogError m = orDo (\e -> logEvent (prettyText e) >> return (fromString $ prettyString e)) m

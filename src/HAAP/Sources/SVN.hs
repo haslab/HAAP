@@ -46,6 +46,8 @@ import System.Locale.Read
 
 import qualified Shelly as Sh
 
+import GHC.Stack
+
 import Safe
 
 data SVN
@@ -191,42 +193,44 @@ getSVNSource s = do
         else (checkout >> return ())
     return ()
 
-getSVNSourceInfo :: (MonadIO m,HasPlugin SVN t m) => SVNSource -> Haap t m SVNSourceInfo
+getSVNSourceInfo :: (HasCallStack,MonadIO m,HasPlugin SVN t m) => SVNSource -> Haap t m SVNSourceInfo
 getSVNSourceInfo s = do
     let path = svnPath s
     let user = svnUser s
     let pass = svnPass s
     --logEvent "svn plugin"
     args <- liftHaap $ liftPluginProxy (Proxy::Proxy SVN) $ Reader.ask
+    let stack = maybe callStack id (ioCallStack $ svnIOArgs args)
     --logEvent "svn info"
     info <- orIOResult $ runBaseShWith' (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["info","--non-interactive","--username",user,"--password",pass]
     --logEvent "svn parseInfo"
-    rev <- parseInfo (resStdout info) (resStderr info)
+    rev <- parseInfo stack (resStdout info) (resStderr info)
     --logEvent "svn log"
     logRev <- orIOResult $ runBaseShWith' (svnIOArgs args) $ do
         shCd path
         shCommandWith (svnIOArgs args) "svn" ["log","-r",show rev,"--non-interactive","--username",user,"--password",pass]
     --logEvent "svn parseLogRev"
-    (author,datestr) <- parseLogRev (resStdout logRev) (resStderr logRev)
+    (author,datestr) <- parseLogRev stack (resStdout logRev) (resStderr logRev)
 --    logEvent $ "svn parseSVNDateCurrent " ++ show datestr
     date <- liftHaap $ lift $ parseSVNDateCurrent datestr
 --    logEvent "svn svnsourceinfo"
     return $ SVNSourceInfo rev author date
   where
-    parseInfo txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
+    parseInfo stack txt1 txt2 = case dropWhile (not . isPrefixOf "Revision:") (lines $ Text.unpack txt1) of
         (x:xs) -> case readMaybe (drop 10 x) :: Maybe Int of
             Just rev -> return rev
-            Nothing -> throw $ HaapException $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
-        [] -> throw $ HaapException $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
-    parseLogRev txt1 txt2 = case tailMay (lines $ Text.unpack txt1) of
+            Nothing -> throw $ HaapException stack $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
+        [] -> throw $ HaapException stack $ "failed to parse svn info revision for " <> T.pack (show s) <> txt1 <> txt2
+    parseLogRev stack txt1 txt2 = case tailMay (lines $ Text.unpack txt1) of
         Nothing -> return ("","")
         Just t -> case headMay t of
             Nothing -> return ("","")
             Just str -> case splitOn "|" str of
                 [_,author,date,_] -> return (author,date)
-                otherwise -> throw $ HaapException $ "failed to parse svn revision log for " <> T.pack (show s) <> txt1 <> txt2
+                otherwise -> do
+                    throw $ HaapException stack $ "failed to parse svn revision log for " <> T.pack (show s) <> txt1 <> txt2
 
 putSVNSource :: (MonadIO m,HasPlugin SVN t m) => [FilePath] -> SVNSource -> Haap t m ()
 putSVNSource files s = do

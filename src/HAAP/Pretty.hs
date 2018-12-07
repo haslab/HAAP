@@ -18,6 +18,7 @@ import qualified Data.Map as Map
 import Data.Time.LocalTime
 import Data.Time.Clock
 import Data.Time.Calendar
+import Data.Text (Text(..))
 
 import Control.Exception (Exception,SomeException,displayException)
 import Control.Monad
@@ -64,12 +65,15 @@ char = pretty
 x $+$ y = vcat[x,y]
 
 instance Pretty HaapException where
-    pretty (HaapException str) = text str
-    pretty (HaapTimeout stack i) = string "timed out after" <+> int i <+> string "seconds"
-    pretty (HaapIOException e) = string (displayException e)
+    pretty (HaapException stack str) = haapCallStack stack $ text str
+    pretty (HaapTimeout stack i) = haapCallStack stack $ string "timed out after" <+> int i <+> string "seconds"
+    pretty (HaapIOException stack e) = haapCallStack stack $ string (displayException e)
 
 instance Pretty HaapEvent where
-    pretty (HaapEvent c s) = vcat [string (prettyCallStack c) <> char ':',nest 4 $ text s]
+    pretty (HaapEvent c s) = haapCallStack c (text s)
+    
+haapCallStack :: CallStack -> Doc ann -> Doc ann
+haapCallStack c txt = vcat [string (prettyCallStack c) <> char ':',nest 4 txt]
 
 instance (Pretty a,Pretty b) => Pretty (Map a b) where
     pretty xs = pretty $ Map.toList xs

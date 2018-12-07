@@ -47,6 +47,7 @@ import System.Directory
 import System.FilePath
 
 import GHC.Generics (Generic(..))
+import GHC.Stack
 
 import qualified Text.Blaze.Html5 as H
 
@@ -135,7 +136,7 @@ type Round a r = [Match a r]
 type Match a r = ([a],[r])
 
 -- TODO: Tourney matches are currently fixed to multiples of 4 players
-getTourneySize :: HasDB db t m => Proxy db -> [a] -> Haap t m Int
+getTourneySize :: (HasCallStack,HasDB db t m) => Proxy db -> [a] -> Haap t m Int
 getTourneySize _ (length -> n)
     | n <= 4 = return 4
     | n <= 16 = return 16
@@ -143,7 +144,7 @@ getTourneySize _ (length -> n)
     | n <= 64 = return 64
     | n <= 128 = return 128
     | n <= 256 = return 256
-    | otherwise = throw $ HaapException $ "unsupported tourney size " <> prettyText n
+    | otherwise = throw $ HaapException callStack $ "unsupported tourney size " <> prettyText n
 
 tourneyDiv :: Int -> Int
 tourneyDiv 256 = 64
@@ -216,7 +217,7 @@ runHaapTourney (tourney::HaapTourney t m db a r) = do
     return (tourneyno,db',tree,tourneytime)
 
 -- shuffles and splits players into groups of 4
-pairPlayers :: (Show a,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
+pairPlayers :: (HasCallStack,Show a,MonadIO m,NFData a,TourneyPlayer a,HasDB db t m) => Proxy db -> Either [a] [[a]] -> Int -> Haap t m [[a]]
 pairPlayers _ (Right players) tourneySize = return players
 pairPlayers _ (Left players) tourneySize = do
     logEvent $ "Pairing for tourney size " <> prettyText tourneySize <> " -> " <> prettyText (tourneyDiv tourneySize)
@@ -227,7 +228,9 @@ pairPlayers _ (Left players) tourneySize = do
     let xxs = pair (tourneySize `div` 4) nonrandoms (randoms++bots) 
     if validaMatches xxs
         then return xxs
-        else throw $ HaapException $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (show xxs)
+        else do
+            let stack = callStack
+            throw $ HaapException stack $ "pairPlayers: " <> prettyText (length xxs) <> " " <> prettyText (show xxs)
   where
     validaMatches xs = all ((==4) . length) xs && length xs == (tourneySize `div` 4)
     
