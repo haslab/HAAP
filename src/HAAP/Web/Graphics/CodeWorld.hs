@@ -78,6 +78,7 @@ data CodeWorldArgs = CodeWorldArgs
     , cwHtmlPath :: FilePath -- relative path to the project to store codeworld results
     , cwImages :: [(String,FilePath)] -- a list of html identifiers and respective local files for loading images
     , cwAudios :: [(String,FilePath)]
+    , cwExtras :: [FilePath] -- extra files to copy to the js folder
     }
 
 useAndRunCodeWorld :: (MonadIO m,HasPlugin Hakyll t m) => CodeWorldArgs -> Haap t m FilePath
@@ -113,6 +114,11 @@ runCodeWorld = do
                 let (dir,exec) = splitFileName cwexec
                 let ghcjs' = ghcjs { ghcjsMake = True, ghcjsArgs = ghcjsArgs ghcjs ++ ["-o",dirToRoot dir </> tmp </> destdir], ghcjsIO = io }
                 Sh.mkdir_p (fromString $ tmp </> destfolder)
+                
+                forM (cwExtras cw) $ \extra -> do
+                    let extraname = takeFileName extra
+                    shCp extra (tmp </> destfolder </> extraname)
+                
                 shCd dir
                 --Sh.setenv "GHC_PACKAGE_PATH" (T.pack $ concatPaths ghcpackagedbs)
                 --Sh.setenv "GHCJS_PACKAGE_PATH" (T.pack $ concatPaths ghcjspackagedbs)
@@ -130,10 +136,7 @@ runCodeWorld = do
                     match (fromGlob $ tmp </> destfolder </> "*.html") $ do
                         route   $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile $ getResourceString >>= hakyllCompile hp
-                    let auxFiles = fromGlob (tmp </> destfolder </> "*.js")
-                                   .||. fromGlob (tmp </> destfolder </> "*.externs")
-                                   .||. fromGlob (tmp </> destfolder </> "*.webapp")
-                                   .||. fromGlob (tmp </> destfolder </> "*.stats")
+                    let auxFiles = fromGlob (tmp </> destfolder </> "*")
                     when (isLeft $ cwExecutable cw) $ match auxFiles $ do
                         route $ relativeRoute tmp `composeRoutes` funRoute (hakyllRoute hp)
                         compile copyFileCompiler
