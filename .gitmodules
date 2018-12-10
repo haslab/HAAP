@@ -25,3 +25,6 @@
 [submodule "packages/hakyll"]
 	path = packages/hakyll
 	url = https://github.com/hpacheco/hakyll
+[submodule "packages/ghcjs-fetch"]
+	path = packages/ghcjs-fetch
+	url = git://github.com/hpacheco/ghcjs-fetch.git
