@@ -42,6 +42,8 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import System.FilePath
 
+import Safe
+
 newtype ScoredTourneyPlayer a r = ScoredTourneyPlayer (a,r)
   deriving (Eq,Ord,Show)
 
@@ -93,100 +95,156 @@ renderHaapTourneyTree :: (HasDB db t m,HasPlugin Hakyll t m,HasPlugin Tourney t 
 renderHaapTourneyTree (t::HaapTourney t m db a r) no tree time = do
     hp <- getHakyllP
     let tPath =  tourneyPath t </> addExtension ("tourney" ++ prettyString no) "html"
-    size <- case tourneyPlayers t of
-        Left ps -> getTourneySize (Proxy::Proxy db) ps
+    nplayers <- case tourneyPlayers t of
+        Left ps -> return $ length ps --getTourneySize (Proxy::Proxy db) ps
         Right ps -> return $ length $ concat ps
+    let rounds = tourneyRounds t nplayers
     let title = "Tourney " <> prettyText no <> " " <> prettyText time
     let header = H.h1 $ H.preEscapedToMarkup title
     let csspath = fileToRoot tPath </> "css"
     
-    hakyllRules $ create [fromFilePath tPath] $ do
-        route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
-        tree' <- mapM (mapM (mapSndM (mapM (renderMatch t)))) tree
-        compile $ do
-            makeItem (prettyString $ tourneyHTML csspath tree' size title header) >>= hakyllCompile hp
+    let cssCtx   = listField "rounds" roundCtx (mapM makeItem $ tourneyLayout rounds)
+        roundCtx = field "roundno"      (return . prettyString . fst4 . itemBody)
+         `mappend` field "matchHeight"  (return . prettyString . snd4 . itemBody)
+         `mappend` field "mergerHeight" (return . prettyString . thr4 . itemBody)
+         `mappend` field "marginHeight" (return . prettyString . fou4 . itemBody)
+    
+    hakyllRules $ do
+        create [fromFilePath tPath] $ do
+            route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
+            tree' <- mapM (mapM (mapM (mapSndM (mapM (renderMatch t))))) tree
+            compile $ do
+                makeItem (prettyString $ tourneyHTML no csspath tree' rounds title header) >>= hakyllCompile hp
+        create [fromFilePath $ "css/tourney"++show no++".css"] $ do
+            route $ idRoute `composeRoutes` funRoute (hakyllRoute hp)
+            compile $ do
+                makeItem "" >>= loadAndApplyHTMLTemplate "templates/tourney.css" cssCtx >>= hakyllCompile hp
     return $ hakyllRoute hp tPath
 
-tourneyHTML :: TourneyPlayer a => FilePath -> TourneyTree a Link -> Int -> T.Text -> Html -> Html
-tourneyHTML pathtocss (r:rs) tsize title header = docTypeHtml $ do
+tourneyLayout :: [TourneyRound] -> [(Int,Int,Int,Int)]
+tourneyLayout rs = tourneyLayout' Nothing (zip [1..] rs)
+
+tourneyLayout' :: Maybe (TourneyRound,(Int,Int,Int,Int)) -> [(Int,TourneyRound)] -> [(Int,Int,Int,Int)]
+tourneyLayout' prev [] = []
+tourneyLayout' prev ((rno,r):rs) = prevLayout : tourneyLayout' (Just (r,prevLayout)) rs
+    where
+    prevLayout = roundLayout rno prev r (fmap snd $ headMay rs)
+
+roundLayout :: Int -> Maybe (TourneyRound,(Int,Int,Int,Int)) -> TourneyRound -> Maybe TourneyRound -> (Int,Int,Int,Int)
+roundLayout rno r0 r Nothing = (rno,matchHeight,0,0)
+    where
+    nmatches = divNote "nmatches" (tourneyRoundSize r) (tourneyRoundMatchSize r)
+    matchHeight = 2 * tourneyRoundMatchSize r
+roundLayout rno Nothing r (Just r1) = (rno,matchHeight,mergerHeight,2)
+    where
+    nmatches = divNote "nmatches" (tourneyRoundSize r) (tourneyRoundMatchSize r)
+    matchHeight = 2 * tourneyRoundMatchSize r
+    nmatches1 = divNote "nmatches1" (tourneyRoundSize r1) (tourneyRoundMatchSize r1)
+    matchHeight1 = 2 * tourneyRoundMatchSize r1
+    nwinners = divNote "nwinners" nmatches nmatches1
+    mergerHeight = nwinners * matchHeight + (pred nwinners) * 2
+roundLayout rno (Just (r0,(rno0,matchHeight0,mergerHeight0,marginHeight0))) r (Just r1) = (rno,matchHeight,mergerHeight,marginHeight)
+    where
+    nmatches0 = divNote "nmatches0" (tourneyRoundSize r0) (tourneyRoundMatchSize r0)
+    matchHeight0 = 2 * tourneyRoundMatchSize r0
+    nmatches = divNote "nmatches" (tourneyRoundSize r) (tourneyRoundMatchSize r)
+    matchHeight = 2 * tourneyRoundMatchSize r
+    nmatches1 = divNote "nmatches1" (tourneyRoundSize r1) (tourneyRoundMatchSize r1)
+    matchHeight1 = 2 * tourneyRoundMatchSize r1
+    nwinners0 = divNote "nwinners0" nmatches0 nmatches
+    nwinners = divNote "nwinners" nmatches nmatches1
+    mergerHeight = nwinners * matchHeight + (pred nwinners) * marginHeight
+    
+    nmarginblocks = divNote "nmarginblocks" (nmatches0 - (pred nwinners0) - nmatches) (pred nmatches)
+    marginHeight = nmarginblocks * matchHeight + (succ nmarginblocks) * marginHeight0
+
+tourneyHTML :: TourneyPlayer a => Int -> FilePath -> TourneyTree a Link -> [TourneyRound] -> T.Text -> Html -> Html
+tourneyHTML no pathtocss rs rounds title header = docTypeHtml $ do
     H.head $ do
         H.meta ! A.charset "UTF-8"
         H.title $ H.preEscapedToMarkup title
-        H.link ! A.rel "stylesheet" ! A.href (fromString $ pathtocss </> "tourney.css")
+        H.link ! A.rel "stylesheet" ! A.href (fromString $ pathtocss </> "normalize.css")
+        H.link ! A.rel "stylesheet" ! A.href (fromString $ pathtocss </> ("tourney"++show no++".css"))
     H.body $ do
-        let bigsmall = if tsize >= 64 then "big" else "small"
-        H.div ! A.class_ (fromString bigsmall) $ do
-            header
-            roundsHTML tsize Nothing (r:rs)
+        header
+        H.div ! A.class_ "bracket" $ do
+            roundsHTML (zip3 [1..] rs rounds)
 
-roundsHTML :: TourneyPlayer a => Int -> Maybe Int -> [Round a Link] -> Html
-roundsHTML fstround _ [] = return ()
-roundsHTML fstround prevround (r:rs) = do
-    roundHTML prevround r
-    let prevround' = Just $ maybe fstround nextRound prevround
-    roundsHTML fstround prevround' rs
+roundsHTML :: TourneyPlayer a => [(Int,Round a Link,TourneyRound)] -> Html
+roundsHTML [] = return ()
+roundsHTML ((rno,r,round_):rs) = do
+    roundHTML rno r round_ (null rs)
+    roundsHTML rs
+    
+--groupMatches :: [Match a r] -> Maybe TourneyRound -> [[Match a r]]
+--groupMatches ms Nothing = [[ms]]
+--groupMatches ms (Just nextRound) = groupN (tourneyRoundMatchSize nextRound)
 
-roundOf :: Maybe Int -> Int -> String
-roundOf Nothing r = "r-of-"++show r
-roundOf (Just prev) r = "r-of-"++show prev++"-"++show r
+--roundOf :: Maybe Int -> Int -> String
+--roundOf Nothing r = "r-of-"++show r
+--roundOf (Just prev) r = "r-of-"++show prev++"-"++show r
 
-roundPat :: Int -> [Bool]
-roundPat 128 = concat $ repeat [True,False]
-roundPat n = True : repeat False
+--roundPat :: Int -> [Bool]
+--roundPat 128 = concat $ repeat [True,False]
+--roundPat n = True : repeat False
 
-roundHTML :: TourneyPlayer a => Maybe Int -> Round a Link -> Html
-roundHTML prevround (m:ms) = do
-    let round = length (m:ms) * 4
-    connectorsHTML prevround round
-    H.div ! A.class_ (fromString $ "round "++roundOf prevround round) $ do
-        mapM_ (\(isFst,m) -> matchHTML round isFst m) $ zip (roundPat round) (m:ms)
-    when (round==4) $ do
-        H.div ! A.class_ "round r-of-4-1" $ do
-            H.div ! A.class_ "connectors r-of-4-1" $ do
-                H.div ! A.class_ "next-line" $ return ()
-            H.div !A.class_ "bracket-game-1-first" $ do
-                playerHMTL 1 (Prelude.head $ fst $ last (m:ms)) True
-
-connectorsHTML :: Maybe Int -> Int -> Html
-connectorsHTML Nothing round = return ()
-connectorsHTML (Just prevround) round = do
-    let len = round `Prelude.div` 4
-    H.div ! A.class_ (fromString $ "connectors "++roundOf (Just prevround) round) $ do
-        connectorHTML prevround round
-        let space = H.div ! A.class_ (fromString $ "space-"++show round) $ return ()
-        replicateM_ (len-1) $ space >> connectorHTML prevround round
-
-connectorHTML :: Int -> Int -> Html
-connectorHTML prevround round = do                
-    H.div ! A.class_ "top-line"     $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-    H.div ! A.class_ "mid-line1"    $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-    H.div ! A.class_ "mid-line2"   $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-    H.div ! A.class_ "bottom-line"  $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-    H.div ! A.class_ "vert-line"    $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-    H.div ! A.class_ "next-line"    $ return ()
-    H.div ! A.class_ "clear"        $ return ()
-
-matchHTML :: TourneyPlayer a => Int -> Bool -> Match a Link -> Html
-matchHTML round isFst (players,links) = do
-    let winplayers = zip players $ replicate (roundWinners round) True ++ repeat False
-    let first = if isFst then "-first" else ""
-    H.div ! A.class_ (fromString $ "bracket-game-"++show round++first) $ do
-        mapM_ (\(i,(p,w)) -> playerHMTL i p w) $ zip [1..] winplayers 
-    H.div ! A.id "battle" $ forM_ (links) $ \link -> do
-        H.preEscapedToHtml $ ("&nbsp;"::String)
-        H.a ! A.href (fromString link) $ "vs"
+roundHTML :: TourneyPlayer a => Int -> Round a Link -> TourneyRound -> Bool -> Html
+roundHTML rno ws round_ isLastRound = do
+--    let round = length (m:ms) * 4
+--    connectorsHTML prevround round
+    H.section ! A.class_ (fromString $ "round " ++ "round" ++ show rno) $ do
+        forM_ ws $ \w -> winnersHTML w round_ isLastRound
  
-playerHMTL :: TourneyPlayer a => Int -> a -> Bool -> Html
-playerHMTL i p win = do
-    let wintag = if isDefaultPlayer p then "bot" else if win then "win" else "loss"
-    H.div ! A.class_ (fromString $ "player top "++wintag) $ do
-        renderPlayer p
-        H.div ! A.class_ "score" $ H.preEscapedToMarkup i
+winnersHTML :: TourneyPlayer a => [Match a Link] -> TourneyRound -> Bool -> Html
+winnersHTML ms round_ isLastRound = do
+    H.div ! A.class_ "winners" $ do
+        H.div ! A.class_ "matchups" $ do
+            forM_ ms $ \m -> matchupHTML m round_
+        unless isLastRound $ H.div ! A.class_ "connector" $ do
+            H.div ! A.class_ "merger" $ return ()
+
+matchupHTML :: TourneyPlayer a => Match a Link -> TourneyRound -> Html
+matchupHTML (players,links) round_ = do
+    H.div ! A.class_ "matchup" $ do
+        H.div ! A.class_ "result" $ linksHTML links
+        H.div ! A.class_ "participants" $ do
+            let nwins = tourneyRoundMatchWinners round_
+            forM_ players $ \player -> playerHTML player round_
+            
+linksHTML :: [Link] -> Html
+linksHTML [] = return ()
+linksHTML [l] = linkHTML l
+linksHTML (l:ls) = do
+    linkHTML l
+    H.preEscapedToHtml $ ("&nbsp;"::String)
+    linksHTML ls
+
+linkHTML :: Link -> Html
+linkHTML link = H.a ! A.href (fromString link) $ "vs"
+
+playerHTML :: TourneyPlayer a => ((a,Int),Bool) -> TourneyRound -> Html
+playerHTML ((p,ppos),pwin) round_ = do
+    let wintag = if isDefaultPlayer p then "" else if pwin then "winner" else "loser"
+    H.div ! A.class_ (fromString $ "participant " ++ wintag) $ do
+        H.span $ renderPlayer p
+        H.span ! A.class_ "score" $ H.preEscapedToMarkup ppos
+
+--matchHTML :: TourneyPlayer a => Int -> Bool -> Match a Link -> Html
+--matchHTML round isFst (players,links) = do
+--    let winplayers = zip players $ replicate (roundWinners round) True ++ repeat False
+--    let first = if isFst then "-first" else ""
+--    H.div ! A.class_ (fromString $ "bracket-game-"++show round++first) $ do
+--        mapM_ (\(i,(p,w)) -> playerHMTL i p w) $ zip [1..] winplayers 
+--    H.div ! A.id "battle" $ forM_ (links) $ \link -> do
+--        H.preEscapedToHtml $ ("&nbsp;"::String)
+--        H.a ! A.href (fromString link) $ "vs"
+ 
+--playerHMTL :: TourneyPlayer a => Int -> a -> Bool -> Html
+--playerHMTL i p win = do
+--    let wintag = if isDefaultPlayer p then "bot" else if win then "win" else "loss"
+--    H.div ! A.class_ (fromString $ "player top "++wintag) $ do
+--        renderPlayer p
+--        H.div ! A.class_ "score" $ H.preEscapedToMarkup i
 
 
 newtype MaybeFloatRank = MaybeFloatRank { unMaybeFloatRank :: Maybe Float }

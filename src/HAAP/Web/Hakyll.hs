@@ -169,6 +169,9 @@ matchDataTemplates = do
     match (fromGlob ("templates" </> "*.html")) $ do
         --route idRoute
         compile templateBodyCompiler
+    match (fromGlob ("templates" </> "*.css")) $ do
+        --route idRoute
+        compile templateBodyCompiler
     match (fromGlob ("templates" </> "*.php")) $ do
         --route idRoute
         compile templateBodyCompiler

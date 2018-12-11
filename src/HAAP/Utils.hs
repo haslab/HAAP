@@ -110,9 +110,10 @@ zipLeft (x:xs) [] = (x,Nothing) : zipLeft xs []
 zipLeft [] (y:ys) = []
 zipLeft (x:xs) (y:ys) = (x,Just y) : zipLeft xs ys
 
-group4 :: [a] -> [[a]]
-group4 [] = []
-group4 (x1:x2:x3:x4:xs) = [x1,x2,x3,x4] : group4 xs
+groupN :: Int -> [a] -> [[a]]
+groupN n [] = []
+groupN n xs = case splitAt n xs of
+    (ys,zs) -> ys : groupN n zs
 
 snoc :: [x] -> x -> [x]
 snoc xs x = xs ++ [x]
@@ -190,3 +191,8 @@ sepByStr :: String -> [String] -> String
 sepByStr s [] = []
 sepByStr s [x] = x
 sepByStr s (x:xs) = x ++ s ++ sepByStr s xs
+
+divNote :: String -> Int -> Int -> Int
+divNote str 0 y = 0
+divNote str x 0 = error $ "divideByZero " ++ str ++ " " ++ show x
+divNote str x y = div x y

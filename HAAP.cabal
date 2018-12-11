@@ -14,7 +14,7 @@ Tested-with:        GHC==8.0.1
 Synopsis:           Haskell Automatic Assessment Platform
 
 Extra-Source-Files: README.md
-Data-Files: templates/*.html, templates/*.php, css/*.css, css/*.min.css, js/*.js, js/*.min.js
+Data-Files: templates/*.html, templates/*.php, templates/*.css, css/*.css, css/*.min.css, js/*.js, js/*.min.js
   
 Library
   exposed-modules:

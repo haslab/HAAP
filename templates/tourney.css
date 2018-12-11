@@ -1,0 +1,146 @@
+@import 'https://fonts.googleapis.com/css?family=Roboto+Slab:400,700';
+html {
+  font-size: 1rem;
+}
+
+body {
+  background: #f0f2f2;
+}
+
+.bracket {
+  left: 10%;
+  top: 10%;
+  display: inline-block;
+  position: absolute;
+  white-space: nowrap;
+  font-size: 0;
+}
+.bracket .round {
+  display: inline-block;
+  vertical-align: middle;
+}
+.bracket .round .winners > div {
+  display: inline-block;
+  vertical-align: middle;
+}
+.bracket .round .winners > div.matchups .matchup:last-child {
+  margin-bottom: 0 !important;
+}
+.bracket .round .winners > div.matchups .matchup .participants {
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+.bracket .round .winners > div.matchups .matchup .participants .participant {
+  box-sizing: border-box;
+  color: #858585;
+  border-left: 0.25rem solid #858585;
+  background: white;
+  width: 14rem;
+  height: 2rem;
+  box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.score{float:right;padding-left:10px;padding-right:10px;}
+
+.bracket .round .winners > div.matchups .matchup .participants .participant.winner {
+  color: #60c645;
+  border-color: #60c645;
+}
+.bracket .round .winners > div.matchups .matchup .participants .participant.winner > span > a {
+  color: #60c645;
+}
+
+.bracket .round .winners > div.matchups .matchup .participants .participant.loser {
+  color: #dc563f;
+  border-color: #dc563f;
+}
+.bracket .round .winners > div.matchups .matchup .participants .participant.loser > span > a {
+  color: #dc563f;
+}
+
+.bracket .round .winners > div.matchups .matchup .participants .participant:not(:last-child) {
+  border-bottom: thin solid #f0f2f2;
+}
+.bracket .round .winners > div.matchups .matchup .participants .participant span {
+  margin: 0 1.25rem;
+  line-height: 2;
+  font-size: 1rem;
+  font-family: "Roboto Slab";
+}
+.bracket .round .winners > div.connector.filled.bottom .merger:after, .bracket .round .winners > div.connector.filled.top .merger:before {
+  border-color: #60c645;
+}
+.bracket .round .winners > div.connector .merger {
+  box-sizing: border-box;
+  width: 2rem;
+  display: inline-block;
+  vertical-align: top;
+}
+.bracket .round .winners > div.matchups > div.matchup > div.result {
+    font-size: 1rem;
+    float:right;
+    vertical-align: middle;
+    height: 12rem;
+    width:0rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    text-align:center;
+}
+
+.bracket .round .winners > div.matchups > div.merger {
+  box-sizing: border-box;
+  float:right;
+  width: 2rem;
+  height:2rem;
+  display: inline-block;
+  vertical-align: top;
+  background-color: #c0c0c8;
+}
+
+.bracket .round .winners > div.connector .merger:before, .bracket .round .winners > div.connector .merger:after {
+  content: "";
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 50%;
+  border: 0 solid;
+  border-color: #c0c0c8;
+  background-color: #c0c0c8;
+}
+.bracket .round .winners > div.connector .merger:before {
+  border-right-width: thin;
+  border-top-width: thin;
+}
+.bracket .round .winners > div.connector .merger:after {
+  border-right-width: thin;
+  border-bottom-width: thin;
+}
+
+$for(rounds)$
+
+.bracket .round.round$roundno$ .winners > div.matchups > div.matchup > div.result {
+    font-size: 1rem;
+    float:right;
+    vertical-align: middle;
+    height: $matchHeight$rem;
+    width:0rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    text-align:center;
+}
+
+.bracket .round.round$roundno$ .winners > div.connector .merger {
+  position: relative;
+  height: $mergerHeight$rem;
+}
+
+.bracket .round.round$roundno$ .winners:not(:last-child) {
+  margin-bottom: $marginHeight$rem;
+}
+
+.bracket .round.round$roundno$ .winners .matchups .matchup:not(:last-child) {
+  margin-bottom: $marginHeight$rem;
+}
+
+$endfor$
+
