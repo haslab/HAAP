@@ -63,7 +63,7 @@ data GHCJSArgs = GHCJSArgs
 instance Default GHCJSArgs where
     def = GHCJSArgs True [] def False
 
-instance (E.MonadCatch m) => HasPlugin GHCJS (ReaderT GHCJSArgs) m where
+instance (HaapMonad m) => HasPlugin GHCJS (ReaderT GHCJSArgs) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin GHCJS (ComposeT (ReaderT GHCJSArgs) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m

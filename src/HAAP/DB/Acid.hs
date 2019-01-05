@@ -83,7 +83,7 @@ instance IsAcidic st => HaapDB (AcidDB st) where
         (ioargs,acid) <- liftPluginProxy (Proxy::Proxy (AcidDB st)) $ State.get
         runBaseIOWith (ioargs) $ update acid u
 
-instance (MonadCatch m) => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m where
+instance (HaapMonad m) => HasPlugin (AcidDB st) (StateT (IOArgs,AcidState st)) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin (AcidDB st) (ComposeT (StateT (IOArgs,AcidState st)) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m

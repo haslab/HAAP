@@ -32,6 +32,7 @@ import qualified Test.HUnit.Lang as HUnit
 import qualified Test.HUnit.Base as HUnit
 
 import Control.Monad
+import Control.Monad.Fail
 import Control.Monad.Base
 import Control.Monad.Trans.Compose
 import Control.Monad.State (State(..))
@@ -91,7 +92,7 @@ instance HaapPlugin Spec where
 useSpec :: (HaapStack t m,PluginK Spec t m) => (PluginI Spec) -> Haap (PluginT Spec :..: t) m a -> Haap t m a
 useSpec args m = usePlugin_ (return args) m
 
-instance (MonadCatch m) => HasPlugin Spec (ReaderT HaapSpecArgs) m where
+instance (MonadFail m,MonadCatch m) => HasPlugin Spec (ReaderT HaapSpecArgs) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin Spec (ComposeT (ReaderT HaapSpecArgs) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m
@@ -368,14 +369,14 @@ haapSpecProperty ioargs (HaapSpecTestMaybe io) = counterexample "Maybe assertion
     b <- run $ runSpecIO ioargs "test" io
     unless (isNothing b) $ do
         pb <- run $ runSpecIO ioargs "solution" $ prettyStringIO (fromJust b)
-        fail ("Maybe assertion failed: got...\n"++pb)
+        Control.Monad.Fail.fail ("Maybe assertion failed: got...\n"++pb)
     QuickCheck.assert (isNothing b)
 haapSpecProperty ioargs (HaapSpecTestEqual eq iox ioy) = monadicIO $ do
     x <- run $ runSpecIO ioargs "oracle" iox
     y <- run $ runSpecIO ioargs "solution" ioy
     px <- run $ runSpecIO ioargs "oracle" $ prettyStringIO x
     py <- run $ runSpecIO ioargs "solution" $ prettyStringIO y
-    unless (x `eq` y) $ fail ("Equality assertion failed: expected...\n"++px ++ "\n...but got...\n"++ py)
+    unless (x `eq` y) $ Control.Monad.Fail.fail ("Equality assertion failed: expected...\n"++px ++ "\n...but got...\n"++ py)
     QuickCheck.assert (x `eq` y)
 haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
     msg <- run $ runSpecIO ioargs "test" io 
@@ -383,7 +384,7 @@ haapSpecProperty ioargs (HaapSpecTestMessage io) = monadicIO $ do
     return ()
 haapSpecProperty ioargs (HaapSpecTestResult io) = monadicIO $ do
     res <- run $ runSpecIO ioargs "test" io
-    unless (isSuccessResult res) $ fail $ prettyString res
+    unless (isSuccessResult res) $ Control.Monad.Fail.fail $ prettyString res
     QuickCheck.assert (isSuccessResult res)
 
 -- HUnit code

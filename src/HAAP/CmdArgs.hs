@@ -44,7 +44,7 @@ instance (Data args) => HaapPlugin (CmdArgs args) where
 useCmdArgs :: (HaapStack t m,PluginK (CmdArgs args) t m) => args -> Haap (PluginT (CmdArgs args) :..: t) m a -> Haap t m a
 useCmdArgs argsDef = usePlugin_ (return $ CmdArgs argsDef)
 
-instance (MonadCatch m) => HasPlugin (CmdArgs args) (ReaderT (CmdArgs args)) m where
+instance (HaapMonad m) => HasPlugin (CmdArgs args) (ReaderT (CmdArgs args)) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin (CmdArgs args) (ComposeT (ReaderT (CmdArgs args)) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m

@@ -28,3 +28,6 @@
 [submodule "packages/ghcjs-fetch"]
 	path = packages/ghcjs-fetch
 	url = https://github.com/hpacheco/ghcjs-fetch
+[submodule "packages/jmacro"]
+	path = packages/jmacro
+	url = https://github.com/hpacheco/jmacro

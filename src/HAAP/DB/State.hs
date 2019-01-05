@@ -63,7 +63,7 @@ instance () => HaapDB (StateDB st) where
         liftPluginProxy (Proxy::Proxy (StateDB st)) $ State.put $ StateDB st'
         return x
 
-instance (MonadCatch m) => HasPlugin (StateDB st) (StateT (StateDB st)) m where
+instance (HaapMonad m) => HasPlugin (StateDB st) (StateT (StateDB st)) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin (StateDB st) (ComposeT (StateT (StateDB st)) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m

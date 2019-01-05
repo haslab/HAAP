@@ -35,10 +35,12 @@ import Data.List as List
 import Data.List.Split
 import qualified Data.Text as Text
 import Data.Default
+import qualified Data.Csv
 import Data.Csv (header,DefaultOrdered(..),Record(..),ToNamedRecord(..),FromNamedRecord(..),(.:),(.=),namedRecord)
 import qualified Data.Vector as Vector
 import qualified Data.HashMap.Strict as HashMap
 import Data.Maybe
+import Data.String
 
 import Control.Monad
 import Control.DeepSeq
@@ -73,6 +75,7 @@ deriving instance Data Picture
 data HaddockStats = HaddockStats
     { haddockComments :: Fraction -- (number of special annotations / total size of comments)
     , haddockCoverage :: Fraction -- (number of haddock comments / number of definitions)
+	, haddockSpecials :: Map String Int -- number of occurences of each special annotation
     }
   deriving (Show,Generic)
 
@@ -90,9 +93,10 @@ instance DefaultOrdered Fraction where
     headerOrder _ = header ["numerador", "denominador"]
 instance DefaultOrdered HaddockStats where
     headerOrder _ = Vector.concat
-        [addPrefixHeader "haddockComments" (headerOrder (undefined::Fraction))
-        ,addPrefixHeader "haddockCoverage" (headerOrder (undefined::Fraction))
-        ]
+		[addPrefixHeader "haddockComments" (headerOrder (undefined::Fraction))
+		,addPrefixHeader "haddockCoverage" (headerOrder (undefined::Fraction))
+		,addPrefixHeader "haddockSpecials" (Vector.fromList $ map fromString specialDocNames)
+		]
        
 instance Semigroup Fraction where
     (<>) = mappend
@@ -108,30 +112,36 @@ instance FromNamedRecord Fraction where
     parseNamedRecord m = Fraction <$> m .: "numerador" <*> m .: "denominador"
 
 instance ToNamedRecord HaddockStats where
-    toNamedRecord (HaddockStats x y) = HashMap.union
-        (addPrefixNamedRecord "haddockComments" $ toNamedRecord x)
-        (addPrefixNamedRecord "haddockCoverage" $ toNamedRecord y)
+    toNamedRecord (HaddockStats x y z) = HashMap.unions
+        [addPrefixNamedRecord "haddockComments" $ toNamedRecord x
+        ,addPrefixNamedRecord "haddockCoverage" $ toNamedRecord y
+		,addPrefixNamedRecord "haddockSpecials" $ toNamedRecord z
+		]
 instance FromNamedRecord HaddockStats where
     parseNamedRecord m = do
-        x <- parseNamedRecord (remPrefixNamedRecord "haddockComments" m)
-        y <- parseNamedRecord (remPrefixNamedRecord "haddockCoverage" m)
-        return $ HaddockStats x y
+		x <- parseNamedRecord (remPrefixNamedRecord "haddockComments" m)
+		y <- parseNamedRecord (remPrefixNamedRecord "haddockCoverage" m)
+		z <- parseNamedRecord (remPrefixNamedRecord "haddockSpecials" m)
+		return $ HaddockStats x y z
 
 instance Default HaddockStats where
-    def = HaddockStats def def
+    def = HaddockStats def def defSpecials
+    
+defSpecials = Map.fromList $ zip specialDocNames $ repeat 0
 
 runHaddockStats :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (HaddockStats,Map String (Set String))
 runHaddockStats files = do
-    comments <- runHaddockComments files
+    (comments,specials) <- runHaddockComments files
     (coverage,missings) <- runHaddockCoverageFiles files
-    return (HaddockStats comments coverage,missings)
+    return (HaddockStats comments coverage specials,missings)
 
 -- returns (number of special annotations,total size of comments)
-runHaddockComments :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m Fraction
+runHaddockComments :: (MonadIO m,HaapStack t m) => [FilePath] -> Haap t m (Fraction,Map String Int)
 runHaddockComments files = orLogDefault def $ do
-    strs <- liftM (concat . catMaybes) $ mapM (orLogMaybe . parseFileComments) files
-    let docs::[DocH Identifier Identifier] = map (_doc . parseParasGeneric) strs
-    return $ Fraction (Set.size $ specialDocs docs) (sum $ map length strs)
+	strs <- liftM (concat . catMaybes) $ mapM (orLogMaybe . parseFileComments) files
+	let docs::[DocH Identifier Identifier] = map (_doc . parseParasGeneric) strs
+	let specials = specialDocs docs
+	return (Fraction (Map.size $ specials) (sum $ map length strs),specials)
 
 #if MIN_VERSION_haddock_library(1,6,0)
 parseParasGeneric = parseParas Nothing
@@ -160,13 +170,64 @@ specialDoc (DocAName {}) = Just 16
 specialDoc (DocProperty {}) = Just 17
 specialDoc (DocExamples {}) = Just 18
 specialDoc (DocHeader {}) = Just 19
+specialDoc (DocTable {}) = Just 20
 specialDoc d = Nothing
 
-specialDocs :: Data a => a -> Set Int
-specialDocs = everything Set.union (mkQ Set.empty aux)
+specialDocName :: DocH mod id -> Maybe String
+specialDocName (DocParagraph {}) = Just "paragraph"
+specialDocName (DocIdentifier {}) = Just "identifier"
+specialDocName (DocIdentifierUnchecked {}) = Just "identifier"
+specialDocName (DocModule {}) = Just "module"
+specialDocName (DocWarning {}) = Just "warning"
+specialDocName (DocEmphasis {}) = Just "emphasis"
+specialDocName (DocMonospaced {}) = Just "monospaced"
+specialDocName (DocBold {}) = Just "bold"
+specialDocName (DocUnorderedList {}) = Just "unorderedlist"
+specialDocName (DocOrderedList {}) = Just "orderedlist"
+specialDocName (DocDefList {}) = Just "deflist"
+specialDocName (DocCodeBlock {}) = Just "codeblock"
+specialDocName (DocHyperlink {}) = Just "hyperlink"
+specialDocName (DocPic {}) = Just "pic"
+specialDocName (DocMathInline {}) = Just "mathinline"
+specialDocName (DocMathDisplay {}) = Just "mathdisplay"
+specialDocName (DocAName {}) = Just "aname"
+specialDocName (DocProperty {}) = Just "property"
+specialDocName (DocExamples {}) = Just "examples"
+specialDocName (DocHeader {}) = Just "header"
+specialDocName (DocTable {}) = Just "table"
+specialDocName d = Nothing
+
+specialDocNames :: [String]
+specialDocNames = 
+	["paragraph"
+	,"identifier"
+	,"module"
+	,"warning"
+	,"emphasis"
+	,"monospaced"
+	,"bold"
+	,"unorderedlist"
+	,"orderedlist"
+	,"deflist"
+	,"codeblock"
+	,"hyperlink"
+	,"pic"
+	,"mathinline"
+	,"mathdisplay"
+	,"aname"
+	,"property"
+	,"examples"
+	,"header"
+	,"table"
+	]
+
+specialDocs :: Data a => a -> Map String Int
+specialDocs = everything (Map.unionWith (+)) (mkQ defSpecials aux)
     where
-    aux :: DocH Identifier Identifier -> Set Int
-    aux d = maybe Set.empty Set.singleton $ specialDoc d
+    aux :: DocH Identifier Identifier -> Map String Int
+    aux d = case (specialDocName d,specialDoc d) of
+		(Just dn,Just di) -> Map.singleton dn di
+		otherwise -> defSpecials
 
 commentString :: Comment -> String
 commentString (Comment _ _ str) = str

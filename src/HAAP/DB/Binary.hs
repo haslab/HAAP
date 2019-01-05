@@ -78,7 +78,7 @@ instance Binary st => HaapDB (BinaryDB st) where
         liftPluginProxy (Proxy::Proxy (BinaryDB st)) $ State.put $ BinaryDB st'
         return x
 
-instance (MonadCatch m) => HasPlugin (BinaryDB st) (StateT (BinaryDB st)) m where
+instance (HaapMonad m) => HasPlugin (BinaryDB st) (StateT (BinaryDB st)) m where
     liftPlugin = id
 instance (HaapStack t2 m) => HasPlugin (BinaryDB st) (ComposeT (StateT (BinaryDB st)) t2) m where
     liftPlugin m = ComposeT $ hoist' lift m

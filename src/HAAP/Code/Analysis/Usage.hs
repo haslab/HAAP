@@ -8,7 +8,7 @@ This module provides basic metrics of data type and higher-order functions usage
 {-# LANGUAGE OverloadedStrings, TupleSections, DeriveGeneric, CPP #-}
 
 module HAAP.Code.Analysis.Usage
-    ( Usage(..),UsageArgs(..),runUsage,UsageReport(..),usageReport,runUsageReport
+    ( Usage(..),UsageArgs(..),runUsage,UsageReport(..),usageReport,runUsageReport,chaseDependencyFiles
     ) where
 
 import HAAP.IO
@@ -160,6 +160,7 @@ usageReport u = UsageReport
 data UsageArgs = UsageArgs
     { usageFiles :: [(FilePath,String)] -- a list of Haskell files (with their module names) to analyze
     , usageIgnores :: String -> String -> Bool -- ignore predicate: receives name and module
+    , usageIgnoreModules :: String -> Bool -- modules to ignore
     , usageImportPaths :: [FilePath] -- a list of additional import paths (similar to ghc's -i parameter)
     }
 
@@ -308,8 +309,29 @@ defUse (ds1,us1) (ds2,us2) = (unionNameSet (maybe emptyNameSet id ds1) ds2,union
 --    u <- runUsage uargs
 --    return ()
  
-
+chaseDependencyFiles :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m [FilePath]
+chaseDependencyFiles u = liftIO $ do
+    
+    -- compiler flags
+    dflags <- runGhc (Just libdir) $ do
+        dflags <- getSessionDynFlags
+        return $ (foldl xopt_set dflags [ImplicitPrelude]) { importPaths = usageImportPaths u }
         
+--    let pretty = showSDoc dflags . ppr
+    
+    -- run ghc API
+    defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
+        runGhc (Just libdir) $ do
+            setSessionDynFlags dflags
+            targets <- forM (usageFiles u) $ \(f,m) -> guessTarget f Nothing
+            setTargets targets
+            load LoadAllTargets
+            forM_ (usageFiles u) $ \(f,m) -> do
+                modSum <- getModSummary $ mkModuleName m
+                p <- parseModule modSum
+                return ()
+            g <- getModuleGraph
+            return $ catMaybes $ map (ml_hs_file . ms_location) $ filter (not . usageIgnoreModules u . moduleNameString . moduleName . ms_mod) $ mgModSummaries g
 
 
 

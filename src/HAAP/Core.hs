@@ -16,6 +16,7 @@ module HAAP.Core where
 import HAAP.Utils
 
 import Control.Monad.Morph
+import Control.Monad.Fail
 import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Compose
@@ -110,7 +111,11 @@ runHaap p (Haap (ComposeT m)) = do
     return (a,w')
 
 newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: (ComposeT (RWST Project HaapLog ()) t) m x }
-  deriving (Applicative,Functor,Monad,MonadWriter HaapLog)
+  deriving (Applicative,Functor,Monad,MonadFail,MonadWriter HaapLog)
+
+instance MonadFail (f (g m)) => MonadFail (ComposeT f g m) where
+	fail e = ComposeT (Control.Monad.Fail.fail e)
+
 
 deriving instance (Monad (t m),MonadCatch (ComposeT (RWST Project HaapLog ()) t m)) => MonadCatch (Haap t m)
 deriving instance (Monad (t m),MonadThrow (ComposeT (RWST Project HaapLog ()) t m)) => MonadThrow (Haap t m)
@@ -160,7 +165,7 @@ getProjectTaskFiles = liftM (concatMap taskFiles) getProjectTasks
 getProjectTaskFilesWith :: HaapStack t m => (Task ->Bool) -> Haap t m [HaapFile]
 getProjectTaskFilesWith p = liftM (concatMap taskFiles) (getProjectTasksWith p)
 
-type HaapMonad m = (Monad m,MonadCatch m,MonadThrow m)
+type HaapMonad m = (MonadFail m,MonadCatch m,MonadThrow m)
 type HaapStack t m = (HaapMonad m,HaapMonad (t m),MonadTrans t,MFunctor' t m)
 
 liftHaap :: Monad (t m) => t m a -> Haap t m a

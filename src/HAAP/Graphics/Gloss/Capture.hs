@@ -60,7 +60,7 @@ instance HaapPlugin Gloss where
         x <- mapHaapMonad (flip Reader.runReaderT args . getComposeT) m
         return (x,())
 
-instance (MonadCatch m) => HasPlugin Gloss (ReaderT GlossArgs) m where
+instance (HaapMonad m) => HasPlugin Gloss (ReaderT GlossArgs) m where
     liftPlugin = id
 --instance (HaapStack t2 m,HaapPluginT (ReaderT GlossArgs) m (t2 m)) => HasPlugin Gloss (ComposeT (ReaderT GlossArgs) t2) m where
 --    liftPlugin m = ComposeT $ hoistPluginT liftStack m
