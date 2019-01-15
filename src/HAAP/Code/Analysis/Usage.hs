@@ -310,7 +310,7 @@ defUse (ds1,us1) (ds2,us2) = (unionNameSet (maybe emptyNameSet id ds1) ds2,union
 --    return ()
  
 chaseDependencyFiles :: (MonadIO m,HaapStack t m) => UsageArgs -> Haap t m [FilePath]
-chaseDependencyFiles u = liftIO $ do
+chaseDependencyFiles u = orLogDefault [] $ liftIO $ do
     
     -- compiler flags
     dflags <- runGhc (Just libdir) $ do
