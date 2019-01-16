@@ -266,12 +266,11 @@ shPipeWith io n args x = shPipeWithType io n args x Proxy
 shPipeWith_ :: (Show a) => IOArgs -> String -> [String] -> a -> Sh ()
 shPipeWith_ io n args x = do
     let io' = io { ioStdin = Just $ T.pack $ show x }
-    res <- orEitherSh $ shCommandWith io' n args
+    res <- orEitherSh $ shCommandWith_ io' n args
     case res of
         Left err -> error $ "error...\n" ++ prettyString err ++ "\n...on getting result"
-        Right res -> do
-            liftIO $ hPutStrLn stderr $ prettyString res
-
+        Right () -> return ()
+        
 orEitherSh :: Sh a -> Sh (Either SomeException a)
 orEitherSh m = catchAnySh (liftM Right m) (\err -> return $ Left err)
 
