@@ -64,6 +64,19 @@ data Picture = Polygon CallStack [Point] !Bool
              | Pictures CallStack [Picture]
              | Image CallStack Int Int Img -- width, height and the identifier of the html element holding the image
 
+propagateColor :: Color -> Picture -> Picture
+propagateColor c pic@(Polygon {}) = colored c pic
+propagateColor c pic@(Path {}) = colored c pic
+propagateColor c pic@(Sector {}) = colored c pic
+propagateColor c pic@(Arc {}) = colored c pic
+propagateColor c pic@(Text {}) = colored c pic
+propagateColor c pic@(Color cs _ p) = pic
+propagateColor c pic@(Translate cs x y p) = Translate cs x y $ propagateColor c p
+propagateColor c pic@(Scale cs x y p) = Scale cs x y $ propagateColor c p
+propagateColor c pic@(Rotate cs r p) = Rotate cs r $ propagateColor c p
+propagateColor c pic@(Pictures cs ps) = Pictures cs $ map (propagateColor c) ps
+propagateColor c pic@(Image {}) = colored c pic
+
 data Img = StringImg String
          | HTMLImg HTMLImageElement
   deriving Eq
