@@ -12,7 +12,8 @@ import Graphics.Gloss.Data.Display
 
 data Event
     = EventKey Key KeyState Modifiers (Float, Float)	 
-    | EventMotion (Float, Float)	 
+    | EventMotion (Float, Float)	
+    | EventResize (Int,Int) 
   deriving (Eq,Ord,Show)
 
 -- TODO: support modifiers
@@ -31,6 +32,7 @@ eventToCW display (EventKey (SpecialKey k) toggle _ pos) = specialKeyToCW k togg
 eventToCW display (EventKey (MouseButton b) Down _ pos) = CW.MousePress (mouseButtonToCW b) (pointToCWWithDisplay display pos)
 eventToCW display (EventKey (MouseButton b) Up _ pos) = CW.MouseRelease (mouseButtonToCW b) (pointToCWWithDisplay display pos)
 eventToCW display (EventMotion p) = CW.MouseMovement (pointToCWWithDisplay display p)
+eventToCW display e = error $ "eventToCW: " ++ show e
 
 eventFromCW :: Display -> CW.Event -> Event
 eventFromCW display (CW.KeyPress k) = stringKeyFromCW (Text.unpack k) Down
