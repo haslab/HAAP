@@ -350,12 +350,10 @@ infix ~~~
 (~~~) :: Sh.FilePath -> GlobPattern -> Sh Bool
 f ~~~ p = return $ (shToFilePath f) ~~ p
         
-shFindGlob :: FilePath -> Sh [FilePath]
-shFindGlob path = do
-    xs <- Sh.findWhen (\x -> x ~~~ (dir </> exec)) (shFromFilePath dir)
+shFindGlob :: FilePath -> GlobPattern -> Sh [FilePath]
+shFindGlob path glob = do
+    xs <- Sh.findWhen (~~~ glob) (shFromFilePath path)
     return $ map shToFilePath xs
-  where
-    (dir,exec) = splitFileName path      
 
 shFindWhen :: (FilePath -> Sh Bool) -> FilePath -> Sh [FilePath]
 shFindWhen p path = do

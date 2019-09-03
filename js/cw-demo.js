@@ -13,3 +13,7 @@ function addToMessage(msg) {
     var message = document.getElementById('message');
     message.innerHTML += msg
 }
+
+function showCanvas() {
+    
+}

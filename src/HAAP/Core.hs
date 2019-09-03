@@ -113,8 +113,8 @@ runHaap p (Haap (ComposeT m)) = do
 newtype Haap (t :: (* -> *) -> * -> *) (m :: * -> *) (x :: *) = Haap { unHaap :: (ComposeT (RWST Project HaapLog ()) t) m x }
   deriving (Applicative,Functor,Monad,MonadFail,MonadWriter HaapLog)
 
-instance MonadFail (f (g m)) => MonadFail (ComposeT f g m) where
-	fail e = ComposeT (Control.Monad.Fail.fail e)
+--instance MonadFail (f (g m)) => MonadFail (ComposeT f g m) where
+--	fail e = ComposeT (Control.Monad.Fail.fail e)
 
 
 deriving instance (Monad (t m),MonadCatch (ComposeT (RWST Project HaapLog ()) t m)) => MonadCatch (Haap t m)

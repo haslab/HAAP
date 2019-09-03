@@ -600,7 +600,7 @@ drawPicture' ctx ds (Text _ sty fnt txt) = do
         
 drawPicture' ctx ds (Image _ w h img) = withDS ctx ds $ do
     Canvas.scale 1 (-1) ctx
-    doc <- orError "drawPicture doc" currentDocument
+    --doc <- orError "drawPicture doc" currentDocument
 --    (w,h) <- getImgSize img
 --    element <- orError ("drawPicture img " ++ show imgid) $ getElementById doc (fromString imgid :: JSString)
     cimg <- liftM Canvas.Image $ toJSVal =<< imgElement img

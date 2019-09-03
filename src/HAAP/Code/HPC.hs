@@ -138,9 +138,9 @@ hpcCleanup dir exec = do
     ignoreError $ runBaseSh $ do
         shCd dir
         shRm ".hpc"
-        shFindGlob "*.tix" >>= mapM_ shRm
-        shFindGlob "*.o" >>= mapM_ shRm
-        shFindGlob "*.hi" >>= mapM_ shRm
+        shFindGlob "." "*.tix" >>= mapM_ shRm
+        shFindGlob "." "*.o" >>= mapM_ shRm
+        shFindGlob "." "*.hi" >>= mapM_ shRm
 
 useAndRunHpcReport :: (MonadIO m,HaapStack t m) => HpcArgs -> a -> (IOResult -> Haap (ReaderT HpcArgs :..: t) m a) -> Haap t m (a,HpcReport)
 useAndRunHpcReport args x m = usePlugin_ (return args) $ runHpcReport x m

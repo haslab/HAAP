@@ -169,7 +169,7 @@ mkPLab_Group src = PLab_Group src []
 
 plab_Groups :: IO [(Group,PLab_Group)]
 plab_Groups = do
-    folders <- runShCoreIO def $ shFindGlob "svn/2017li1g*"
+    folders <- runShCoreIO def $ shFindGlob "svn" "2017li1g*"
     let groups = map mkGroup folders
     return groups
 

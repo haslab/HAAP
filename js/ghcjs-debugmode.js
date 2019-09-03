@@ -1,6 +1,5 @@
-
 /*
- * Copyright 2017 The CodeWorld Authors. All rights reserved.
+ * Copyright 2019 The CodeWorld Authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,128 +13,134 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-"use strict";
+'use strict';
 
-window.debugMode = false;
-window.debugMarkers = [];
+(() => {
+    let available = false;
+    let active = false;
 
-window.infobox = null;
+    // Checked by parent.updateUI
+    window.debugAvailable = false;
+    window.debugActive = false;
 
-function initDebugMode(getStackAtPoint) {
-    var canvas = document.getElementById("screen");
+    // These functions are provided by a debugmode-supported entrypoint when
+    // calling initDebugMode
+    //  debugGetNode :: { x :: Double, y :: Double } -> Int
+    //   Returns the nodeId of the shape at the coordinate (x,y) of the canvas.
+    //   Negative return indicates no shape at that point.
+    let debugGetNode = null;
+    //  debugSetActive :: Bool -> ()
+    //   Indicates to the entry point when debugmode has been turned off and on
+    let debugSetActive = null;
+    //  debugGetPicture :: () -> Object
+    //   Gets an object showing the current state of the Picture being drawn. Is
+    //   only called directly after debugSetActive(true).
+    let debugGetPicture = null;
+    //  debugHighlightShape :: (Bool, Int) -> ()
+    //   Indicates to the entry point should highlight or select a shape or tree
+    //   of shapes. A true value indicates highlight (change color and bring to
+    //   front) and false indicates select (change color and do not change
+    //   position). A negative value indicates to stop highlighting or selecting.
+    //   At most one shape may be highlighted and one shape selected at a time.
+    let debugHighlightShape = null;
+    // debugDrawShape :: (Canvas, Int) -> ()
+    //  Draws the node with a coordinate plane in the background.
+    let debugDrawShape = null;
 
-    infobox = document.createElement("div");
-    infobox.style.position = "absolute";
-    infobox.style.border = "1px solid black";
-    infobox.style.background = "white";
-    infobox.style.minWidth = "60px";
-    infobox.style.padding = "10px";
-    infobox.style.display = "none";
-    infobox.id = "infobox";
-    document.body.appendChild(infobox);
+    let cachedPic = null;
+    let canvas = null;
 
-    canvas.addEventListener("click", function (evt) {
-        if (!debugMode) return;
+    // Globals
 
-        var ret = {};
-        getStackAtPoint({
-            x: evt.clientX,
-            y: evt.clientY,
-        }, ret);
+    function initDebugMode(getNode, setActive, getPicture, highlightShape,
+        drawShape) {
+        debugGetNode = getNode;
+        debugSetActive = setActive;
+        debugGetPicture = getPicture;
+        debugHighlightShape = highlightShape;
+        debugDrawShape = drawShape;
 
-        clearMarkers();
+        if (!available) {
+            canvas = document.getElementById('screen');
 
-        var stack = ret.stack;
-        if (stack) {
-            var pic, i, marker;
-            var printable = false;
-
-            infobox.innerHTML = "";
-            for (i=stack.length-1;i>=0;i--) {
-                pic = stack[i];
-                if (!pic)
-                    continue;
-
-                printable = true;
-
-                marker = parent.codeworldEditor.markText({
-                    line: pic.srcLoc.startLine-1,
-                    ch: pic.srcLoc.startCol-1
-                }, {
-                    line: pic.srcLoc.endLine-1,
-                    ch: pic.srcLoc.endCol-1
-                },{
-                    className: "marked"
-                });
-                debugMarkers.push(marker);
-
-                var link = document.createElement("a");
-                var text = document.createTextNode(
-                        pic.name + "@" + pic.srcLoc.startLine + ":" + stack[i].srcLoc.startCol);
-                var br = document.createElement("br");
-
-                link.href = "#";
-                link.addEventListener("click", (function (pic) {
-                    parent.codeworldEditor.setCursor({
-                        line: pic.srcLoc.startLine-1,
-                        ch: pic.srcLoc.startCol-1
+            canvas.addEventListener('mousemove', evt => {
+                if (active) {
+                    const nodeId = debugGetNode({
+                        x: evt.clientX,
+                        y: evt.clientY
                     });
-                }).bind(null,pic) );
 
-                link.appendChild(text);
-                infobox.appendChild(link);
-                infobox.appendChild(br);
+                    debugHighlightShape(true, nodeId);
+                }
+            });
+
+            canvas.addEventListener('mouseout', evt => {
+                if (active) {
+                    debugHighlightShape(true, -1);
+                }
+            });
+
+            canvas.addEventListener('click', evt => {
+                if (active) {
+                    const nodeId = debugGetNode({
+                        x: evt.clientX,
+                        y: evt.clientY
+                    });
+
+                    if (nodeId >= 0) {
+                        parent.openTreeDialog(nodeId);
+                    }
+                }
+            });
+
+            available = true;
+            window.debugAvailable = true;
+            if (parent && parent.updateUI) {
+              parent.updateUI();
             }
-
-            if (printable) {
-                infobox.style.left = evt.clientX + "px";
-                infobox.style.top  = evt.clientY + "px";
-
-                infobox.style.display = "block";
-            } else {
-                // If user clicks on a coordinatePlane, stack may contain
-                // only null
-                infobox.style.display = "none";
-            }
-        } else {
-            infobox.style.display = "none";
         }
-    });
-
-    window.addEventListener("unload", function () {
-        clearMarkers();
-    });
-
-    canvas.onblur = (function (evt) {
-        infobox.style.display = "none";
-    });
-}
-
-function clearMarkers() {
-    while (debugMarkers.length > 0) {
-        debugMarkers.pop().clear();
     }
-}
+    window.initDebugMode = initDebugMode;
 
-function startDebugMode() {
-    if (!infobox) {
-        throw new Error("Can't start debugMode: isPointInPath not registered via initDebugMode!");
-    }
-    window.debugMode = true;
-}
+    function startDebugMode() {
+        if (!available) {
+            throw new Error('Debug mode is not available.');
+        }
 
-function stopDebugMode() {
-    if (infobox) {
-        infobox.style.display = "none";
-    }
-    window.debugMode = false;
-    clearMarkers();
-}
+        active = true;
+        debugSetActive(true);
+        cachedPic = debugGetPicture();
 
-function toggleDebugMode() {
-    if (window.debugMode) {
-        stopDebugMode();
-    } else {
-        startDebugMode();
+        parent.initTreeDialog(cachedPic, debugHighlightShape,
+            debugDrawShape, () => stopDebugMode());
+        parent.openTreeDialog(0);
+
+        window.debugActive = true;
+        parent.updateUI();
     }
-}
+    window.startDebugMode = startDebugMode;
+
+    function stopDebugMode() {
+        active = false;
+        debugSetActive(false);
+        cachedPic = null;
+
+        debugHighlightShape(true, -1);
+        debugHighlightShape(false, -1);
+
+        parent.destroyTreeDialog();
+
+        window.debugActive = false;
+        parent.updateUI();
+    }
+    window.stopDebugMode = stopDebugMode;
+
+    function toggleDebugMode() {
+        if (active) {
+            stopDebugMode();
+        } else {
+            startDebugMode();
+        }
+    }
+    window.toggleDebugMode = toggleDebugMode;
+})();

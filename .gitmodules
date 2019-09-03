@@ -31,3 +31,6 @@
 [submodule "packages/jmacro"]
 	path = packages/jmacro
 	url = https://github.com/hpacheco/jmacro
+[submodule "packages/codeworld-api-gloss"]
+	path = packages/codeworld-api-gloss
+	url = https://github.com/hpacheco/codeworld-api-gloss
