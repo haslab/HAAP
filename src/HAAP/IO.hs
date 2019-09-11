@@ -79,6 +79,7 @@ data IOArgs = IOArgs
     , ioSandbox :: Sandbox -- run inside a cabal sandbox (with given config file) or not; relative to the current path
     , ioEscaping :: Bool -- escape shell characters or not
     , ioEnv :: [(String,FilePath)] -- additional environment variables
+    , ioPath :: [FilePath] -- paths to add to $PATH
     , ioCmd :: Maybe String -- environment command (such as env, bash)
     , ioHidden :: Bool -- run without reporting errors 
     , ioCallStack :: Maybe CallStack -- callstack to be passed to errors
@@ -121,7 +122,7 @@ instance Pretty IOResult where
            $+$ string "Exit Code:" <+> pretty (resExitCode io)
 
 defaultIOArgs :: IOArgs
-defaultIOArgs = IOArgs (Just 120) False Nothing NoSandbox True [] Nothing False Nothing
+defaultIOArgs = IOArgs (Just 120) False Nothing NoSandbox True [] [] Nothing False Nothing
 
 hiddenIOArgs :: IOArgs
 hiddenIOArgs = defaultIOArgs {ioHidden = True, ioSilent = True }

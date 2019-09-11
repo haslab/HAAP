@@ -149,6 +149,7 @@ shCommandWith_ :: IOArgs -> String -> [String] -> Sh ()
 shCommandWith_ ioargs name args  = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+    forM_ (ioPath ioargs) $ \path -> Sh.appendToPath (shFromFilePath path)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     Sh.run_ (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
   where
