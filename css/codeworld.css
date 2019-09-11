@@ -307,6 +307,13 @@ body {
     max-width: 100vw;
     max-height: 76vh;
 }
+.squared {
+    cursor: default;
+    width: 76vh;
+    height: 76vh;
+    max-width: 76vh;
+    max-height: 76vh;
+}
 .fullscreen {
     cursor: default;
     width: 100vw;

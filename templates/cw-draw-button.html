@@ -47,7 +47,7 @@
   </script>
   
   <script type="text/javascript">
-    function reportRuntimeError(err, str) {
+    function addMessage(err, str) {
       if (window.parent.addToMessage) {
         var message = window.parent.addToMessage('\n' + str);
         var msgelem = window.parent.document.getElementById('message');
