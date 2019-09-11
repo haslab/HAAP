@@ -56,7 +56,7 @@ data DebuggerArgs = DebuggerArgs
     , debuggerGHC :: GHCArgs
     , debuggerPath :: FilePath -- path relative to the project whose files are being debugged
     , debuggerFiles :: [FilePath] -- debugged files relative to the debugger path
-    , debuggerInstrumentedPath :: FilePath -- path relative to the project path of lareaady instrumented debug files
+    , debuggerInstrumentedPath :: FilePath -- path relative to the project path of already instrumented debug files
     , debuggerInstrumentedFiles :: [FilePath] -- debug files relative to the instrumented path
     , debuggerModules :: [String] -- a list of modules to import or the source code
     , debuggerImports :: String -- a list of imports to prefix the file
