@@ -165,6 +165,7 @@ shCommandToFileWith_ :: IOArgs -> String -> [String] -> FilePath -> Sh ()
 shCommandToFileWith_ ioargs name args file = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+    forM_ (ioPath ioargs) $ \path -> Sh.appendToPath (shFromFilePath path)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     Sh.runHandle (shFromFilePath $ head cmds) (map T.pack $ tail cmds) handle
     
@@ -185,6 +186,7 @@ shCommandToFileWith :: IOArgs -> String -> [String] -> FilePath -> Sh IOResult
 shCommandToFileWith ioargs name args file = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+    forM_ (ioPath ioargs) $ \path -> Sh.appendToPath (shFromFilePath path)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     stderr <- Sh.runHandles (shFromFilePath $ head cmds) (map T.pack $ tail cmds) [] handle
     exit <- Sh.lastExitCode
@@ -213,6 +215,7 @@ shCommandWith ioargs name args = shCommandWith' ioargs name args
     shCommandWith' ioargs name args = do
         forM_ (ioStdin ioargs) Sh.setStdin
         forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+        forM_ (ioPath ioargs) $ \path -> Sh.appendToPath (shFromFilePath path)
         let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
         stdout <- Sh.errExit False $ Sh.run (shFromFilePath $ head cmds) (map T.pack $ tail cmds)
         stderr <- if ioHidden ioargs then return (T.pack "hidden") else Sh.lastStderr
@@ -237,6 +240,7 @@ shCommandHandleWith :: IOArgs -> String -> [String] -> (Handle -> Sh a) -> Sh a
 shCommandHandleWith ioargs name args handle = do
     forM_ (ioStdin ioargs) Sh.setStdin
     forM_ (ioEnv ioargs) $ \(evar,epath) -> Sh.setenv (T.pack evar) (T.pack epath)
+    forM_ (ioPath ioargs) $ \path -> Sh.appendToPath (shFromFilePath path)
     let cmds = addEnv $ addTimeout (ioTimeout ioargs) $ addSandbox (ioSandbox ioargs) (name:args)
     a <- Sh.errExit False $ Sh.runHandle (shFromFilePath $ head cmds) (map T.pack $ tail cmds) handle
     return a
