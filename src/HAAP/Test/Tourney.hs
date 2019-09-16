@@ -356,7 +356,7 @@ playMatch xs = do
     cmpsnd x y = compare (snd x) (snd y)
     
 
-instance (Ord a,SafeCopy a) => SafeCopy (HaapTourneyDB a) where
+instance (Typeable a,Ord a,SafeCopy a) => SafeCopy (HaapTourneyDB a) where
     putCopy (HaapTourneyDB no db) = contain $ do
         safePut no
         safePut db
