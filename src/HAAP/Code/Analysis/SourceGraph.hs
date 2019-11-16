@@ -131,10 +131,11 @@ runSourceGraph args files = orLogDefault def $ do
     return (SGReport (maximumDef 0 mccs) gcc mcalls,slices)
 
 codeGraph :: SourceGraphArgs -> ParsedModules -> (SGraph,Set Entity)
-codeGraph args ms = g
+codeGraph args ms = (g',es)
     where
     mns = Map.keys ms
-    g = sliceGraph args $ filterGraph args $ graphData $ collapsedHData $ codeToGraph mns ms
+    g = filterGraph args $ graphData $ collapsedHData $ codeToGraph mns ms
+    (g',es) = sliceGraph args g
     
 moduleGraphs :: SourceGraphArgs -> ParsedModules -> Map ModName (SGraph,Set Entity)
 moduleGraphs args = Map.map (moduleGraph args)

@@ -46,6 +46,8 @@ import qualified Data.Map as Map
 import Data.Set (Set(..))
 import qualified Data.Set as Set
 import Control.Monad
+import Data.List
+import Data.Char
 import Data.Generics hiding (TyCon,tyConName)
 import Control.Monad.IO.Class
 import qualified GHC.Generics as GHC
@@ -179,29 +181,32 @@ runUsage u = liftIO $ do
     
     -- run ghc API
     (defthings,extthings,insts) <- defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-        runGhc (Just libdir) $ do
-            setSessionDynFlags dflags
-            targets <- forM (usageFiles u) $ \(f,m) -> guessTarget f Nothing
-            setTargets targets
-            load LoadAllTargets
-            tcenvs <- forM (usageFiles u) $ \(f,m) -> do
-                modSum <- getModSummary $ mkModuleName m
-                p <- parseModule modSum
-                t <- typecheckModule p
-                let (tcenv,_) = tm_internals_ t
-                return tcenv
-            
-            let (defns,usedns) = foldl (flip defUses) (emptyNameSet,emptyNameSet) (map tcg_dus tcenvs)
-            let extns = minusNameSet usedns defns
-            
-            let ignoreNameSet = filterNameSet $ \n -> not $ (usageIgnores u) (nameString n) (nameModuleString n)
-            
-            defthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet defns) lookupName
-            extthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet extns) lookupName
-            
-            let insts = concatMap tcg_insts tcenvs
-            
-            return (defthings,extthings,insts)
+        liftM catUsage $ forM (usageFiles u) $ \(f,m) -> do
+            let m' = takeWhile (not . isSpace) m
+            --liftIO $ putStrLn $ "usage file " ++ show f ++ " " ++ show m
+            orDefaultIO ([],[],[]) $ runGhc (Just libdir) $ do
+                setSessionDynFlags dflags
+                target <- guessTarget f Nothing
+                setTargets [target]
+                load LoadAllTargets
+                tcenv <- do
+                    modSum <- getModSummary $ mkModuleName m'
+                    p <- parseModule modSum
+                    t <- typecheckModule p
+                    let (tcenv,_) = tm_internals_ t
+                    return tcenv
+                
+                let (defns,usedns) = foldl (flip defUses) (emptyNameSet,emptyNameSet) [tcg_dus tcenv]
+                let extns = minusNameSet usedns defns
+                
+                let ignoreNameSet = filterNameSet $ \n -> (nameModuleString n) == m' && not ((usageIgnores u) (nameString n) (nameModuleString n))
+                
+                defthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet defns) lookupName
+                extthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet extns) lookupName
+                
+                let insts = concatMap tcg_insts [tcenv]
+                
+                return (defthings,extthings,insts)
     
     let (deffuns,deftys,defclss) = defThings defthings (Map.empty,Map.empty,Set.empty)
     let (usedfuns,usedtys,usedclss) = extThings extthings (Map.empty,Map.empty,Set.empty)
@@ -220,6 +225,11 @@ runUsage u = liftIO $ do
     
     return $ Usage deffuns usedfuns deftys usedtys defclss usedclss instclss
  
+catUsage :: [([TyThing],[TyThing],[ClsInst])] -> ([TyThing],[TyThing],[ClsInst])
+catUsage = foldr union ([],[],[])
+    where
+    union (a1,b1,c1) (a2,b2,c2) = (a1++a2,b1++b2,c1++c2)
+ 
 mkInsts :: [ClsInst] -> Map String (String,IsHO) -> Map String (String,IsHO)
 mkInsts ds xs = foldl (flip mkInst) xs ds
 
@@ -236,6 +246,15 @@ nameModuleString :: Name -> String
 nameModuleString = moduleNameString . moduleName . nameModule
  
 type ExtThings = (Map String IsHO,Map String IsHO,Set String)
+ 
+catExtThings :: [ExtThings] -> ExtThings
+catExtThings = foldr unionExtThings emptyExtThings
+
+unionExtThings :: ExtThings -> ExtThings -> ExtThings
+unionExtThings (a1,b1,c1) (a2,b2,c2) = (Map.unionWith (||) a1 a2,Map.unionWith (||) b1 b2,Set.union c1 c2)
+
+emptyExtThings :: ExtThings
+emptyExtThings = (Map.empty,Map.empty,Set.empty)
  
 extThings :: [TyThing] -> ExtThings -> ExtThings
 extThings ds xs = foldl (flip extThing) xs ds
@@ -260,6 +279,17 @@ extThing (ATyCon con) (usedfuns,usedtys,usedclss)
 extThing thing useds = error $ "extThing: " ++ showSDocUnsafe (ppr thing)
  
 type DefThings = (Map String IsHO,Map String (IsTySyn,IsHO),Set String)
+ 
+catDefThings :: [DefThings] -> DefThings
+catDefThings = foldr unionDefThings emptyDefThings
+
+emptyDefThings :: DefThings
+emptyDefThings = (Map.empty,Map.empty,Set.empty)
+ 
+unionDefThings :: DefThings -> DefThings -> DefThings
+unionDefThings (a1,b1,c1) (a2,b2,c2) = (Map.unionWith (||) a1 a2,Map.unionWith mergeb b1 b2,Set.union c1 c2)
+    where
+    mergeb (x1,y1) (x2,y2) = (x1||x2,y1||y2)
  
 defThings :: [TyThing] -> DefThings -> DefThings
 defThings ds xs = foldl (flip defThing) xs ds

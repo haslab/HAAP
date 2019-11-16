@@ -268,6 +268,9 @@ orLogDefault' a m = orDo' (\e -> logEvent (prettyText e) >> return a) m
 orDefault :: (MonadIO m,HaapStack t m) => a -> Haap t m a -> Haap t m a
 orDefault a m = orDo (\e -> return a) m
 
+orDefaultIO :: a -> IO a -> IO a
+orDefaultIO def m = catchAny (evaluateM m) (\err -> return def)
+
 orMaybeIO :: IO a -> IO (Maybe a)
 orMaybeIO m = catchAny (evaluateM $ liftM Just m) (\err -> return Nothing)
 
