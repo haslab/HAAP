@@ -108,7 +108,8 @@ data TourneyRound = TourneyRound
     { tourneyRoundSize :: Int -- number of players per round
     , tourneyRoundMatchSize :: Int -- number of players per match
     , tourneyRoundMatchWinners :: Int -- number of winning players
-    , tourneyRoundBestOf :: Int -- number of matches per round (to the best of n wins)
+    , tourneyRoundBestOf :: Int -- number of matches per round (to the best of n wins)s
+    , tourneyRoundAllowDraws :: Bool -- allow draws
     }
 
 type Link = FilePath
@@ -302,15 +303,15 @@ playMatches xs round_ = do
     lift $ logEvent $ "playing matches "
     --(tourney,tourneyno,roundno,matchno,_) <- State.get
     let bestof = tourneyRoundBestOf round_
-    scores <- forM xs (playMatchBest bestof)
+    scores <- forM xs (playMatchBest round_ bestof)
     return (map fst scores,map (mapFst addWinner) scores)
   where
     nwinners = tourneyRoundMatchWinners round_
     addWinner :: [(a,Int)] -> [((a,Int),Bool)]
     addWinner xs = zip xs (replicate nwinners True ++ repeat False)
 
-playMatchBest :: (MonadIO m,HasDB db t m,TourneyPlayer a) => Int -> [a] -> HaapPlay t m db a r ([(a,Int)],[r])
-playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) xs)
+playMatchBest :: (MonadIO m,HasDB db t m,TourneyPlayer a) => TourneyRound -> Int -> [a] -> HaapPlay t m db a r ([(a,Int)],[r])
+playMatchBest round_ bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) xs)
     where
     intToFloat :: Int -> Float
     intToFloat = realToFrac
@@ -322,9 +323,14 @@ playMatchBest bestof xs = playMatchBest' [] (Map.fromList $ map (\x -> (x,[])) x
         if Map.null winners
             then do
                 (res,replay) <- playMatch (Map.keys players)
-                let replays' = replays++[replay]
-                let players' = Map.unionWith (++) players (Map.map (\x -> [x]) $ Map.fromList res)
-                playMatchBest' replays' players'
+                let isDraw = length (filter (==1) $ map snd res) /= 1
+                if not (tourneyRoundAllowDraws round_) && isDraw
+                    then do
+                        playMatchBest' replays players
+                    else do
+                        let replays' = replays++[replay]
+                        let players' = Map.unionWith (++) players (Map.map (\x -> [x]) $ Map.fromList res)
+                        playMatchBest' replays' players'
             else do
                 let rank = rankGroups players
                 lift $ logEvent $ "match rank" <> prettyText rank
