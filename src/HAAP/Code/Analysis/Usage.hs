@@ -197,9 +197,11 @@ runUsage u = liftIO $ do
                     return tcenv
                 
                 let (defns,usedns) = foldl (flip defUses) (emptyNameSet,emptyNameSet) [tcg_dus tcenv]
+                --liftIO $ putStrLn $ "defs " ++ show (map nameString $ nameSetElemsStable defns)
+                --liftIO $ putStrLn $ "uses " ++ show (map nameString $ nameSetElemsStable usedns)
                 let extns = minusNameSet usedns defns
                 
-                let ignoreNameSet = filterNameSet $ \n -> (nameModuleString n) == m' && not ((usageIgnores u) (nameString n) (nameModuleString n))
+                let ignoreNameSet = filterNameSet $ \n -> {-(nameModuleString n) == m' &&-} not ((usageIgnores u) (nameString n) (nameModuleString n))
                 
                 defthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet defns) lookupName
                 extthings <- catMaybes <$> forM (nameSetElemsStable $ ignoreNameSet extns) lookupName

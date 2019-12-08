@@ -21,6 +21,7 @@ import Data.Traversable
 import Data.Default
 import Data.Map (Map(..))
 import qualified Data.Map as Map
+import Data.String
 
 import Control.Monad
 import qualified Control.Monad.Reader as Reader
@@ -50,6 +51,7 @@ populateGroupSource predtask ctx overwriteStudentFiles g s = do
     ppath <- getProjectPath
     let spath = sourcePath s
     files <- getProjectTaskFilesWith predtask
+    --logEvent $ fromString $ "populating files" ++ show files
     remotefiles <- runBaseSh $ forM files $ \file -> do
         --Sh.liftIO $ putStrLn $ "populating file " ++ show file
         --let copy = haapFileType file == HaapLibraryFile || haapFileType file == HaapOracleFile || overwriteStudentFiles

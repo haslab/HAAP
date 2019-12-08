@@ -63,4 +63,4 @@ runModularity files = do
   where
     maxSize :: Module SrcSpanInfo -> [Int]
     maxSize m = sizes
-        where sizes = List.map gsize (removeLets $ List.map noLocDecl $ functions $ removeTopConstants $ getTopDecls m)
+        where sizes = List.map gsize (List.map noLocDecl $ removeLets $ functions $ removeTopConstants $ getTopDecls m)
